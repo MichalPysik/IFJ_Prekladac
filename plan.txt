@@ -1,0 +1,24 @@
+Rozdělení práce:
+- 1 člověk na scanneru
+- 2 lidi na parseru
+- 1 člověk na interpretu
+
+!VYPRACOVAT DO POKUSNEHO ODEVZDANI NEBO OZNUK A OTEVRU SI CINSKOU RESTAURACI
+	- MICHAL TRAN
+!ANO A JA DAM TAKY OZNUK A BUDU POMAHAT VARIT
+	- MICHAL PYŠÍK
+
+
+Michal Tran
+- Parser?
+
+Michal Pyšík
+- Scanner
+- 
+
+Karel Jirgl
+- 
+
+Václav Klem
+- 
+
