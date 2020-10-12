@@ -1,0 +1,1 @@
+// hlavni soubor scanneru
