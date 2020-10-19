@@ -57,7 +57,7 @@ typedef enum
 
 typedef union {
 	char string[30];
-	int integer;
+	int64_t integer;
 	double real;
 } Token_attribute;
 
@@ -69,26 +69,9 @@ typedef struct {
 } Token;
 
 
-typedef enum {
+//funkce ktera kontroluje zda je string v tokenu keyword, kdyz ano tak zmeni jeho typ a vraci true
+bool keywordCheck (Token *currentToken);
 
-	SSTATE_START,
-	SSTATE_ID,
-	SSTATE_ID_FINAL,
-	SSTATE_NUM,
-	SSTATE_NUM_REAL,
-	SSTATE_NUM_DOT,
-	SSTATE_NUM_EXPONENT,
-	SSTATE_NUM_EXPONENT_SIGN,
-	SSTATE_LESS,
-	SSTATE_MORE,
-	SSTATE_EQUAL,
-	SSTATE_EOL,
-	SSTATE_SLASH,
-	SSTATE_COMMENT,
-	SSTATE_BLOCK_COMMENT,
-
-
-} SFSM_STATE; //State of scanner FSM
 
 //funkce co nacte a ulozi novy token na urcitou adresu tokenu
 int getToken (Token *currentToken);
