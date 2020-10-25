@@ -613,7 +613,7 @@ int getToken (Token *currentToken)
 
 			default:
 				fprintf(stderr, "Internal error: Scanner reached undefined state\n");
-        		return INTERNAL_ERROR;
+				return INTERNAL_ERROR;
 
 		} //konec switche stavu
 
