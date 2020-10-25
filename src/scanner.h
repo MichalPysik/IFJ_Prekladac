@@ -10,6 +10,8 @@
 #include <ctype.h>
 #include "errors.h"
 
+#define STATIC_STRING_LENGHT 50
+
 typedef enum
 {
 	TOKEN_EMPTY, //prazdny defaultni typ
@@ -29,6 +31,7 @@ typedef enum
 	TOKEN_ASSIGN, //prirazeni =
 	TOKEN_INIT, //inicializace promenne :=
 	TOKEN_COMMA, //klasicka oddelovaci carka ,
+	TOKEN_SEMICOLON, // strednik ;
 	TOKEN_LROUNDBRACKET, //leva zavorka (
 	TOKEN_RROUNDBRACKET, //prava zavorka )
 	TOKEN_LCURLYBRACKET, //leva spicata zavorka {
@@ -56,7 +59,7 @@ typedef enum
 
 
 typedef union {
-	char string[30];
+	char string[STATIC_STRING_LENGHT];
 	int64_t integer;
 	double real;
 } Token_attribute;

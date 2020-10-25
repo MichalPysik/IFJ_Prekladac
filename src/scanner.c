@@ -14,15 +14,20 @@ typedef enum {
 	SSTATE_NUM_EXPONENT_SIGN,
   SSTATE_NUM_EXPONENT_AFTER,
   SSTATE_NUM_ZERO,
+	SSTATE_STRING,
+	SSTATE_STRING_BACKSLASH,
+	SSTATE_STRING_HEX1,
+	SSTATE_STRING_HEX2,
 	SSTATE_LESS,
 	SSTATE_MORE,
 	SSTATE_EQUAL,
+	SSTATE_INITVAR,
 	SSTATE_SLASH,
 	SSTATE_COMMENT,
 	SSTATE_BLOCK_COMMENT,
 	SSTATE_BLOCK_COMMENT_END,
 
-} SFSM_STATE; //State of scanner FSM
+} SFSM_STATE; //Vsechny stavy scanner FSM
 
 
 // test zda je token keyword, kdyz ano zmeni jeho typ na konkretni keyword
@@ -87,7 +92,8 @@ int getToken (Token *currentToken)
 
   char currChar;
 
-  int i = 0;
+  int i = 0; //pocitadlo string attributu
+	char hexString[2] = {'0', '0'}; //hex cislo uvnitr stringu (napriklad "\x2F")
 
   while(1)
   {
@@ -123,11 +129,20 @@ int getToken (Token *currentToken)
           i++;
           state = SSTATE_NUM_ZERO;
         }
+				else if (currChar == '\"')
+				{
+					state = SSTATE_STRING;
+				}
         else if (currChar == ',')
         {
           currentToken->type = TOKEN_COMMA;
           return ALL_OK;
         }
+				else if (currChar == ';')
+				{
+					currentToken->type = TOKEN_SEMICOLON;
+					return ALL_OK;
+				}
         else if (currChar == '/')
         {
           state = SSTATE_SLASH;
@@ -179,13 +194,18 @@ int getToken (Token *currentToken)
         {
           state = SSTATE_MORE;
         }
-        else if (currChar == EOF)
-        {
-          currentToken->type = TOKEN_EOF;
-          return ALL_OK;
-        }
+				else if (currChar == ':')
+				{
+					state = SSTATE_INITVAR;
+				}
+				else if (currChar == EOF)
+				{
+					currentToken->type = TOKEN_EOF;
+					return ALL_OK;
+				}
         else
         {
+					fprintf(stderr, "Lexical analysis error: Invalid token\n");
           return LEX_ERROR;
         }
         break;
@@ -220,6 +240,12 @@ int getToken (Token *currentToken)
           i++;
           state = SSTATE_NUM_DOT;
         }
+				else if (currChar == 'e' || currChar == 'E')
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+					state = SSTATE_NUM_EXPONENT;
+				}
         else
         {
           ungetc(currChar, stdin);
@@ -242,6 +268,7 @@ int getToken (Token *currentToken)
         {
           ungetc(currChar, stdin);
           currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: The dot must be followed by atlest one digit for a valid float value\n");
           return LEX_ERROR;
         }
         break;
@@ -277,12 +304,20 @@ int getToken (Token *currentToken)
           i++;
           state = SSTATE_NUM_DOT;
         }
-        else
+        else if (isdigit(currChar))
         {
           ungetc(currChar, stdin);
           currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Whole decimal number cannot start with a zero\n");
           return LEX_ERROR;
         }
+				else
+				{
+					ungetc(currChar, stdin);
+          currentToken->attribute.integer = 0;
+          currentToken->type = TOKEN_INTVALUE;
+          return ALL_OK;
+				}
         break;
 
 
@@ -303,6 +338,7 @@ int getToken (Token *currentToken)
         {
           ungetc(currChar, stdin);
           currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Exponent must be followed by at least one digit\n");
           return LEX_ERROR;
         }
         break;
@@ -319,6 +355,7 @@ int getToken (Token *currentToken)
         {
           ungetc(currChar, stdin);
           currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Exponent sign must be followed by at least one digit\n");
           return LEX_ERROR;
         }
         break;
@@ -340,6 +377,118 @@ int getToken (Token *currentToken)
       }
       break;
 
+
+			case(SSTATE_STRING):
+				if (currChar == '\"')
+				{
+					currentToken->attribute.string[i] = '\0';
+					currentToken->type = TOKEN_STRINGVALUE;
+					return ALL_OK;
+				}
+				else if (currChar == '\\')
+				{
+					state = SSTATE_STRING_BACKSLASH;
+				}
+				else if (currChar == '\n' || currChar == EOF)
+				{
+					ungetc(currChar, stdin);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: String must be written on a single line and cannot reach End Of File\n");
+					return LEX_ERROR;
+				}
+				else if (currChar > 31 && currChar != 34)
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+				}
+				else
+				{
+					ungetc(currChar, stdin);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Invalid character or character sequence inside string\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_STRING_BACKSLASH):
+				if (currChar == '\"')
+				{
+					currentToken->attribute.string[i] = '\"';
+					i++;
+					state = SSTATE_STRING;
+				}
+				else if (currChar == 'n')
+				{
+					currentToken->attribute.string[i] = '\n';
+					i++;
+					state = SSTATE_STRING;
+				}
+				else if (currChar == 't')
+				{
+					currentToken->attribute.string[i] = '\t';
+					i++;
+					state = SSTATE_STRING;
+				}
+				else if (currChar == '\\')
+				{
+					currentToken->attribute.string[i] = '\\';
+					i++;
+					state = SSTATE_STRING;
+				}
+				else if (currChar == 'x')
+				{
+					state = SSTATE_STRING_HEX1;
+				}
+				else
+				{
+					ungetc(currChar, stdin);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Invalid escape sequence inside string\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_STRING_HEX1):
+			{
+				if (isxdigit(currChar))
+				{
+					hexString[0] = tolower(currChar);
+					state = SSTATE_STRING_HEX2;
+				}
+				else
+				{
+					ungetc(currChar, stdin);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
+					return LEX_ERROR;
+				}
+			}
+			break;
+
+
+			case(SSTATE_STRING_HEX2):
+			{
+				if (isxdigit(currChar))
+				{
+					hexString[1] = tolower(currChar);
+					unsigned int x;
+					sscanf(hexString, "%x", &x);
+					currChar = x & 0xFF;
+					currentToken->attribute.string[i] = currChar;
+					i++;
+					state = SSTATE_STRING;
+				}
+				else
+				{
+					ungetc(currChar, stdin);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
+					return LEX_ERROR;
+				}
+			}
+			break;
 
 
       case(SSTATE_SLASH):
@@ -372,6 +521,22 @@ int getToken (Token *currentToken)
           return ALL_OK;
         }
         break;
+
+
+			case(SSTATE_INITVAR):
+				if (currChar == '=')
+				{
+					currentToken->type = TOKEN_INIT;
+					return ALL_OK;
+				}
+				else
+				{
+					ungetc(currChar, stdin);
+          currentToken->type = TOKEN_EMPTY;
+					fprintf(stderr, "Lexical analysis error: Character \":\" can only be used as variable initialization \":=\"\n");
+          return LEX_ERROR;
+				}
+				break;
 
 
       case(SSTATE_LESS):
@@ -449,6 +614,7 @@ int getToken (Token *currentToken)
 
 
       default:
+				fprintf(stderr, "Internal error: Scanner reached undefined state\n");
         return INTERNAL_ERROR;
 
     } //konec switche stavu
@@ -458,36 +624,3 @@ int getToken (Token *currentToken)
 
   return ALL_OK;
 } //konec funkce getToken
-
-
-
-
-
-/*
-
-
-// !!MAIN TU MAM JEN DOCASNE NA TESTOVANI!!
-int main() {
-  Token *testToken = malloc(sizeof(Token));
-
-  testToken->type = TOKEN_EMPTY;
-
-  int retval = 0;
-
-  while(testToken->type != TOKEN_EOF)
-  {
-      retval = getToken(testToken);
-
-      if (testToken->type == TOKEN_ID) printf("Token Type: %d is string: %s\n", testToken->type, testToken->attribute.string);
-      else if (testToken->type == TOKEN_INTVALUE) printf("Token Type: %d is integer: %ld\n", testToken->type, testToken->attribute.integer);
-      else if (testToken->type == TOKEN_FLOATVALUE) printf("Token Type: %d is float64: %f\n", testToken->type, testToken->attribute.real);
-      else printf("Token Type: %d\n", testToken->type);
-
-      if (retval) printf("nastala nejaka chyba, error code %d\n",retval);
-    }
-
-
-  free(testToken);
-
-  return retval;
-} */
