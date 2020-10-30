@@ -1,7 +1,7 @@
 Rozdělení práce:
 - 1 člověk na scanneru
 - 2 lidi na parseru
-- 1 člověk na interpretu
+- 1 člověk na generátor kódu
 
 !VYPRACOVAT DO POKUSNEHO ODEVZDANI NEBO OZNUK A OTEVRU SI CINSKOU RESTAURACI
 	- MICHAL TRAN
@@ -9,16 +9,12 @@ Rozdělení práce:
 	- MICHAL PYŠÍK
 
 
-Michal Tran
-- Parser?
+Karel Jirgl (xjirgl00), Michal Tran (xtrant02)
+- Parser
 
-Michal Pyšík
+Michal Pyšík (xpysik00)
 - Scanner
-- 
-
-Karel Jirgl
-- 
 
 Václav Klem
-- 
+- Generator
 
