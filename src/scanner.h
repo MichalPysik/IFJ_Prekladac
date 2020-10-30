@@ -3,14 +3,8 @@
 #ifndef _SCANNER_H
 #define _SCANNER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include "errors.h"
+#include "common.h"
 
-#define STATIC_STRING_LENGHT 50
 
 typedef enum
 {
@@ -77,7 +71,7 @@ bool keywordCheck (Token *currentToken);
 
 
 //funkce co nacte a ulozi novy token na urcitou adresu tokenu
-int getToken (Token *currentToken);
+int scannerGetToken (Token *currentToken)
 
 
 

@@ -83,7 +83,7 @@ bool keywordCheck (Token *currentToken)
 
 // funkce co nacte novy Token do adresy currentToken
 // vraci 0 pri kdyz nacte platny token, 1 kdyz narazi na syntaktickou chybu
-int getToken (Token *currentToken)
+int scannerGetToken (Token *currentToken)
 {
 	currentToken->type = TOKEN_EMPTY;
 	SFSM_STATE state = SSTATE_START;
@@ -95,7 +95,7 @@ int getToken (Token *currentToken)
 
 	while(1)
 	{
-		currChar = getc(stdin);
+		currChar = getc(FILE_INPUT);
 
 		switch(state)
 		{
@@ -203,7 +203,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					fprintf(stderr, "Lexical analysis error: Invalid token\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Invalid token\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -217,7 +217,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->type = TOKEN_ID;
 					keywordCheck(currentToken);
@@ -246,7 +246,7 @@ int getToken (Token *currentToken)
 				}
         			else
         			{
-        				ungetc(currChar, stdin);
+        				ungetc(currChar, inputFile);
         				currentToken->attribute.string[i] = '\0';
         				currentToken->attribute.integer = (atoll(currentToken->attribute.string));
         				currentToken->type = TOKEN_INTVALUE;
@@ -264,9 +264,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: The dot must be followed by atlest one digit for a valid float value\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: The dot must be followed by atlest one digit for a valid float value\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -286,7 +286,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->attribute.real = (atof(currentToken->attribute.string));
 					currentToken->type = TOKEN_FLOATVALUE;
@@ -304,14 +304,14 @@ int getToken (Token *currentToken)
 				}
 				else if (isdigit(currChar))
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Whole decimal number cannot start with a zero\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Whole decimal number cannot start with a zero\n");
 					return LEX_ERROR;
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
         				currentToken->attribute.integer = 0;
         				currentToken->type = TOKEN_INTVALUE;
         				return ALL_OK;
@@ -334,9 +334,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Exponent must be followed by at least one digit\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Exponent must be followed by at least one digit\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -351,9 +351,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Exponent sign must be followed by at least one digit\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Exponent sign must be followed by at least one digit\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -367,7 +367,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->attribute.real = (atof(currentToken->attribute.string));
 					currentToken->type = TOKEN_FLOATVALUE;
@@ -389,9 +389,9 @@ int getToken (Token *currentToken)
 				}
 				else if (currChar == '\n' || currChar == EOF)
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: String must be written on a single line and cannot reach End Of File\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: String must be written on a single line and cannot reach End Of File\n");
 					return LEX_ERROR;
 				}
 				else if (currChar > 31 && currChar != 34)
@@ -401,9 +401,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Invalid character or character sequence inside string\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Invalid character or character sequence inside string\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -440,9 +440,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Invalid escape sequence inside string\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Invalid escape sequence inside string\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -457,9 +457,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
 				}
 			}
@@ -480,9 +480,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
 				}
 			}
@@ -500,7 +500,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_DIV;
 					return ALL_OK;
 				}
@@ -529,9 +529,9 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_EMPTY;
-					fprintf(stderr, "Lexical analysis error: Character \":\" can only be used as variable initialization \":=\"\n");
+					fprintf(FILE_ERROR, "Lexical analysis error: Character \":\" can only be used as variable initialization \":=\"\n");
 					return LEX_ERROR;
 				}
 				break;
@@ -545,7 +545,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_LT;
 					return ALL_OK;
 				}
@@ -560,7 +560,7 @@ int getToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, stdin);
+					ungetc(currChar, inputFile);
 					currentToken->type = TOKEN_GT;
 					return ALL_OK;
 				}
@@ -612,7 +612,7 @@ int getToken (Token *currentToken)
 
 
 			default:
-				fprintf(stderr, "Internal error: Scanner reached undefined state\n");
+				fprintf(FILE_ERROR, "Internal error: Scanner reached undefined state\n");
 				return INTERNAL_ERROR;
 
 		} //konec switche stavu
