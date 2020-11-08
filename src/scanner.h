@@ -75,4 +75,47 @@ int scannerGetToken (Token *currentToken)
 
 
 
+typedef struct TokenListElement {
+	Token token;
+	struct TokenListElement *leftPtr;
+	struct TokenListElement *rightPtr;
+} *TokenListElementPtr;
+
+
+
+typedef struct {
+	TokenListElementPtr active;
+	TokenListElementPtr first;
+	TokenListElementPtr last;
+} TokenList;
+
+
+
+int scannerTokenListInit(TokenList *tokenList);
+
+int scannerTokenListAdd(TokenList *tokenList, Token token);
+
+int scannerTokenListDeleteActive(TokenList *tokenList);
+
+int scannerTokenListMovePrev(TokenList *tokenList);
+
+int scannerTokenListMoveNext(TokenList *tokenList);
+
+int scannerTokenListGetPrev(TokenList *tokenList, Token *token);
+
+int scannerTokenListGetActive(TokenList *tokenList, Token *token);
+
+int scannerTokenListGetNext(TokenList *tokenList, Token *token);
+
+int scannerTokenListSetActiveFirst(TokenList *tokenList);
+
+int scannerTokenListSetActiveLast(TokenList *tokenList);
+
+int scannerTokenListFree(TokenList *tokenList);
+
+
+
+int scannerGetTokenList(TokenList *tokenList);
+
+
 #endif //defined _SCANNER_H

@@ -9,45 +9,34 @@
 int main()
 {
 	int result;
-	Token currentToken = NULL;
-	Token previousToken = NULL;
-	do{// Dočasný main - TODO
-		previousToken = currentToken;
-		
-		// Lexikální analýza
-		// TODO - vytvořit Seznam na tokeny nebo Zásobník na tokeny
-		// scannerListInit();
-		// scannerListAdd();
-		// scannerListGetPrev();
-		// scannerListGetNext();
-		// scannerListDelete();
-		// scannerListFree();
-		result = scannerGetToken(&currentToken);
-		if(result != ALL_OK){
-			errorHandle(result);
-			break;
-		}
-
-		// Syntaktická analýza a Sémantická analýza
-		result = parserPreRun(&currentToken,&previousToken); // Sémantický pre-run, naplnění tabulky definicemi funkcí a proměnnými
-		if(result != ALL_OK){
-			errorHandle(result);
-			break;
-		}
-		result = parserAnalyze(&currentToken); // Syntaktická analýza + Sémantická analýza
-		if(result != ALL_OK){
-			errorHandle(result);
-			break;
-		}
-		
-		result = generatorGenerateCode(&currentToken); // tu nebo mimo while?
-		if(result != ALL_OK){
-			errorHandle(result);
-			break;
-		}
-	}while(currentToken.type != TOKEN_EOF);
+	TokenList tokenList;
+	scannerTokenListInit(&tokenList);
 	
-	return result;
+	// získání seznamu s tokeny
+	result = scannerGetTokenList(&tokenList);
+	if(result != ALL_OK){
+		return errorHandle(result);
+	}
+	
+	// Sémantický pre-run, naplnění tabulky definicemi funkcí a proměnnými
+	result = parserPreRun(&tokenList); 
+	if(result != ALL_OK){
+		return errorHandle(result);
+	}
+	
+	// Syntaktická analýza + Sémantická analýza
+	result = parserAnalyze(&tokenList); 
+	if(result != ALL_OK){
+		return errorHandle(result);
+	}
+	
+	// generování výsledného kódu
+	result = generatorGenerateCode(&tokenList); // zde nebo rovnou v scannerGetTokenList?
+	if(result != ALL_OK){
+		return errorHandle(result);
+	}
+	
+	return 0;
 }
 
 

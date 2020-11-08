@@ -21,7 +21,8 @@ typedef enum{
 	INT,
 	FLOAT64,
 	STRING,
-	BOOL
+	BOOL,
+	NIL
 } STparamType;
 
 // Data v uzlu
@@ -41,6 +42,6 @@ typedef struct SYM_TABLE_BINARY_TREE{
 	struct SYM_TABLE_BINARY_TREE *rptr;	// Pravá větev stromu (větší klíč)
 } *STtree;
 
-
+//TODO pomocný zásobník
 
 #endif //defined _SYMTABLE_H

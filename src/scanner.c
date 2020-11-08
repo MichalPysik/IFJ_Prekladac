@@ -622,3 +622,202 @@ int scannerGetToken (Token *currentToken)
 
 	return ALL_OK;
 } //konec funkce getToken
+
+
+/****************************************************** SCANNER TOKEN LIST ******************************************************************************/
+
+int scannerTokenListInit(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		tokenList->first = NULL;
+		tokenList->active = NULL;
+		tokenList->last = NULL;
+		return 0;
+	}
+	return 1;
+}
+
+int scannerTokenListAdd(TokenList *tokenList, Token token)
+{
+	if(tokenList != NULL){
+		TokenListElementPtr added = (TokenListElementPtr)malloc(sizeof(struct TokenListElement));
+		if(added != NULL){
+			added->token = token;
+			
+			added->leftPtr = tokenList->last;
+			added->rightPtr = NULL;
+			
+			if(tokenList->last != NULL){
+				tokenList->last->rightPtr = added;
+			} else {
+				tokenList->first = added;
+			}
+			tokenList->last = added;
+			return 0;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListDeleteActive(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			TokenListElementPtr destroy = tokenList->active;
+			if(destroy != tokenList->first && destroy != tokenList->last){
+				if(destroy != tokenList->first){
+					destroy->leftPtr->rightPtr = destroy->rightPtr;
+				} else {
+					destroy->rightPtr->leftPtr = NULL
+					tokenList->first = destroy->rightPtr;
+				}
+				if(destroy != tokenList->last){
+					destroy->rightPtr->leftPtr = destroy->leftPtr;
+				} else {
+					destroy->leftPtr->rightPtr = NULL;
+					tokenList->last = destroy->leftPtr;
+				}
+			} else {
+				return scannerTokenListFree(tokenList);
+			}
+			return 0;
+		}
+		return 4;
+	}
+	return 3;
+}
+
+int scannerTokenListMovePrev(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			if(tokenList->active != tokenList->first){
+				tokenList->active = tokenList->active->leftPtr;
+				return 0;
+			}
+			return 3;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListMoveNext(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			if(tokenList->active != tokenList->last){
+				tokenList->active = tokenList->active->rightPtr;
+				return 0;
+			}
+			return 3;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListGetPrev(TokenList *tokenList, Token *token)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			if(tokenList->active != tokenList->first){
+				(*token) = tokenList->active->leftPtr->token;
+				return 0;
+			}
+			return 3;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListGetActive(TokenList *tokenList, Token *token)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			(*token) = tokenList->active->token;
+			return 0;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListGetNext(TokenList *tokenList, Token *token)
+{
+	if(tokenList != NULL){
+		if(tokenList->active != NULL){
+			if(tokenList->active != tokenList->last){
+				(*token) = tokenList->active->rightPtr->token;
+				return 0;
+			}
+			return 3;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListSetActiveFirst(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		if(tokenList->first != NULL){
+			tokenList->active = tokenList->first;
+			return 0;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListSetActiveLast(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		if(tokenList->last != NULL){
+			tokenList->active = tokenList->last;
+			return 0;
+		}
+		return 2;
+	}
+	return 1;
+}
+
+int scannerTokenListFree(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		TokenListElementPtr first = tokenList->first;
+		TokenListElementPtr destroy;
+		while(first != NULL){
+			destroy = first;
+			first = first->rightPtr;
+			free(destroy);
+		}
+		tokenList->first = NULL;
+		tokenList->active = NULL;
+		tokenList->last = NULL;
+		return 0;
+	}
+	return 1;
+}
+
+
+/****************************************************** SCANNER GET TOKEN LIST ******************************************************************************/
+
+int scannerGetTokenList(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		int result = 0;
+		do{
+			Token currentToken;
+			result = scannerGetToken(&currentToken);
+			if(result == ALL_OK){
+				scannerTokenListAdd(&tokenList, currentToken);
+			}
+		}while(currentToken.type != TOKEN_EOF && result == ALL_OK);
+		scannerTokenListSetActiveLast(&tokenList);
+		return result;
+	}
+	return 10;
+}
