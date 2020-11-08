@@ -7,14 +7,14 @@
 
 
 
-#define SYMTABLE_STACK_CHUNK_SIZE 100
+//#define SYMTABLE_STACK_CHUNK_SIZE 100
 
 
 // Typ identifikátoru
 typedef enum{
-	VAR,	// Identifikátor je proměnná
-	FUNC	// Identifikátor je funkce
-} STdataType;
+	VAR,	// proměnná
+	FUNC	// funkce
+} IDtype;
 
 // Datový typ identifikátoru
 typedef enum{
@@ -23,25 +23,31 @@ typedef enum{
 	STRING,
 	BOOL,
 	NIL
-} STparamType;
+} IDdataType;
 
 // Data v uzlu
-typedef struct SYM_TABLE_DATA{
-	STdataType idType;										// Typ identifikátoru
-	bool idDefined;											// Je identifikátor definovaný
-	STparamType idDataType;									// typ proměnné nebo návratový typ funkce
-	struct SYM_TABLE_BINARY_TREE *functionLocalSymTable;	// Ukazatel na lokální tabulku symbolů funkce
-	int functionParamCount;									// Počet parametrů funkce
-} *STdata;
+typedef struct SymTableData{
+	IDtype idType;											// typ identifikátoru
+	bool idDefined;											// je identifikátor definovaný
+	IDdataType idDataType;									// typ proměnné nebo návratový typ funkce
+	struct SymTableBinTree *functionLocalSymTable;			// ukazatel na lokální tabulku symbolů funkce
+	int functionParamCount;									// počet parametrů funkce
+} *SymTableDataPtr;
 
 // Uzel stromu
-typedef struct SYM_TABLE_BINARY_TREE{
-	char *key;							// Identifikátor
-	struct SYM_TABLE_DATA *data;		// Data uzlu
-	struct SYM_TABLE_BINARY_TREE *lptr;	// Levá větev stromu (menší klíč)
-	struct SYM_TABLE_BINARY_TREE *rptr;	// Pravá větev stromu (větší klíč)
-} *STtree;
+typedef struct SymTableBinTree{
+	char *key;							// identifikátor
+	struct SymTableData *data;			// data uzlu
+	struct SymTableBinTree *leftPtr;	// levá větev stromu (menší klíč)
+	struct SymTableBinTree *rightPtr;	// pravá větev stromu (větší klíč)
+} *SymTableBinTreePtr;
 
-//TODO pomocný zásobník
+
+// Pomocný zásobník na procházení stromu
+typedef struct BinTreeStack{
+	int size;				// velikost zásobníku
+	int top;				// index nejvyššího prvku
+	SymTableBinTreePtr *binTreeStack;	// zásobník ukazatelů na položky
+} *BinTreeStackPtr;
 
 #endif //defined _SYMTABLE_H
