@@ -18,17 +18,13 @@ int main()
 		return errorHandle(result);
 	}
 	
-	// Sémantický pre-run, naplnění tabulky definicemi funkcí a proměnnými
-	result = parserPreRun(&tokenList); 
-	if(result != ALL_OK){
-		return errorHandle(result);
-	}
-	
+
 	// Syntaktická analýza + Sémantická analýza
 	result = parserAnalyze(&tokenList); 
 	if(result != ALL_OK){
 		return errorHandle(result);
 	}
+	
 	
 	// generování výsledného kódu
 	result = generatorGenerateCode(&tokenList); // zde nebo rovnou v scannerGetTokenList?
@@ -36,7 +32,7 @@ int main()
 		return errorHandle(result);
 	}
 	
-	return 0;
+	return result;
 }
 
 

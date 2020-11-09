@@ -26,28 +26,41 @@ typedef enum{
 } IDdataType;
 
 // Data v uzlu
-typedef struct SymTableData{
+typedef struct SymTableDataStruct{
 	IDtype idType;											// typ identifikátoru
 	bool idDefined;											// je identifikátor definovaný
 	IDdataType idDataType;									// typ proměnné nebo návratový typ funkce
-	struct SymTableBinTree *functionLocalSymTable;			// ukazatel na lokální tabulku symbolů funkce
+	struct SymTableBinTreeNode *functionLocalSymTable;		// ukazatel na lokální tabulku symbolů funkce
 	int functionParamCount;									// počet parametrů funkce
-} *SymTableDataPtr;
+} SymTableData;
 
 // Uzel stromu
-typedef struct SymTableBinTree{
-	char *key;							// identifikátor
-	struct SymTableData *data;			// data uzlu
-	struct SymTableBinTree *leftPtr;	// levá větev stromu (menší klíč)
-	struct SymTableBinTree *rightPtr;	// pravá větev stromu (větší klíč)
+typedef struct SymTableBinTreeNode{
+	char *key;								// identifikátor
+	SymTableData data;						// data uzlu
+	struct SymTableBinTreeNode *leftPtr;	// levá větev stromu (menší klíč)
+	struct SymTableBinTreeNode *rightPtr;	// pravá větev stromu (větší klíč)
 } *SymTableBinTreePtr;
 
 
 // Pomocný zásobník na procházení stromu
 typedef struct BinTreeStack{
-	int size;				// velikost zásobníku
-	int top;				// index nejvyššího prvku
+	int size;							// velikost zásobníku
+	int top;							// index nejvyššího prvku
 	SymTableBinTreePtr *binTreeStack;	// zásobník ukazatelů na položky
 } *BinTreeStackPtr;
+
+
+
+void symTableInit(SymTableBinTreePtr *RootPtr);
+
+void symTableInitData(SymTableData *data, IDtype idType, bool idDefined, IDdataType idDataType, SymTableBinTreePtr functionLocalSymTable, int functionParamCount);
+
+int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data);
+
+int symTableSearch(SymTableBinTreePtr RootPtr, char *key, SymTableData *data);
+
+void symTableDispose(SymTableBinTreePtr *RootPtr);
+
 
 #endif //defined _SYMTABLE_H
