@@ -14,12 +14,14 @@ int parserAnalyze(TokenList tokenList)
 	// Sémantický pre-run, naplnění tabulky definicemi funkcí a proměnnými
 	result = parserPreRun(&tokenList, symTable); 
 	if(result != ALL_OK){
+		symTableDispose(&symTable);
 		return result;
 	}
 	
 	// Syntaktická analýza + Sémantická analýza
 	result = parserAnalyze(&tokenList, symTable); 
 	if(result != ALL_OK){
+		symTableDispose(&symTable);
 		return result;
 	}
 	

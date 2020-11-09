@@ -3,7 +3,7 @@
 #include "common.h"
 
 
-int errorHandle(int errorID)
+int handleError(int errorID)
 {
 	if(errorID == LEX_ERROR){
 		fprintf(FILE_ERROR, "FATAL ERROR: Lexical Error!\n");
@@ -23,6 +23,16 @@ int errorHandle(int errorID)
 		fprintf(FILE_ERROR, "FATAL ERROR: Zero Division!\n");
 	} else if(errorID == INTERNAL_ERROR){
 		fprintf(FILE_ERROR, "FATAL ERROR: Internal Error!\n");
+	} else {
+		return handleInternlError(errorID);
 	}
+	return errorID;
+}
+
+
+int handleInternalError(int errorID)
+{
+	// TODO
+
 	return errorID;
 }

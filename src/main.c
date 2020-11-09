@@ -15,6 +15,7 @@ int main()
 	// získání seznamu s tokeny
 	result = scannerGetTokenList(&tokenList);
 	if(result != ALL_OK){
+		scannerTokenListFree(&tokenList);
 		return errorHandle(result);
 	}
 	
@@ -22,6 +23,7 @@ int main()
 	// Syntaktická analýza + Sémantická analýza
 	result = parserAnalyze(&tokenList); 
 	if(result != ALL_OK){
+		scannerTokenListFree(&tokenList);
 		return errorHandle(result);
 	}
 	
@@ -29,9 +31,11 @@ int main()
 	// generování výsledného kódu
 	result = generatorGenerateCode(&tokenList); // zde nebo rovnou v scannerGetTokenList?
 	if(result != ALL_OK){
+		scannerTokenListFree(&tokenList);
 		return errorHandle(result);
 	}
 	
+	scannerTokenListFree(&tokenList);
 	return result;
 }
 

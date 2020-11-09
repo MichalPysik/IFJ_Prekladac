@@ -31,8 +31,10 @@ const int FILE_ERROR =	STDERR;
 
 
 // vytiskne chybovou hlášku podle čísla chyby
-int errorHandle(int errorID);
+int handleError(int errorID);
 
+
+int handleInternalError(int errorID);
 
 
 #endif //defined _COMMON_H
