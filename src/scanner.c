@@ -217,7 +217,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->type = TOKEN_ID;
 					keywordCheck(currentToken);
@@ -246,7 +246,7 @@ int scannerGetToken (Token *currentToken)
 				}
         			else
         			{
-        				ungetc(currChar, inputFile);
+        				ungetc(currChar, FILE_INPUT);
         				currentToken->attribute.string[i] = '\0';
         				currentToken->attribute.integer = (atoll(currentToken->attribute.string));
         				currentToken->type = TOKEN_INTVALUE;
@@ -264,7 +264,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: The dot must be followed by atlest one digit for a valid float value\n");
 					return LEX_ERROR;
@@ -286,7 +286,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->attribute.real = (atof(currentToken->attribute.string));
 					currentToken->type = TOKEN_FLOATVALUE;
@@ -304,14 +304,14 @@ int scannerGetToken (Token *currentToken)
 				}
 				else if (isdigit(currChar))
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Whole decimal number cannot start with a zero\n");
 					return LEX_ERROR;
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
         				currentToken->attribute.integer = 0;
         				currentToken->type = TOKEN_INTVALUE;
         				return ALL_OK;
@@ -334,7 +334,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Exponent must be followed by at least one digit\n");
 					return LEX_ERROR;
@@ -351,7 +351,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Exponent sign must be followed by at least one digit\n");
 					return LEX_ERROR;
@@ -367,7 +367,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->attribute.string[i] = '\0';
 					currentToken->attribute.real = (atof(currentToken->attribute.string));
 					currentToken->type = TOKEN_FLOATVALUE;
@@ -389,7 +389,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else if (currChar == '\n' || currChar == EOF)
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: String must be written on a single line and cannot reach End Of File\n");
 					return LEX_ERROR;
@@ -401,7 +401,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid character or character sequence inside string\n");
 					return LEX_ERROR;
@@ -440,7 +440,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid escape sequence inside string\n");
 					return LEX_ERROR;
@@ -457,7 +457,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
@@ -480,7 +480,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
@@ -500,7 +500,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_DIV;
 					return ALL_OK;
 				}
@@ -529,7 +529,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_EMPTY;
 					fprintf(FILE_ERROR, "Lexical analysis error: Character \":\" can only be used as variable initialization \":=\"\n");
 					return LEX_ERROR;
@@ -545,7 +545,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_LT;
 					return ALL_OK;
 				}
@@ -560,7 +560,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else
 				{
-					ungetc(currChar, inputFile);
+					ungetc(currChar, FILE_INPUT);
 					currentToken->type = TOKEN_GT;
 					return ALL_OK;
 				}
@@ -669,7 +669,7 @@ int scannerTokenListDeleteActive(TokenList *tokenList)
 				if(destroy != tokenList->first){
 					destroy->leftPtr->rightPtr = destroy->rightPtr;
 				} else {
-					destroy->rightPtr->leftPtr = NULL
+					destroy->rightPtr->leftPtr = NULL;
 					tokenList->first = destroy->rightPtr;
 				}
 				if(destroy != tokenList->last){
@@ -809,14 +809,37 @@ int scannerGetTokenList(TokenList *tokenList)
 {
 	if(tokenList != NULL){
 		int result = 0;
+		Token currentToken;
+		currentToken.type = TOKEN_EMPTY;
+		currentToken.attribute.string[0] = '\0';
+		
+		char tokeTypes[][STATIC_STRING_LENGHT] = {"TOKEN_EMPTY", "TOKEN_KEYWORD_ELSE", "TOKEN_KEYWORD_FLOAT64", "TOKEN_KEYWORD_FOR", "TOKEN_KEYWORD_FUNC",
+			"TOKEN_KEYWORD_IF", "TOKEN_KEYWORD_INT", "TOKEN_KEYWORD_RETURN", "TOKEN_KEYWORD_STRING", "TOKEN_KEYWORD_PACKAGE", "TOKEN_KEYWORD_MAIN", "TOKEN_ID",
+			"TOKEN_ASSIGN", "TOKEN_INIT", "TOKEN_COMMA", "TOKEN_SEMICOLON", "TOKEN_LROUNDBRACKET", "TOKEN_RROUNDBRACKET", "TOKEN_LCURLYBRACKET",
+			"TOKEN_RCURLYBRACKET", "TOKEN_EOL", "TOKEN_EOF", "TOKEN_INTVALUE", "TOKEN_FLOATVALUE", "TOKEN_STRINGVALUE", "TOKEN_ADD", "TOKEN_SUB", "TOKEN_MUL",
+			"TOKEN_DIV", "TOKEN_EQ", "TOKEN_NEQ", "TOKEN_GT", "TOKEN_LT", "TOKEN_GTE", "TOKEN_LTE"};
+		uint64_t current_line = 1;
+		uint64_t current_token = 1;
+		
 		do{
-			Token currentToken;
 			result = scannerGetToken(&currentToken);
 			if(result == ALL_OK){
-				scannerTokenListAdd(&tokenList, currentToken);
+				scannerTokenListAdd(tokenList, currentToken);
+				if(currentToken.type == TOKEN_EOL){
+					current_line++;
+					current_token = 1;
+				} else {
+					current_token++;
+				}
 			}
 		}while(currentToken.type != TOKEN_EOF && result == ALL_OK);
-		scannerTokenListSetActiveLast(&tokenList);
+		scannerTokenListSetActiveLast(tokenList);
+		
+		if(result != ALL_OK){
+			scannerTokenListGetActive(tokenList, &currentToken);
+			fprintf(FILE_ERROR, "ERROR POSITION - line: %u; token: %u - LAST OK token: \"%s\"; type: %s\n", current_line, current_token, currentToken.attribute.string, tokeTypes[currentToken.type]);
+		}
+		
 		return result;
 	}
 	return 10;

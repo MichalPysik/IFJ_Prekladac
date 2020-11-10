@@ -71,9 +71,10 @@ bool keywordCheck (Token *currentToken);
 
 
 //funkce co nacte a ulozi novy token na urcitou adresu tokenu
-int scannerGetToken (Token *currentToken)
+int scannerGetToken (Token *currentToken);
 
 
+/****************************************************** SCANNER TOKEN LIST ******************************************************************************/
 
 typedef struct TokenListElement {
 	Token token;
@@ -114,6 +115,7 @@ int scannerTokenListSetActiveLast(TokenList *tokenList);
 int scannerTokenListFree(TokenList *tokenList);
 
 
+/****************************************************** SCANNER GET TOKEN LIST ******************************************************************************/
 
 int scannerGetTokenList(TokenList *tokenList);
 

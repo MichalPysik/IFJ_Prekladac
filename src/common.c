@@ -24,7 +24,7 @@ int handleError(int errorID)
 	} else if(errorID == INTERNAL_ERROR){
 		fprintf(FILE_ERROR, "FATAL ERROR: Internal Error!\n");
 	} else {
-		return handleInternlError(errorID);
+		return handleInternalError(errorID);
 	}
 	return errorID;
 }

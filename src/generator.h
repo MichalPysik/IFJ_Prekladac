@@ -4,10 +4,12 @@
 #define _GENERATOR_H
 
 #include "common.h"
+#include "scanner.h"
 
 
 
 
+int generatorGenerateCode(TokenList *tokenList);
 
 
 

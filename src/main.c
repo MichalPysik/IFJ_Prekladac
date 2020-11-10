@@ -1,13 +1,16 @@
 // main
 
+#include "common.h"
 #include "scanner.h"
 #include "parser.h"
 #include "generator.h"
-#include "common.h"
-
 
 int main()
 {
+	FILE_INPUT	= stdin;
+	FILE_OUTPUT	= stdout;
+	FILE_ERROR	= stderr;
+
 	int result;
 	TokenList tokenList;
 	scannerTokenListInit(&tokenList);
@@ -16,7 +19,7 @@ int main()
 	result = scannerGetTokenList(&tokenList);
 	if(result != ALL_OK){
 		scannerTokenListFree(&tokenList);
-		return errorHandle(result);
+		return handleError(result);
 	}
 	
 
@@ -24,7 +27,7 @@ int main()
 	result = parserAnalyze(&tokenList); 
 	if(result != ALL_OK){
 		scannerTokenListFree(&tokenList);
-		return errorHandle(result);
+		return handleError(result);
 	}
 	
 	
@@ -32,7 +35,7 @@ int main()
 	result = generatorGenerateCode(&tokenList); // zde nebo rovnou v scannerGetTokenList?
 	if(result != ALL_OK){
 		scannerTokenListFree(&tokenList);
-		return errorHandle(result);
+		return handleError(result);
 	}
 	
 	scannerTokenListFree(&tokenList);

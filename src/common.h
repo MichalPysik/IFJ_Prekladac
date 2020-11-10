@@ -7,12 +7,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <ctype.h>
 
 
-const int FILE_INPUT =	STDIN;
-const int FILE_OUTPUT =	STDOUT;
-const int FILE_ERROR =	STDERR;
+FILE *FILE_INPUT;
+FILE *FILE_OUTPUT;
+FILE *FILE_ERROR;
+
+
+#define ARRAY_SIZE(x)  (int)(sizeof(x) / sizeof((x)[0]))
+
 
 #define STATIC_STRING_LENGHT 50
 
