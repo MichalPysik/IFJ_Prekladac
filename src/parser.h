@@ -8,6 +8,7 @@
 #include "symtable.h"
 
 
+
 int parserAnalyze(TokenList *tokenList);
 
 

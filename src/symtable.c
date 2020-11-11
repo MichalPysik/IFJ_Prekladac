@@ -14,6 +14,7 @@
 */
 
 
+
 /****************************************************** SYMTABLE TREE ******************************************************************************/
 
 void symTableInit(SymTableBinTreePtr *RootPtr)
@@ -21,12 +22,13 @@ void symTableInit(SymTableBinTreePtr *RootPtr)
 	(*RootPtr) = NULL;
 }
 
-SymTableData symTableInitData(IDtype idType, bool idDefined, SymTableParamList functionParamDataTypes, SymTableParamList functionReturnDataTypes, SymTableBinTreePtr functionLocalSymTable)
+SymTableData symTableInitData(IDtype idType, bool idDefined, IDdataType idDataType, SymTableParamList functionParamDataTypes, SymTableParamList functionReturnDataTypes, SymTableBinTreePtr functionLocalSymTable)
 {
 	SymTableData data;
 	
 	data.idType = idType;
 	data.idDefined = idDefined;
+	data.idDataType = idDataType;
 	data.functionParamDataTypes = functionParamDataTypes;
 	data.functionReturnDataTypes = functionReturnDataTypes;
 	data.functionLocalSymTable = functionLocalSymTable;
@@ -34,7 +36,7 @@ SymTableData symTableInitData(IDtype idType, bool idDefined, SymTableParamList f
 	return data;
 }
 
-SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable)
+SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType idDataType, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable)
 {
 	SymTableData data;
 	symTableParamListInit(&(data.functionParamDataTypes));
@@ -42,10 +44,14 @@ SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, int paramCoun
 	
 	data.idType = idType;
 	data.idDefined = idDefined;
+	data.idDataType = idDataType;
 	
 	int i;
 	for(i = 0; i < paramCount; i++){
 		symTableParamListAdd(&(data.functionParamDataTypes), paramDataTypes[i]);
+	}
+	if(paramCount == -1){ // libovolný počet parametrů 
+		data.functionParamDataTypes.size = -1;
 	}
 	for(i = 0; i < returnCount; i++){
 		symTableParamListAdd(&(data.functionReturnDataTypes), returnDataTypes[i]);
@@ -248,7 +254,7 @@ void Print_tree2(SymTableBinTreePtr TempTree, char* sufix, char fromdir, char* s
 			suf2 = strcat(suf2, "   ");
 		}
 		Print_tree2(TempTree->rightPtr, suf2, 'R', space_size);
-		printf("%s%s  +-[%s]\n", sufix, space_size, TempTree->key);
+		printf("%s%s  +-[%s][%d,%d]\n", sufix, space_size, TempTree->key, TempTree->data.functionParamDataTypes.size, TempTree->data.functionReturnDataTypes.size);
 		strcpy(suf2, sufix);
 		suf2 = strcat(suf2, space_size);
 		if (fromdir == 'R') {
