@@ -10,7 +10,7 @@ int generatorGenerateCode(TokenList *tokenList, ErrorHandle *errorHandle)
 	
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
 
-
+	printf("test");
 
 	// TODO
 	
