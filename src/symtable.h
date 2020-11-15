@@ -12,15 +12,15 @@
 
 
 // Typ identifikátoru
-typedef enum{
+typedef enum {
 	VAR,	// proměnná
 	FUNC	// funkce
 } IDtype;
 
 // Datový typ identifikátoru
-typedef enum{
+typedef enum {
 	INT,
-	FLOAT64,
+	FLOAT,
 	STRING,
 	BOOL,
 	NIL
