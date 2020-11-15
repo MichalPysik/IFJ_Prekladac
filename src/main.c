@@ -51,6 +51,11 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	ErrorHandle internalErrorHandle;
 	errorHandleInit(&internalErrorHandle);
 	handleFreeError(scannerTokenListGetActive(tokenList, &currentToken, &internalErrorHandle), __LINE__, __FILE__);
+	if(currentToken.type == TOKEN_INTVALUE){
+		sprintf(currentToken.attribute.string, "%lld", currentToken.attribute.integer);
+	} else if(currentToken.type == TOKEN_FLOATVALUE){
+		sprintf(currentToken.attribute.string, "%.*f", 20, currentToken.attribute.real);
+	}
 	return handleError(errorHandle, tokenTypes[currentToken.type], currentToken.pos_line, currentToken.pos_number, currentToken.attribute.string);
 }
 

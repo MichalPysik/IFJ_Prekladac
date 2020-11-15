@@ -39,7 +39,7 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 	scannerTokenListSetActiveFirst(tokenList, errorHandle); // nastavení seznamu tokenů na začátek
 	
 	parserSymTableInitBuiltIn(globalSymTable, errorHandle); // vložení předdefinovaných funkcí
-/*TODO kontrola chyb
+
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
 	currentToken.attribute.string[0] = '\0';
@@ -54,13 +54,12 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 		scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 		//******************************************************************************
 		if(currentToken.type == TOKEN_ID){ // máme ID...
+			char functionName[STATIC_STRING_LENGHT] = "";
+			strncpy(functionName, tokenList->active->token.attribute.string, STATIC_STRING_LENGHT-1);
 			if(scannerTokenListGetPrev(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_KEYWORD_FUNC){ // ...a jedná se o definici funkce
-				if(symTableSearch(*globalSymTable, currentToken.attribute.string, NULL, errorHandle) == 0){ // pokud je již v tabulce, jedná se o redefinici -> error
+				if(symTableSearch(*globalSymTable, functionName, NULL, errorHandle) == 0){ // pokud je již v tabulce, jedná se o redefinici -> error
 					if(scannerTokenListGetNext(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_LROUNDBRACKET){
 						//******************************************************************************
-						char functionName[STATIC_STRING_LENGHT];
-						strcpy(functionName, currentToken.attribute.string);
-						
 						scannerTokenListMoveNext(tokenList, errorHandle);
 						scannerTokenListMoveNext(tokenList, errorHandle);
 						
@@ -99,14 +98,14 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 										//add type to param list
 										symTableParamListAdd(&paramList, STRING, errorHandle);
 									} else {
-										//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+										errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 									}
 								} else {
-									//result = SYNTAX_ERROR;// TODO error - redefinice proměnné
+									errorSet(SEM_OTHER_ERROR, "parserPreRun: redefinice promenne", __FILE__, __LINE__, errorHandle);
 								}
 								scannerTokenListMoveNext(tokenList, errorHandle);
-							} else if(currentToken.type != TOKEN_COMMA){
-								//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+							} else if(currentToken.type != TOKEN_COMMA){// jinak se cyklus neukončí
+								errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 							}
 							scannerTokenListMoveNext(tokenList, errorHandle);
 						}
@@ -131,11 +130,11 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 								} else if(currentToken.type == TOKEN_KEYWORD_STRING){
 									//add type to return list
 									symTableParamListAdd(&returnList, STRING, errorHandle);
-								} else if(currentToken.type != TOKEN_COMMA){
-									//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+								} else if(currentToken.type != TOKEN_COMMA){// jinak se cyklus neukončí
+									errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 								}
 								scannerTokenListMoveNext(tokenList, errorHandle);
-							}						
+							}
 						}
 						
 						
@@ -145,7 +144,7 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 						
 						// kontrola špičaté závorky a konce řádku
 						if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
-							//result = SYNTAX_ERROR;// TODO error - špatné ukončení hlavičky funkce
+							errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 						}
 						
 						
@@ -159,17 +158,17 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 						}
 						//******************************************************************************
 					} else {
-						//return SYNTAX_ERROR;// TODO error - chybí levá závorka u vstupních parametrů
+						errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);// chybí levá závorka u vstupních parametrů
 					}
 				} else {
-					//return SYNTAX_ERROR;// TODO error - redefinice funkce
+					errorSet(SEM_OTHER_ERROR, "parserPreRun: redefinice funkce", __FILE__, __LINE__, errorHandle);// redefinice funkce
 				}
 			}
 		}
 		//******************************************************************************
 		if(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK){scannerTokenListMoveNext(tokenList, errorHandle);}
 	} while(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK);
-*/
+
 	return errorHandle->errorID;
 }
 
