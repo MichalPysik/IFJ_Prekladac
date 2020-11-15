@@ -4,66 +4,65 @@
 
 
 
-int parserAnalyze(TokenList *tokenList)
+int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle)
 {
-	int result;
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	SymTableBinTreePtr globalSymTable;
 	symTableInit(&globalSymTable);
-
-
+	
+	
 	// Sémantický pre-run, naplnění tabulky definicemi funkcí a proměnnými
-	result = parserPreRun(tokenList, &globalSymTable); 
-	if(result != ALL_OK){
-		symTableDispose(&globalSymTable);
-		return result;
-	}
+	parserPreRun(tokenList, &globalSymTable, errorHandle); 
+	
 	
 	// Syntaktická analýza + Sémantická analýza
-	result = parserRunAnalyze(tokenList, &globalSymTable); 
-	if(result != ALL_OK){
-		symTableDispose(&globalSymTable);
-		return result;
-	}
+	parserRunAnalyze(tokenList, &globalSymTable, errorHandle); 
 	
 	
+	// tree test print
 	Print_tree(globalSymTable);
 	
-	symTableDispose(&globalSymTable);
-	return result;
+	
+	handleFreeError(symTableDispose(&globalSymTable), __LINE__, __FILE__);
+	
+	return errorHandle->errorID;
 }
 
 
 /****************************************************** PARSER SYMTABLE PRERUN ******************************************************************************/
 
-int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable)
+int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
-	int result = ALL_OK;
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
-	result = parserSymTableInitBuiltIn(globalSymTable); // vložení předdefinovaných funkcí
-	if(result != ALL_OK){return result;}
+	scannerTokenListSetActiveFirst(tokenList, errorHandle); // nastavení seznamu tokenů na začátek
 	
-	
-	result = scannerTokenListSetActiveFirst(tokenList);
-	if(result != ALL_OK){return result;}
-	
+	parserSymTableInitBuiltIn(globalSymTable, errorHandle); // vložení předdefinovaných funkcí
+/*TODO kontrola chyb
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
+	currentToken.attribute.string[0] = '\0';
+	currentToken.pos_line = 0;
+	currentToken.pos_number = 0;
+	Token tempToken;
+	tempToken.type = TOKEN_EMPTY;
+	tempToken.attribute.string[0] = '\0';
+	tempToken.pos_line = 0;
+	tempToken.pos_number = 0;
 	do{
-		result = scannerTokenListGetActive(tokenList, &currentToken);
-		if(result != ALL_OK){return result;}
-		/******************************************************************************/
+		scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+		//******************************************************************************
 		if(currentToken.type == TOKEN_ID){ // máme ID...
-			Token tempToken;
-			tempToken.type = TOKEN_EMPTY;
-			if(scannerTokenListGetPrev(tokenList, &tempToken) == 0 && tempToken.type == TOKEN_KEYWORD_FUNC){ // ...a jedná se o definici funkce
-				if(symTableSearch(*globalSymTable, currentToken.attribute.string, NULL) == 0){ // pokud je již v tabulce, jedná se o redefinici -> error
-					if(scannerTokenListGetNext(tokenList, &tempToken) == 0 && tempToken.type == TOKEN_LROUNDBRACKET){
-						/******************************************************************************/
+			if(scannerTokenListGetPrev(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_KEYWORD_FUNC){ // ...a jedná se o definici funkce
+				if(symTableSearch(*globalSymTable, currentToken.attribute.string, NULL, errorHandle) == 0){ // pokud je již v tabulce, jedná se o redefinici -> error
+					if(scannerTokenListGetNext(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_LROUNDBRACKET){
+						//******************************************************************************
 						char functionName[STATIC_STRING_LENGHT];
 						strcpy(functionName, currentToken.attribute.string);
 						
-						result = scannerTokenListMoveNext(tokenList);
-						result = scannerTokenListMoveNext(tokenList);
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						scannerTokenListMoveNext(tokenList, errorHandle);
 						
 						
 						// vytvoření functionLocalSymTable
@@ -71,142 +70,146 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable)
 						symTableInit(&localSymTable);
 						// vytvoření functionParamDataTypes
 						SymTableParamList paramList;
-						symTableParamListInit(&paramList);
+						symTableParamListInit(&paramList, errorHandle);
 						// vytvoření functionReturnDataTypes
 						SymTableParamList returnList;
-						symTableParamListInit(&returnList);
+						symTableParamListInit(&returnList, errorHandle);
 						
 						
 						// uložení vstupních parametrů
-						while(scannerTokenListGetActive(tokenList, &currentToken) == 0 && currentToken.type != TOKEN_RROUNDBRACKET && result == ALL_OK){
-							result = scannerTokenListGetPrev(tokenList, &tempToken);
+						while(errorHandle->errorID == ALL_OK && scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != TOKEN_RROUNDBRACKET){
+							scannerTokenListGetPrev(tokenList, &tempToken, errorHandle);
 							
 							if(currentToken.type == TOKEN_ID){
-								if(symTableSearch(localSymTable, currentToken.attribute.string, NULL) == 0){
-									result = scannerTokenListGetNext(tokenList, &tempToken);
+								if(symTableSearch(localSymTable, currentToken.attribute.string, NULL, errorHandle) == 0){
+									scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
 									if(tempToken.type == TOKEN_KEYWORD_INT){
 										//add id to local table
-										result = symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, INT, 0, NULL, 0, NULL, NULL));
+										symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, INT, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 										//add type to param list
-										result = symTableParamListAdd(&paramList, INT);
+										symTableParamListAdd(&paramList, INT, errorHandle);
 									} else if(tempToken.type == TOKEN_KEYWORD_FLOAT64){
 										//add id to local table
-										result = symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, FLOAT64, 0, NULL, 0, NULL, NULL));
+										symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, FLOAT64, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 										//add type to param list
-										result = symTableParamListAdd(&paramList, FLOAT64);
+										symTableParamListAdd(&paramList, FLOAT64, errorHandle);
 									} else if(tempToken.type == TOKEN_KEYWORD_STRING){
 										//add id to local table
-										result = symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, STRING, 0, NULL, 0, NULL, NULL));
+										symTableInsert(&localSymTable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, STRING, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 										//add type to param list
-										result = symTableParamListAdd(&paramList, STRING);
+										symTableParamListAdd(&paramList, STRING, errorHandle);
 									} else {
-										result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+										//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
 									}
 								} else {
-									result = SYNTAX_ERROR;// TODO error - redefinice proměnné
+									//result = SYNTAX_ERROR;// TODO error - redefinice proměnné
 								}
-								if(result == ALL_OK){
-									result = scannerTokenListMoveNext(tokenList);
-								}
+								scannerTokenListMoveNext(tokenList, errorHandle);
 							} else if(currentToken.type != TOKEN_COMMA){
-								result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+								//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
 							}
-							if(result == ALL_OK){
-								result = scannerTokenListMoveNext(tokenList);
-							}
+							scannerTokenListMoveNext(tokenList, errorHandle);
 						}
 						
 						
-						if(result == ALL_OK){
-							result = scannerTokenListMoveNext(tokenList);
-							result = scannerTokenListGetActive(tokenList, &currentToken);
-							result = scannerTokenListGetNext(tokenList, &tempToken);
-						}
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+						scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
 						// uložení výstupních parametrů (není povinné)
-						if(result == ALL_OK && currentToken.type == TOKEN_LROUNDBRACKET){
-							result = scannerTokenListMoveNext(tokenList);
+						if(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LROUNDBRACKET){
+							scannerTokenListMoveNext(tokenList, errorHandle);
 							
-							while(scannerTokenListGetActive(tokenList, &currentToken) == 0 && currentToken.type != TOKEN_RROUNDBRACKET && result == ALL_OK){
-								result = scannerTokenListGetPrev(tokenList, &tempToken);
+							while(errorHandle->errorID == ALL_OK && scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != TOKEN_RROUNDBRACKET){
+								scannerTokenListGetPrev(tokenList, &tempToken, errorHandle);
 								
 								if(currentToken.type == TOKEN_KEYWORD_INT){
 									//add type to return list
-									result = symTableParamListAdd(&returnList, INT);
+									symTableParamListAdd(&returnList, INT, errorHandle);
 								} else if(currentToken.type == TOKEN_KEYWORD_FLOAT64){
 									//add type to return list
-									result = symTableParamListAdd(&returnList, FLOAT64);
+									symTableParamListAdd(&returnList, FLOAT64, errorHandle);
 								} else if(currentToken.type == TOKEN_KEYWORD_STRING){
 									//add type to return list
-									result = symTableParamListAdd(&returnList, STRING);
+									symTableParamListAdd(&returnList, STRING, errorHandle);
 								} else if(currentToken.type != TOKEN_COMMA){
-									result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
+									//result = SYNTAX_ERROR;// TODO error - špatný token v hlavičce funkce
 								}
-								if(result == ALL_OK){
-									result = scannerTokenListMoveNext(tokenList);
-								}
+								scannerTokenListMoveNext(tokenList, errorHandle);
 							}						
 						}
 						
 						
-						if(result == ALL_OK){
-							result = scannerTokenListMoveNext(tokenList);
-							result = scannerTokenListGetActive(tokenList, &currentToken);
-							result = scannerTokenListGetNext(tokenList, &tempToken);
-						}
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+						scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
+						
 						// kontrola špičaté závorky a konce řádku
-						if(!(result == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
-							result = SYNTAX_ERROR;// TODO error - špatné ukončení hlavičky funkce
+						if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
+							//result = SYNTAX_ERROR;// TODO error - špatné ukončení hlavičky funkce
 						}
 						
 						
-						// přidání funkce do tabulky symbolů
-						if(result != ALL_OK){
-							symTableInsert(globalSymTable, functionName, symTableInitData(FUNC, true, NIL, paramList, returnList, localSymTable));
+						// přidání funkce do tabulky symbolů (musí být přidáno i při chybě pro uvolnění paměti)
+						if(errorHandle->errorID != ALL_OK){
+							ErrorHandle internalErrorHandle;
+							errorHandleInit(&internalErrorHandle);
+							symTableInsert(globalSymTable, functionName, symTableInitData(FUNC, true, NIL, paramList, returnList, localSymTable), &internalErrorHandle);
 						} else {
-							result = symTableInsert(globalSymTable, functionName, symTableInitData(FUNC, true, NIL, paramList, returnList, localSymTable));
+							symTableInsert(globalSymTable, functionName, symTableInitData(FUNC, true, NIL, paramList, returnList, localSymTable), errorHandle);
 						}
-						/******************************************************************************/
+						//******************************************************************************
 					} else {
-						return SYNTAX_ERROR;// TODO error - chybí levá závorka u vstupních parametrů
+						//return SYNTAX_ERROR;// TODO error - chybí levá závorka u vstupních parametrů
 					}
 				} else {
-					return SYNTAX_ERROR;// TODO error - redefinice funkce
+					//return SYNTAX_ERROR;// TODO error - redefinice funkce
 				}
 			}
 		}
-		/******************************************************************************/
-		if(currentToken.type != TOKEN_EOF && result == ALL_OK){result = scannerTokenListMoveNext(tokenList);}
-	} while(currentToken.type != TOKEN_EOF && result == ALL_OK);
-	
-	return result;
+		//******************************************************************************
+		if(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK){scannerTokenListMoveNext(tokenList, errorHandle);}
+	} while(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK);
+*/
+	return errorHandle->errorID;
 }
 
 
 // Naplnění tabulky built-in funkcemi
-int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable)
+int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
-	int result;
-	result = symTableInsert(globalSymTable, "inputs", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){STRING, INT}), NULL));
-	result = symTableInsert(globalSymTable, "inputi", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){INT, INT}), NULL));
-	result = symTableInsert(globalSymTable, "inputf", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){FLOAT64, INT}), NULL));
-	result = symTableInsert(globalSymTable, "print", symTableInitDataInLine(FUNC, true, NIL, -1, NULL, 0, NULL, NULL));
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
-	result = symTableInsert(globalSymTable, "int2float", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){INT}), 1, ((IDdataType[]){FLOAT64}), NULL));
-	result = symTableInsert(globalSymTable, "float2int", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){FLOAT64}), 1, ((IDdataType[]){INT}), NULL));
-	
-	result = symTableInsert(globalSymTable, "len", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){STRING}), 1, ((IDdataType[]){INT}), NULL));
-	result = symTableInsert(globalSymTable, "substr", symTableInitDataInLine(FUNC, true, NIL, 3, ((IDdataType[]){STRING, INT, INT}), 2, ((IDdataType[]){STRING, INT}), NULL));
-	
-	result = symTableInsert(globalSymTable, "ord", symTableInitDataInLine(FUNC, true, NIL, 2, ((IDdataType[]){STRING, INT}), 2, ((IDdataType[]){INT, INT}), NULL));
-	result = symTableInsert(globalSymTable, "chr", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){INT}), 2, ((IDdataType[]){STRING, INT}), NULL));
-	return result;
+	symTableInsert(globalSymTable, "inputs", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){STRING, INT}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "inputi", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){INT, INT}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "inputf", symTableInitDataInLine(FUNC, true, NIL, 0, NULL, 2, ((IDdataType[]){FLOAT64, INT}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "print", symTableInitDataInLine(FUNC, true, NIL, -1, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+
+	symTableInsert(globalSymTable, "int2float", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){INT}), 1, ((IDdataType[]){FLOAT64}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "float2int", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){FLOAT64}), 1, ((IDdataType[]){INT}), NULL, errorHandle), errorHandle);
+
+	symTableInsert(globalSymTable, "len", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){STRING}), 1, ((IDdataType[]){INT}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "substr", symTableInitDataInLine(FUNC, true, NIL, 3, ((IDdataType[]){STRING, INT, INT}), 2, ((IDdataType[]){STRING, INT}), NULL, errorHandle), errorHandle);
+
+	symTableInsert(globalSymTable, "ord", symTableInitDataInLine(FUNC, true, NIL, 2, ((IDdataType[]){STRING, INT}), 2, ((IDdataType[]){INT, INT}), NULL, errorHandle), errorHandle);
+	symTableInsert(globalSymTable, "chr", symTableInitDataInLine(FUNC, true, NIL, 1, ((IDdataType[]){INT}), 2, ((IDdataType[]){STRING, INT}), NULL, errorHandle), errorHandle);
+
+	return errorHandle->errorID;
 }
 
 
 /****************************************************** PARSER RUN ANALYZE ******************************************************************************/
 
-int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable)
+int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
+	scannerTokenListSetActiveFirst(tokenList, errorHandle);
+
+
+
 	// TODO - po další přednášce
-	return 0;
+	
+	
+	
+	return errorHandle->errorID;
 }

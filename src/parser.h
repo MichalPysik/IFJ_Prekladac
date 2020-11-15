@@ -9,19 +9,19 @@
 
 
 
-int parserAnalyze(TokenList *tokenList);
+int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle);
 
 
 /****************************************************** PARSER SYMTABLE PRERUN ******************************************************************************/
 
-int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable);
+int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
-int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable);
+int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
 
 /****************************************************** PARSER RUN ANALYZE ******************************************************************************/
 
-int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable);
+int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
 
 #endif //defined _PARSER_H

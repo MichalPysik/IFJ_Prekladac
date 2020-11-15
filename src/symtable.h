@@ -77,33 +77,34 @@ void symTableInit(SymTableBinTreePtr *RootPtr);
 
 SymTableData symTableInitData(IDtype idType, bool idDefined, IDdataType idDataType, SymTableParamList functionParamDataTypes, SymTableParamList functionReturnDataTypes, SymTableBinTreePtr functionLocalSymTable);
 
-SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType idDataType, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable);
+SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType idDataType, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable, ErrorHandle *errorHandle);
 
-int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data);
+int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data, ErrorHandle *errorHandle);
 
-int symTableSearch(SymTableBinTreePtr RootPtr, char *key, SymTableData *data);
+int symTableSearch(SymTableBinTreePtr RootPtr, char *key, SymTableData *data, ErrorHandle *errorHandle);
 
-void symTableDispose(SymTableBinTreePtr *RootPtr);
+int symTableDispose(SymTableBinTreePtr *RootPtr);
 
 
 /****************************************************** PARAMS STACK ******************************************************************************/
 
-int symTableParamListInit(SymTableParamList *paramList);
+int symTableParamListInit(SymTableParamList *paramList, ErrorHandle *errorHandle);
 
-int symTableParamListAdd(SymTableParamList *paramList, IDdataType dataType);
+int symTableParamListAdd(SymTableParamList *paramList, IDdataType dataType, ErrorHandle *errorHandle);
 
-int symTableParamListMoveNext(SymTableParamList *paramList);
+int symTableParamListMoveNext(SymTableParamList *paramList, ErrorHandle *errorHandle);
 
-int symTableParamListGetActive(SymTableParamList *paramList, IDdataType *dataType);
+int symTableParamListGetActive(SymTableParamList *paramList, IDdataType *dataType, ErrorHandle *errorHandle);
 
-int symTableParamListSetActiveFirst(SymTableParamList *paramList);
+int symTableParamListSetActiveFirst(SymTableParamList *paramList, ErrorHandle *errorHandle);
 
-int symTableParamListGetSize(SymTableParamList *paramList);
+int symTableParamListGetSize(SymTableParamList *paramList, ErrorHandle *errorHandle);
 
 int symTableParamListFree(SymTableParamList *paramList);
 
 
 /****************************************************** TEST PRINT TREE ******************************************************************************/
+
 void Print_tree2(SymTableBinTreePtr TempTree, char* sufix, char fromdir, char* space_size);
 
 void Print_tree(SymTableBinTreePtr TempTree);

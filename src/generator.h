@@ -8,9 +8,7 @@
 
 
 
-
-int generatorGenerateCode(TokenList *tokenList);
-
+int generatorGenerateCode(TokenList *tokenList, ErrorHandle *errorHandle);
 
 
 #endif //defined _GENERATOR_H

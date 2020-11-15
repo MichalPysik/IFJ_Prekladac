@@ -11,6 +11,7 @@
 #include <ctype.h>
 
 
+
 FILE *FILE_INPUT;
 FILE *FILE_OUTPUT;
 FILE *FILE_ERROR;
@@ -18,11 +19,13 @@ FILE *FILE_ERROR;
 
 #define ARRAY_SIZE(x)  (int)(sizeof(x) / sizeof((x)[0]))
 
+#define STATIC_STRING_LENGHT 255
 
-#define STATIC_STRING_LENGHT 50
 
 
-//onumerovani navratovych hodnot pro chyby
+/****************************************************** ERROR HANDLE ******************************************************************************/
+
+//onumerovani navratovych hodnot pro chyby = errorID
 #define ALL_OK 0
 #define LEX_ERROR 1
 #define SYNTAX_ERROR 2
@@ -33,13 +36,26 @@ FILE *FILE_ERROR;
 #define SEM_OTHER_ERROR 7
 #define ZERO_DIVISION_ERROR 9
 #define INTERNAL_ERROR 99
+#define ERROR_ALREADY_EXISTS 100
 
+
+typedef struct {
+	int errorID;
+	char errorString[STATIC_STRING_LENGHT];
+	char errorPosFile[STATIC_STRING_LENGHT];
+	int errorPosLine;
+} ErrorHandle;
 
 // vytiskne chybovou hlášku podle čísla chyby
-int handleError(int errorID);
+int handleError(ErrorHandle errorHandle, char *lastOKTokenType, int lastOKTokenPosLine, int lastOKTokenPosNumber, char *lastOKTokenString);
 
+void handleFreeError(int errorID, int errorLine, char *errorFile);
 
-int handleInternalError(int errorID);
+int errorHandleInit(ErrorHandle *errorHandle);
+
+int errorExists(ErrorHandle errorHandle);
+
+int errorSet(int errorID, char *errorString, char *errorPosFile, int errorPosLine, ErrorHandle *errorHandle);
 
 
 #endif //defined _COMMON_H

@@ -36,11 +36,11 @@ SymTableData symTableInitData(IDtype idType, bool idDefined, IDdataType idDataTy
 	return data;
 }
 
-SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType idDataType, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable)
+SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType idDataType, int paramCount, IDdataType paramDataTypes[], int returnCount, IDdataType returnDataTypes[], SymTableBinTreePtr functionLocalSymTable, ErrorHandle *errorHandle)
 {
 	SymTableData data;
-	symTableParamListInit(&(data.functionParamDataTypes));
-	symTableParamListInit(&(data.functionReturnDataTypes));
+	symTableParamListInit(&(data.functionParamDataTypes), errorHandle);
+	symTableParamListInit(&(data.functionReturnDataTypes), errorHandle);
 	
 	data.idType = idType;
 	data.idDefined = idDefined;
@@ -48,13 +48,13 @@ SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType id
 	
 	int i;
 	for(i = 0; i < paramCount; i++){
-		symTableParamListAdd(&(data.functionParamDataTypes), paramDataTypes[i]);
+		symTableParamListAdd(&(data.functionParamDataTypes), paramDataTypes[i], errorHandle);
 	}
 	if(paramCount == -1){ // libovolný počet parametrů 
 		data.functionParamDataTypes.size = -1;
 	}
 	for(i = 0; i < returnCount; i++){
-		symTableParamListAdd(&(data.functionReturnDataTypes), returnDataTypes[i]);
+		symTableParamListAdd(&(data.functionReturnDataTypes), returnDataTypes[i], errorHandle);
 	}
 	
 	data.functionLocalSymTable = functionLocalSymTable;
@@ -62,8 +62,10 @@ SymTableData symTableInitDataInLine(IDtype idType, bool idDefined, IDdataType id
 	return data;
 }
 
-int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data)
+int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	SymTableBinTreePtr *ROOT = RootPtr;
 	while((*ROOT) != NULL){
 		if(strcmp((*ROOT)->key, key) == 0){
@@ -72,9 +74,9 @@ int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data)
 				strcpy(newKey, key);
 				(*ROOT)->key = newKey;
 			} else {
-				return 2;
+				errorSet(INTERNAL_ERROR, "symTableInsert: realloc NULL", __FILE__, __LINE__, errorHandle);
 			}
-			return 0; // existující klíč - přepsat nebo chyba?
+			return errorHandle->errorID; // existující klíč - přepsat nebo chyba?
 		} else if(strcmp(key, (*ROOT)->key) < 0){
 			ROOT = &((*ROOT)->leftPtr);
 		} else {
@@ -93,32 +95,38 @@ int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data)
 		} else {
 			free((*ROOT));
 			(*ROOT) = NULL;
-			return 3;
+			errorSet(INTERNAL_ERROR, "symTableInsert: malloc struct SymTableBinTreeNode NULL", __FILE__, __LINE__, errorHandle);
 		}
-		return 0;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableInsert: malloc char NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableSearch(SymTableBinTreePtr RootPtr, char *key, SymTableData *data)
+int symTableSearch(SymTableBinTreePtr RootPtr, char *key, SymTableData *data, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(RootPtr != NULL){
 		if(strcmp(RootPtr->key, key) == 0){
 			if(data != NULL){
 				(*data) = RootPtr->data;
+			} else {
+				//errorSet(INTERNAL_ERROR, "symTableSearch: data NULL", __FILE__, __LINE__, errorHandle);
 			}
+			return 1;
 		} else if(strcmp(key, RootPtr->key) < 0){
-			return symTableSearch(RootPtr->leftPtr, key, data);
+			return symTableSearch(RootPtr->leftPtr, key, data, errorHandle);
 		} else {
-			return symTableSearch(RootPtr->rightPtr, key, data);
+			return symTableSearch(RootPtr->rightPtr, key, data, errorHandle);
 		}
-		return 1;
 	}
 	return 0;
 }
 
-void symTableDispose(SymTableBinTreePtr *RootPtr)
-{
+int symTableDispose(SymTableBinTreePtr *RootPtr)
+{	
 	SymTableBinTreePtr root = (*RootPtr);
 	if(root != NULL){
 		symTableDispose(&root->leftPtr);
@@ -128,26 +136,34 @@ void symTableDispose(SymTableBinTreePtr *RootPtr)
 		symTableParamListFree(&(root->data.functionReturnDataTypes));
 		free(root);
 		(*RootPtr) = NULL;
+		return ALL_OK;
 	}
+	return INTERNAL_ERROR;
 }
 
 
 /****************************************************** PARAMS STACK ******************************************************************************/
 
-int symTableParamListInit(SymTableParamList *paramList)
+int symTableParamListInit(SymTableParamList *paramList, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		paramList->size = 0;
 		paramList->first = NULL;
 		paramList->active = NULL;
 		paramList->last = NULL;
-		return 0;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableParamListInit: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableParamListAdd(SymTableParamList *paramList, IDdataType dataType)
+int symTableParamListAdd(SymTableParamList *paramList, IDdataType dataType, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		SymTableParamListElementPtr added = (SymTableParamListElementPtr)malloc(sizeof(struct SymTableParamListElement));
 		if(added != NULL){
@@ -164,57 +180,81 @@ int symTableParamListAdd(SymTableParamList *paramList, IDdataType dataType)
 			paramList->last = added;
 			
 			(paramList->size)++;
-			return 0;
+		} else {
+			errorSet(INTERNAL_ERROR, "symTableParamListAdd: malloc struct SymTableParamListElement NULL", __FILE__, __LINE__, errorHandle);
 		}
-		return 2;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableParamListAdd: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableParamListMoveNext(SymTableParamList *paramList)
+int symTableParamListMoveNext(SymTableParamList *paramList, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		if(paramList->active != NULL){
 			if(paramList->active != paramList->last){
 				paramList->active = paramList->active->rightPtr;
-				return 0;
+			} else {
+				errorSet(INTERNAL_ERROR, "symTableParamListMoveNext: Active Last", __FILE__, __LINE__, errorHandle);
 			}
-			return 3;
+		} else {
+			errorSet(INTERNAL_ERROR, "symTableParamListMoveNext: Active NULL", __FILE__, __LINE__, errorHandle);
 		}
-		return 2;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableParamListMoveNext: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableParamListGetActive(SymTableParamList *paramList, IDdataType *dataType)
+int symTableParamListGetActive(SymTableParamList *paramList, IDdataType *dataType, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		if(paramList->active != NULL){
 			(*dataType) = paramList->active->dataType;
-			return 0;
+		} else {
+			errorSet(INTERNAL_ERROR, "symTableParamListGetActive: Active NULL", __FILE__, __LINE__, errorHandle);
 		}
-		return 2;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableParamListGetActive: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableParamListSetActiveFirst(SymTableParamList *paramList)
+int symTableParamListSetActiveFirst(SymTableParamList *paramList, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		if(paramList->first != NULL){
 			paramList->active = paramList->first;
-			return 0;
+		} else {
+			errorSet(INTERNAL_ERROR, "symTableParamListSetActiveFirst: First NULL", __FILE__, __LINE__, errorHandle);
 		}
-		return 2;
+	} else {
+		errorSet(INTERNAL_ERROR, "symTableParamListSetActiveFirst: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	}
-	return 1;
+	
+	return errorHandle->errorID;
 }
 
-int symTableParamListGetSize(SymTableParamList *paramList)
+int symTableParamListGetSize(SymTableParamList *paramList, ErrorHandle *errorHandle)
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
 	if(paramList != NULL){
 		return paramList->size;
 	}
+	
+	errorSet(INTERNAL_ERROR, "symTableParamListGetSize: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
+	
 	return -1;
 }
 
@@ -232,9 +272,9 @@ int symTableParamListFree(SymTableParamList *paramList)
 		paramList->first = NULL;
 		paramList->active = NULL;
 		paramList->last = NULL;
-		return 0;
+		return ALL_OK;
 	}
-	return 1;
+	return INTERNAL_ERROR;
 }
 
 

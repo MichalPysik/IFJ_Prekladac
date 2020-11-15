@@ -51,8 +51,15 @@ typedef enum
 } Token_type;
 
 
+static char tokenTypes[][STATIC_STRING_LENGHT] = {"TOKEN_EMPTY", "TOKEN_KEYWORD_ELSE", "TOKEN_KEYWORD_FLOAT64", "TOKEN_KEYWORD_FOR", "TOKEN_KEYWORD_FUNC",
+	"TOKEN_KEYWORD_IF", "TOKEN_KEYWORD_INT", "TOKEN_KEYWORD_RETURN", "TOKEN_KEYWORD_STRING", "TOKEN_KEYWORD_PACKAGE", "TOKEN_KEYWORD_MAIN", "TOKEN_ID",
+	"TOKEN_ASSIGN", "TOKEN_INIT", "TOKEN_COMMA", "TOKEN_SEMICOLON", "TOKEN_LROUNDBRACKET", "TOKEN_RROUNDBRACKET", "TOKEN_LCURLYBRACKET",
+	"TOKEN_RCURLYBRACKET", "TOKEN_EOL", "TOKEN_EOF", "TOKEN_INTVALUE", "TOKEN_FLOATVALUE", "TOKEN_STRINGVALUE", "TOKEN_ADD", "TOKEN_SUB", "TOKEN_MUL",
+	"TOKEN_DIV", "TOKEN_EQ", "TOKEN_NEQ", "TOKEN_GT", "TOKEN_LT", "TOKEN_GTE", "TOKEN_LTE"
+};
 
-typedef union {
+
+typedef struct {
 	char string[STATIC_STRING_LENGHT];
 	int64_t integer;
 	double real;
@@ -63,6 +70,8 @@ typedef union {
 typedef struct {
 	Token_type type;
 	Token_attribute attribute;
+	int pos_line;
+	int pos_number;
 } Token;
 
 
@@ -92,32 +101,32 @@ typedef struct {
 
 
 
-int scannerTokenListInit(TokenList *tokenList);
+int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle);
 
-int scannerTokenListAdd(TokenList *tokenList, Token token);
+int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHandle);
 
-int scannerTokenListDeleteActive(TokenList *tokenList);
+int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle);
 
-int scannerTokenListMovePrev(TokenList *tokenList);
+int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle);
 
-int scannerTokenListMoveNext(TokenList *tokenList);
+int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle);
 
-int scannerTokenListGetPrev(TokenList *tokenList, Token *token);
+int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
-int scannerTokenListGetActive(TokenList *tokenList, Token *token);
+int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
-int scannerTokenListGetNext(TokenList *tokenList, Token *token);
+int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
-int scannerTokenListSetActiveFirst(TokenList *tokenList);
+int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandle);
 
-int scannerTokenListSetActiveLast(TokenList *tokenList);
+int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle);
 
 int scannerTokenListFree(TokenList *tokenList);
 
 
 /****************************************************** SCANNER GET TOKEN LIST ******************************************************************************/
 
-int scannerGetTokenList(TokenList *tokenList);
+int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle);
 
 
 #endif //defined _SCANNER_H
