@@ -59,7 +59,7 @@ static char tokenTypes[][STATIC_STRING_LENGHT] = {"TOKEN_EMPTY", "TOKEN_KEYWORD_
 };
 
 
-typedef struct {
+typedef union {
 	char string[STATIC_STRING_LENGHT];
 	int64_t integer;
 	double real;
