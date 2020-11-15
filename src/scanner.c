@@ -21,6 +21,7 @@ typedef enum
 	SSTATE_LESS,
 	SSTATE_MORE,
 	SSTATE_EQUAL,
+	SSTATE_EXMARK,
 	SSTATE_INITVAR,
 	SSTATE_SLASH,
 	SSTATE_COMMENT,
@@ -97,10 +98,10 @@ int scannerGetToken (Token *currentToken)
 	while(1)
 	{
 		currChar = getc(FILE_INPUT);
-		
+
 		switch(state)
 		{
-			case(SSTATE_START):				
+			case(SSTATE_START):
 				if (currChar == '\n')
 				{
 					currentToken->type = TOKEN_EOL;
@@ -184,6 +185,10 @@ int scannerGetToken (Token *currentToken)
 				else if (currChar == '=')
 				{
 					state = SSTATE_EQUAL;
+				}
+				else if (currChar == '!')
+				{
+					state = SSTATE_EXMARK;
 				}
 				else if (currChar == '<')
 				{
@@ -522,6 +527,22 @@ int scannerGetToken (Token *currentToken)
 				break;
 
 
+			case(SSTATE_EXMARK):
+				if (currChar == '=')
+				{
+					currentToken->type = TOKEN_NEQ;
+					return ALL_OK;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Lexical analysis error: Character \"!\" can only be used in not equal operator \"!=\"\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
 			case(SSTATE_INITVAR):
 				if (currChar == '=')
 				{
@@ -630,7 +651,7 @@ int scannerGetToken (Token *currentToken)
 int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		tokenList->first = NULL;
 		tokenList->active = NULL;
@@ -638,22 +659,22 @@ int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle)
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_INIT: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		TokenListElementPtr added = (TokenListElementPtr)malloc(sizeof(struct TokenListElement));
 		if(added != NULL){
 			added->token = token;
-			
+
 			added->leftPtr = tokenList->last;
 			added->rightPtr = NULL;
-			
+
 			if(tokenList->last != NULL){
 				tokenList->last->rightPtr = added;
 			} else {
@@ -666,14 +687,14 @@ int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHan
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_ADD: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			TokenListElementPtr destroy = tokenList->active;
@@ -699,14 +720,14 @@ int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle)
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_DELETE_ACTIVE: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			if(tokenList->active != tokenList->first){
@@ -720,14 +741,14 @@ int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle)
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_MOVE_PREV: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			if(tokenList->active != tokenList->last){
@@ -741,14 +762,14 @@ int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle)
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_MOVE_NEXT: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			if(tokenList->active != tokenList->first){
@@ -762,14 +783,14 @@ int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *err
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_GET_PREV: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			(*token) = tokenList->active->token;
@@ -779,14 +800,14 @@ int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *e
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_GET_ACTIVE: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->active != NULL){
 			if(tokenList->active != tokenList->last){
@@ -800,14 +821,14 @@ int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *err
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_GET_NEXT: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->first != NULL){
 			tokenList->active = tokenList->first;
@@ -817,14 +838,14 @@ int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandl
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_SET_ACTIVE_FIRST: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
 int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		if(tokenList->last != NULL){
 			tokenList->active = tokenList->last;
@@ -834,7 +855,7 @@ int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_TOKEN_LIST_SET_ACTIVE_LAST: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
 
@@ -862,15 +883,15 @@ int scannerTokenListFree(TokenList *tokenList)
 int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
+
 	if(tokenList != NULL){
 		Token currentToken;
 		currentToken.type = TOKEN_EMPTY;
 		currentToken.attribute.string[0] = '\0';
 		currentToken.pos_line = 1;
 		currentToken.pos_number = 0;
-		
-		do{			
+
+		do{
 			if(currentToken.type == TOKEN_EOL){
 				currentToken.pos_line++;
 				currentToken.pos_number = 1;
@@ -879,19 +900,19 @@ int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle)
 			}
 			scannerTokenListSetActiveLast(tokenList, errorHandle); // vyhodí error, když je seznam prázdný
 			errorHandleInit(errorHandle); // proto zde, přepíšeme na ALL_OK
-			
+
 			errorHandle->errorID = scannerGetToken(&currentToken);
 			if(errorHandle->errorID != ALL_OK){
 				errorSet(errorHandle->errorID, "scannerGetToken", __FILE__, __LINE__, errorHandle);
 			}
-			
+
 			scannerTokenListAdd(tokenList, currentToken, errorHandle);
 		}while(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK);
-		
+
 		scannerTokenListSetActiveLast(tokenList, errorHandle);
 	} else {
 		errorSet(INTERNAL_ERROR, "SCANNER_GET_TOKEN_LIST: NULL_POINTER", __FILE__, __LINE__, errorHandle);
 	}
-	
+
 	return errorHandle->errorID;
 }
