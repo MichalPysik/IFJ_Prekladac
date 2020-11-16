@@ -1,23 +1,23 @@
------------------------------------------------------------
+----------------------------------------------------------
 potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací proměnná -> nový token TOKEN_LEFTID_
 ----------------------------------------------------------
 // program
-<program>		-> TOKEN_KEYWORD_PACKAGE TOKEN_ID TOKEN_EOL <program>
-<program>		-> TOKEN_KEYWORD_FUNC TOKEN_ID TOKEN_LROUNDBRACKET <param_in_first> TOKEN_RROUNDBRACKET <funkce_body> TOKEN_EOL <program>
-<program>		-> TOKEN_EOL <program>
-<program>		-> TOKEN_EOF
+<program>       -> TOKEN_KEYWORD_PACKAGE TOKEN_ID TOKEN_EOL <program>
+<program>       -> TOKEN_KEYWORD_FUNC TOKEN_ID TOKEN_LROUNDBRACKET <param_in_first> TOKEN_RROUNDBRACKET <funkce_body> TOKEN_EOL <program>
+<program>       -> TOKEN_EOL <program>
+<program>       -> TOKEN_EOF
 
 <param_in_first>-> TOKEN_ID <type> <param_in_next>
 <param_in_first>-> ε
-<param_in_next>	-> TOKEN_COMMA TOKEN_ID <type> <param_in_next>
-<param_in_next>	-> ε
+<param_in_next> -> TOKEN_COMMA TOKEN_ID <type> <param_in_next>
+<param_in_next> -> ε
 
 
 
 
 // tělo funkce
-<funkce_body>	-> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
-<funkce_body>	-> TOKEN_LROUNDBRACKET <type> <param_out_next> TOKEN_RROUNDBRACKET TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET 
+<funkce_body>   -> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
+<funkce_body>   -> TOKEN_LROUNDBRACKET <type> <param_out_next> TOKEN_RROUNDBRACKET TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
 
 <param_out_next>-> TOKEN_COMMA <type> <param_out_next>
 <param_out_next>-> ε
@@ -30,34 +30,34 @@ potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací p
 <statement_list>-> ε
 
 
-<statement>		-> TOKEN_ID <state_id_list> <statement_list>
-<state_id_list>	-> TOKEN_LROUNDBRACKET <param_first> TOKEN_RROUNDBRACKET
-<state_id_list>	-> TOKEN_INIT <expression>
-<state_id_list>	-> TOKEN_ASSIGN <expression>
-<state_id_list>	-> TOKEN_COMMA TOKEN_ID <id_next>
-<id_next>		-> TOKEN_COMMA TOKEN_ID <id_next>
-<id_next>		-> TOKEN_INIT <expression> <expr_next>
-<id_next>		-> TOKEN_ASSIGN <expression> <expr_next>
+<statement>     -> TOKEN_ID <state_id_list> <statement_list>
+<state_id_list> -> TOKEN_LROUNDBRACKET <param_first> TOKEN_RROUNDBRACKET
+<state_id_list> -> TOKEN_INIT <expression>
+<state_id_list> -> TOKEN_ASSIGN <expression>
+<state_id_list> -> TOKEN_COMMA TOKEN_ID <id_next>
+<id_next>       -> TOKEN_COMMA TOKEN_ID <id_next>
+<id_next>       -> TOKEN_INIT <expression> <expr_next>
+<id_next>       -> TOKEN_ASSIGN <expression> <expr_next>
 
-<param_first>	-> <expression> <param_next>
-<param_first>	-> ε
-<param_next>	-> TOKEN_COMMA <expression> <param_next>
-<param_next>	-> ε
+<param_first>   -> <expression> <param_next>
+<param_first>   -> ε
+<param_next>    -> TOKEN_COMMA <expression> <param_next>
+<param_next>    -> ε
 
 
-<statement>		-> _ TOKEN_ASSIGN <expression> <expr_next> <statement_list>
-<statement>		-> TOKEN_KEYWORD_RETURN <expression> <expr_next> <statement_list>
-<statement>		-> TOKEN_KEYWORD_IF <if> <statement_list>
-<statement>		-> TOKEN_KEYWORD_FOR <for> <statement_list>
-<statement>		-> ε
+<statement>     -> _ TOKEN_ASSIGN <expression> <expr_next> <statement_list>
+<statement>     -> TOKEN_KEYWORD_RETURN <expression> <expr_next> <statement_list>
+<statement>     -> TOKEN_KEYWORD_IF <if> <statement_list>
+<statement>     -> TOKEN_KEYWORD_FOR <for> <statement_list>
+<statement>     -> ε
 
 
 
 
 // if statement
-<if>			-> <expression> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET TOKEN_KEYWORD_ELSE TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
+<if>            -> <expression> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET TOKEN_KEYWORD_ELSE TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
 // loop
-<for>			-> <for_definition> TOKEN_SEMICOLON <expression> TOKEN_SEMICOLON <for_assignment> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
+<for>           -> <for_definition> TOKEN_SEMICOLON <expression> TOKEN_SEMICOLON <for_assignment> TOKEN_LCURLYBRACKET TOKEN_EOL <statement_list> TOKEN_RCURLYBRACKET
 <for_definition>-> TOKEN_ID TOKEN_INIT <expression>
 <for_definition>-> ε
 <for_assignment>-> TOKEN_ID TOKEN_ASSIGN <expression>
@@ -67,31 +67,31 @@ potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací p
 
 
 // výrazy
-<expr_next>		-> TOKEN_COMMA <expression> <expr_next>
-<expr_next>		-> ε
+<expr_next>     -> TOKEN_COMMA <expression> <expr_next>
+<expr_next>     -> ε
 
 // priorita výrazů (expressionů)
-<expression>	-> TOKEN_LROUNDBRACKET <expression> TOKEN_RROUNDBRACKET
+<expression>    -> TOKEN_LROUNDBRACKET <expression> TOKEN_RROUNDBRACKET
 //aritmeticke operace
-<expression>	-> <expression> TOKEN_ADD <expression> 
-<expression>	-> <expression> TOKEN_SUB <expression>
-<expression>	-> <expression> TOKEN_MUL <expression>
-<expression>	-> <expression> TOKEN_DIV <expression>
+<expression>    -> <expression> TOKEN_ADD <expression>
+<expression>    -> <expression> TOKEN_SUB <expression>
+<expression>    -> <expression> TOKEN_MUL <expression>
+<expression>    -> <expression> TOKEN_DIV <expression>
 // porovnávací operátory
-<expression>	-> <expression> TOKEN_EQ <expression> 
-<expression>	-> <expression> TOKEN_NEQ <expression>
-<expression>	-> <expression> TOKEN_GT <expression>
-<expression>	-> <expression> TOKEN_LT <expression>
-<expression>	-> <expression> TOKEN_GTE <expression>
-<expression>	-> <expression> TOKEN_LTE <expression>
+<expression>    -> <expression> TOKEN_EQ <expression>
+<expression>    -> <expression> TOKEN_NEQ <expression>
+<expression>    -> <expression> TOKEN_GT <expression>
+<expression>    -> <expression> TOKEN_LT <expression>
+<expression>    -> <expression> TOKEN_GTE <expression>
+<expression>    -> <expression> TOKEN_LTE <expression>
 // hodnoty
-<expression>	-> <value>
-<value>			-> TOKEN_ID
-<value>			-> TOKEN_STRINGVALUE
-<value>			-> TOKEN_INTVALUE
-<value>			-> TOKEN_FLOATVALUE
+<expression>    -> <value>
+<value>         -> TOKEN_ID
+<value>         -> TOKEN_STRINGVALUE
+<value>         -> TOKEN_INTVALUE
+<value>         -> TOKEN_FLOATVALUE
 
 
-<type>			-> TOKEN_KEYWORD_INT
-<type>			-> TOKEN_KEYWORD_FLOAT64
-<type>			-> TOKEN_KEYWORD_STRING
+<type>          -> TOKEN_KEYWORD_INT
+<type>          -> TOKEN_KEYWORD_FLOAT64
+<type>          -> TOKEN_KEYWORD_STRING
