@@ -8,12 +8,22 @@ typedef enum
 	SSTATE_START,
 	SSTATE_ID,
 	SSTATE_NUM,
+	SSTATE_NUM_UNDERSCORE,
 	SSTATE_NUM_REAL,
 	SSTATE_NUM_DOT,
 	SSTATE_NUM_EXPONENT,
 	SSTATE_NUM_EXPONENT_SIGN,
 	SSTATE_NUM_EXPONENT_AFTER,
 	SSTATE_NUM_ZERO,
+	SSTATE_NUM_BIN_PREFIX,
+	SSTATE_NUM_OCT_PREFIX,
+	SSTATE_NUM_HEX_PREFIX,
+	SSTATE_NUM_BIN,
+	SSTATE_NUM_OCT,
+	SSTATE_NUM_HEX,
+	SSTATE_NUM_BIN_UNDERSCORE,
+	SSTATE_NUM_OCT_UNDERSCORE,
+	SSTATE_NUM_HEX_UNDERSCORE,
 	SSTATE_STRING,
 	SSTATE_STRING_BACKSLASH,
 	SSTATE_STRING_HEX1,
@@ -250,21 +260,41 @@ int scannerGetToken (Token *currentToken)
 					i++;
 					state = SSTATE_NUM_EXPONENT;
 				}
-        			else
-        			{
-        				ungetc(currChar, FILE_INPUT);
-        				currentToken->attribute.string[i] = '\0';
-        				currentToken->attribute.integer = (atoll(currentToken->attribute.string));
-        				currentToken->type = TOKEN_INTVALUE;
-        				return ALL_OK;
-        			}
-        			break;
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_UNDERSCORE;
+				}
+        		else
+        		{
+        			ungetc(currChar, FILE_INPUT);
+        			currentToken->attribute.string[i] = '\0';
+        			currentToken->attribute.integer = (atoll(currentToken->attribute.string));
+        			currentToken->type = TOKEN_INTVALUE;
+        			return ALL_OK;
+        		}
+        		break;
+
+
+			case(SSTATE_NUM_UNDERSCORE):
+				if (isdigit(currChar))
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM;
+				}
+	        	else
+	        	{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Lexical analysis error: Underscore (only single one) can be only between digits\n");
+					return LEX_ERROR;
+	        	}
+	        	break;
 
 
 			case(SSTATE_NUM_DOT):
 				if (isdigit(currChar))
 				{
-        				currentToken->attribute.string[i] = currChar;
+        			currentToken->attribute.string[i] = currChar;
 					i++;
 					state = SSTATE_NUM_REAL;
 				}
@@ -315,14 +345,203 @@ int scannerGetToken (Token *currentToken)
 					fprintf(FILE_ERROR, "Lexical analysis error: Whole decimal number cannot start with a zero\n");
 					return LEX_ERROR;
 				}
+				else if (tolower(currChar) == 'b')
+				{
+					i--;
+					state = SSTATE_NUM_BIN_PREFIX;
+				}
+				else if (tolower(currChar) == 'o')
+				{
+					i--;
+					state = SSTATE_NUM_OCT_PREFIX;
+				}
+				else if (tolower(currChar) == 'x')
+				{
+					i--;
+					state = SSTATE_NUM_HEX_PREFIX;
+				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-        				currentToken->attribute.integer = 0;
-        				currentToken->type = TOKEN_INTVALUE;
-        				return ALL_OK;
+        			currentToken->attribute.integer = 0;
+        			currentToken->type = TOKEN_INTVALUE;
+        			return ALL_OK;
 				}
-        			break;
+        		break;
+
+
+			case(SSTATE_NUM_BIN_PREFIX):
+				if (currChar == '0' || currChar == '1')
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+					state = SSTATE_NUM_BIN;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_BIN_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Prefix 0b must be followed by a binary number with optional single underscore in front of it\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_NUM_BIN):
+				if (currChar == '0' || currChar == '1')
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_BIN_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->attribute.string[i] = '\0';
+					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 2);
+					currentToken->type = TOKEN_INTVALUE;
+					return ALL_OK;
+				}
+				break;
+
+
+			case(SSTATE_NUM_BIN_UNDERSCORE):
+				if (currChar == '0' || currChar == '1')
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM_BIN;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Single underscores can be only between digits, or prefix and a digit\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_NUM_OCT_PREFIX):
+				if (currChar >= '0' && currChar <= '7')
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+					state = SSTATE_NUM_OCT;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_OCT_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Prefix 0o must be followed by a binary number with optional single underscore in front of it\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_NUM_OCT):
+				if (currChar >= '0' && currChar <= '7')
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_OCT_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->attribute.string[i] = '\0';
+					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 8);
+					currentToken->type = TOKEN_INTVALUE;
+					return ALL_OK;
+				}
+				break;
+
+
+			case(SSTATE_NUM_OCT_UNDERSCORE):
+				if (currChar >= '0' && currChar <= '7')
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM_OCT;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Single underscores can be only between digits, or prefix and a digit\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_NUM_HEX_PREFIX):
+				if (isxdigit(currChar))
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+					state = SSTATE_NUM_HEX;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_HEX_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Prefix 0x must be followed by a binary number with optional single underscore in front of it\n");
+					return LEX_ERROR;
+				}
+				break;
+
+
+			case(SSTATE_NUM_HEX):
+				if (isxdigit(currChar))
+				{
+					currentToken->attribute.string[i] = currChar;
+					i++;
+				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_HEX_UNDERSCORE;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->attribute.string[i] = '\0';
+					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 16);
+					currentToken->type = TOKEN_INTVALUE;
+					return ALL_OK;
+				}
+				break;
+
+
+			case(SSTATE_NUM_HEX_UNDERSCORE):
+				if (isxdigit(currChar))
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM_HEX;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Single underscores can be only between digits, or prefix and a digit\n");
+					return LEX_ERROR;
+				}
+				break;
 
 
 			case(SSTATE_NUM_EXPONENT):
