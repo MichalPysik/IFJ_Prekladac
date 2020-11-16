@@ -1,0 +1,97 @@
+-----------------------------------------------------------
+potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací proměnná -> nový token TOKEN_LEFTID_
+----------------------------------------------------------
+// program
+<program>		-> package id EOL <program>
+<program>		-> func id ( <param_in_first> ) <funkce_body> EOL <program>
+<program>		-> EOL <program>
+<program>		-> EOF
+
+<param_in_first>-> id <type> <param_in_next>
+<param_in_first>-> ε
+<param_in_next>	-> , id <type> <param_in_next>
+<param_in_next>	-> ε
+
+
+
+
+// tělo funkce
+<funkce_body>	-> { EOL <statement_list> }
+<funkce_body>	-> ( <type> <param_out_next> ) { EOL <statement_list> } 
+
+<param_out_next>-> , <type> <param_out_next>
+<param_out_next>-> ε
+
+
+
+
+// příkazy
+<statement_list>-> <statement> EOL <statement_list>
+<statement_list>-> ε
+
+
+<statement>		-> id <state_id_list> <statement_list>
+<state_id_list>	-> ( <param_first> )
+<state_id_list>	-> := <expression>
+<state_id_list>	-> = <expression>
+<state_id_list>	-> , id <id_next>
+<id_next>		-> , id <id_next>
+<id_next>		-> := <expression> <expr_next>
+<id_next>		-> = <expression> <expr_next>
+
+<param_first>	-> <expression> <param_next>
+<param_first>	-> ε
+<param_next>	-> , <expression> <param_next>
+<param_next>	-> ε
+
+
+<statement>		-> _ = <expression> <expr_next> <statement_list>
+<statement>		-> return <expression> <expr_next> <statement_list>
+<statement>		-> if <if> <statement_list>
+<statement>		-> for <for> <statement_list>
+<statement>		-> ε
+
+
+
+
+// if statement
+<if>			-> <expression> { EOL <statement_list> } else { EOL <statement_list> }
+// loop
+<for>			-> <for_definition> ; <expression> ; <for_assignment> { EOL <statement_list> }
+<for_definition>-> id := <expression>
+<for_definition>-> ε
+<for_assignment>-> id = <expression>
+<for_assignment>-> ε
+
+
+
+
+// výrazy
+<expr_next>		-> , <expression> <expr_next>
+<expr_next>		-> ε
+
+// priorita výrazů (expressionů)
+<expression>	-> ( <expression> )
+//aritmeticke operace
+<expression>	-> <expression> + <expression> 
+<expression>	-> <expression> - <expression>
+<expression>	-> <expression> * <expression>
+<expression>	-> <expression> / <expression>
+// porovnávací operátory
+<expression>	-> <expression> == <expression> 
+<expression>	-> <expression> != <expression>
+<expression>	-> <expression> > <expression>
+<expression>	-> <expression> < <expression>
+<expression>	-> <expression> >= <expression>
+<expression>	-> <expression> <= <expression>
+// hodnoty
+<expression>	-> <value>
+<value>			-> id
+<value>			-> STRING
+<value>			-> INT
+<value>			-> FLOAT
+
+
+<type>			-> int
+<type>			-> float
+<type>			-> string

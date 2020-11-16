@@ -165,7 +165,7 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 				} else {
 					errorSet(SEM_OTHER_ERROR, "parserPreRun: redefinice funkce", __FILE__, __LINE__, errorHandle);// redefinice funkce
 				}
-			} else if(left_brackets_count == 0 && tempToken.type == TOKEN_EOL && scannerTokenListGetNext(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_INIT){// .. jedná se o globální proměnnou
+			}/* else if(left_brackets_count == 0 && tempToken.type == TOKEN_EOL && scannerTokenListGetNext(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_INIT){// .. jedná se o globální proměnnou
 				scannerTokenListMoveNext(tokenList, errorHandle);
 				scannerTokenListGetNext(tokenList, &currentToken, errorHandle);
 				if(currentToken.type == TOKEN_INTVALUE){
@@ -175,7 +175,7 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 				} else if(currentToken.type == TOKEN_STRINGVALUE){
 					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, true, STRING, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 				}
-			}
+			}*/
 		} else if(currentToken.type == TOKEN_LCURLYBRACKET){
 			left_brackets_count++;
 		} else if(currentToken.type == TOKEN_RCURLYBRACKET){
