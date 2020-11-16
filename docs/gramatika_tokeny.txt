@@ -1,6 +1,3 @@
-----------------------------------------------------------
-potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací proměnná -> nový token TOKEN_LEFTID_
-----------------------------------------------------------
 // program
 <program>       -> TOKEN_KEYWORD_PACKAGE TOKEN_ID TOKEN_EOL <program>
 <program>       -> TOKEN_KEYWORD_FUNC TOKEN_ID TOKEN_LROUNDBRACKET <param_in_first> TOKEN_RROUNDBRACKET <funkce_body> TOKEN_EOL <program>
@@ -45,7 +42,6 @@ potřeba přidat nový token: "_" (podtržítko, viz řádek 48) = zahazovací p
 <param_next>    -> ε
 
 
-<statement>     -> _ TOKEN_ASSIGN <expression> <expr_next> <statement_list>
 <statement>     -> TOKEN_KEYWORD_RETURN <expression> <expr_next> <statement_list>
 <statement>     -> TOKEN_KEYWORD_IF <if> <statement_list>
 <statement>     -> TOKEN_KEYWORD_FOR <for> <statement_list>
