@@ -60,7 +60,7 @@ static char tokenTypes[][STATIC_STRING_LENGHT] = {"TOKEN_EMPTY", "TOKEN_KEYWORD_
 
 
 typedef union {
-	char string[STATIC_STRING_LENGHT];
+	char *string;
 	int64_t integer;
 	double real;
 } Token_attribute;
@@ -75,7 +75,7 @@ typedef struct {
 } Token;
 
 
-//funkce ktera kontroluje zda je string v tokenu keyword, kdyz ano tak zmeni jeho typ a vraci true
+//funkce ktera kontroluje zda je string v tokenu keyword, kdyz ano tak zmeni jeho typ, uvolni pamet stringu a vraci true
 bool keywordCheck (Token *currentToken);
 
 

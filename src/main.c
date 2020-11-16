@@ -14,7 +14,7 @@ int main()
 	FILE_INPUT	= stdin;
 	FILE_OUTPUT	= stdout;
 	FILE_ERROR	= stderr;
-	
+
 	ErrorHandle errorHandle;
 	errorHandleInit(&errorHandle);
 
@@ -25,12 +25,12 @@ int main()
 
 	// získání seznamu s tokeny
 	scannerGetTokenList(&tokenList, &errorHandle);
-	
-	
+
+
 	// Syntaktická analýza + Sémantická analýza
-	parserAnalyze(&tokenList, &errorHandle); 
-	
-	
+	parserAnalyze(&tokenList, &errorHandle);
+
+
 	// generování výsledného kódu
 	generatorGenerateCode(&tokenList, &errorHandle);
 
@@ -52,7 +52,7 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	errorHandleInit(&internalErrorHandle);
 	handleFreeError(scannerTokenListGetActive(tokenList, &currentToken, &internalErrorHandle), __LINE__, __FILE__);
 	if(currentToken.type == TOKEN_INTVALUE){
-		sprintf(currentToken.attribute.string, "%lld", currentToken.attribute.integer);
+		sprintf(currentToken.attribute.string, "%ld", currentToken.attribute.integer);
 	} else if(currentToken.type == TOKEN_FLOATVALUE){
 		sprintf(currentToken.attribute.string, "%.*f", 20, currentToken.attribute.real);
 	}

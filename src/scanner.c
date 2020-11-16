@@ -2,6 +2,10 @@
 
 #include "scanner.h"
 
+//tento buffer neni deklarovany v .h souboru umyslne!! je jen pro mistni ucely
+char strBuffer[1024];
+
+
 // Stavy konecneho automatu scanneru
 typedef enum
 {
@@ -88,6 +92,7 @@ bool keywordCheck (Token *currentToken)
 	}
 	else return false;
 
+	free(currentToken->attribute.string); //pokud to byl keyword tak uvolni pamet
 	return true; // vypada to neintuitivne ale true se vrati kdyz je to keyword
 } // konec funkce keyword check
 
@@ -123,19 +128,19 @@ int scannerGetToken (Token *currentToken)
 				}
 				else if (isalpha(currChar) || currChar == '_')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_ID;
 				}
 				else if (isdigit(currChar) && currChar != '0')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM;
 				}
 				else if (currChar == '0')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_ZERO;
 				}
@@ -228,14 +233,20 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_ID):
 				if (isalnum(currChar) || currChar == '_')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
+					strBuffer[i] = '\0';
 					currentToken->type = TOKEN_ID;
+					if( (currentToken->attribute.string = malloc(1 + strlen(strBuffer))) == NULL )
+					{
+						fprintf(FILE_ERROR, "Internal error: Memory allocation failed\n");
+						return INTERNAL_ERROR;
+					}
+					strcpy(currentToken->attribute.string, strBuffer);
 					keywordCheck(currentToken);
 					return ALL_OK;
 				}
@@ -245,18 +256,18 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM):
 				if (isdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else if (currChar == '.')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_DOT;
 				}
 				else if (currChar == 'e' || currChar == 'E')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_EXPONENT;
 				}
@@ -267,8 +278,8 @@ int scannerGetToken (Token *currentToken)
         		else
         		{
         			ungetc(currChar, FILE_INPUT);
-        			currentToken->attribute.string[i] = '\0';
-        			currentToken->attribute.integer = (atoll(currentToken->attribute.string));
+        			strBuffer[i] = '\0';
+        			currentToken->attribute.integer = atol(strBuffer);
         			currentToken->type = TOKEN_INTVALUE;
         			return ALL_OK;
         		}
@@ -294,7 +305,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_DOT):
 				if (isdigit(currChar))
 				{
-        			currentToken->attribute.string[i] = currChar;
+        			strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_REAL;
 				}
@@ -311,20 +322,20 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_REAL):
 				if (isdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else if (currChar == 'e' || currChar == 'E')
 				{
-					currentToken->attribute.string[i] = 'e';
+					strBuffer[i] = 'e';
 					i++;
 					state = SSTATE_NUM_EXPONENT;
 				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
-					currentToken->attribute.real = (atof(currentToken->attribute.string));
+					strBuffer[i] = '\0';
+					currentToken->attribute.real = atof(strBuffer);
 					currentToken->type = TOKEN_FLOATVALUE;
 					return ALL_OK;
 				}
@@ -334,7 +345,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_ZERO):
 				if (currChar == '.')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_DOT;
 				}
@@ -373,7 +384,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_BIN_PREFIX):
 				if (currChar == '0' || currChar == '1')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_BIN;
 				}
@@ -394,7 +405,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_BIN):
 				if (currChar == '0' || currChar == '1')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else if (currChar == '_')
@@ -404,8 +415,8 @@ int scannerGetToken (Token *currentToken)
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
-					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 2);
+					strBuffer[i] = '\0';
+					currentToken->attribute.integer = strtol(strBuffer, NULL, 2);
 					currentToken->type = TOKEN_INTVALUE;
 					return ALL_OK;
 				}
@@ -431,7 +442,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_OCT_PREFIX):
 				if (currChar >= '0' && currChar <= '7')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_OCT;
 				}
@@ -452,7 +463,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_OCT):
 				if (currChar >= '0' && currChar <= '7')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else if (currChar == '_')
@@ -462,8 +473,8 @@ int scannerGetToken (Token *currentToken)
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
-					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 8);
+					strBuffer[i] = '\0';
+					currentToken->attribute.integer = strtol(strBuffer, NULL, 8);
 					currentToken->type = TOKEN_INTVALUE;
 					return ALL_OK;
 				}
@@ -489,7 +500,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_HEX_PREFIX):
 				if (isxdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_HEX;
 				}
@@ -510,7 +521,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_HEX):
 				if (isxdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else if (currChar == '_')
@@ -520,8 +531,8 @@ int scannerGetToken (Token *currentToken)
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
-					currentToken->attribute.integer = strtoll(currentToken->attribute.string, NULL, 16);
+					strBuffer[i] = '\0';
+					currentToken->attribute.integer = strtol(strBuffer, NULL, 16);
 					currentToken->type = TOKEN_INTVALUE;
 					return ALL_OK;
 				}
@@ -547,13 +558,13 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_EXPONENT):
 				if (currChar == '+' || currChar == '-')
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_EXPONENT_SIGN;
 				}
 				else if (isdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_EXPONENT_AFTER;
 				}
@@ -570,7 +581,7 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_EXPONENT_SIGN):
 				if (isdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_NUM_EXPONENT_AFTER;
 				}
@@ -587,14 +598,14 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_NUM_EXPONENT_AFTER):
 				if (isdigit(currChar))
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
-					currentToken->attribute.string[i] = '\0';
-					currentToken->attribute.real = (atof(currentToken->attribute.string));
+					strBuffer[i] = '\0';
+					currentToken->attribute.real = atof(strBuffer);
 					currentToken->type = TOKEN_FLOATVALUE;
 					return ALL_OK;
 				}
@@ -604,7 +615,13 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_STRING):
 				if (currChar == '\"')
 				{
-					currentToken->attribute.string[i] = '\0';
+					strBuffer[i] = '\0';
+					if( (currentToken->attribute.string = malloc(1 + strlen(strBuffer))) == NULL )
+					{
+						fprintf(FILE_ERROR, "Internal error: Memory allocation failed\n");
+						return INTERNAL_ERROR;
+					}
+					strcpy(currentToken->attribute.string, strBuffer);
 					currentToken->type = TOKEN_STRINGVALUE;
 					return ALL_OK;
 				}
@@ -621,7 +638,7 @@ int scannerGetToken (Token *currentToken)
 				}
 				else if (currChar > 31 && currChar != 34)
 				{
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 				}
 				else
@@ -637,25 +654,25 @@ int scannerGetToken (Token *currentToken)
 			case(SSTATE_STRING_BACKSLASH):
 				if (currChar == '\"')
 				{
-					currentToken->attribute.string[i] = '\"';
+					strBuffer[i] = '\"';
 					i++;
 					state = SSTATE_STRING;
 				}
 				else if (currChar == 'n')
 				{
-					currentToken->attribute.string[i] = '\n';
+					strBuffer[i] = '\n';
 					i++;
 					state = SSTATE_STRING;
 				}
 				else if (currChar == 't')
 				{
-					currentToken->attribute.string[i] = '\t';
+					strBuffer[i] = '\t';
 					i++;
 					state = SSTATE_STRING;
 				}
 				else if (currChar == '\\')
 				{
-					currentToken->attribute.string[i] = '\\';
+					strBuffer[i] = '\\';
 					i++;
 					state = SSTATE_STRING;
 				}
@@ -699,7 +716,7 @@ int scannerGetToken (Token *currentToken)
 					unsigned int x;
 					sscanf(hexString, "%x", &x);
 					currChar = x & 0xFF;
-					currentToken->attribute.string[i] = currChar;
+					strBuffer[i] = currChar;
 					i++;
 					state = SSTATE_STRING;
 				}
@@ -1086,6 +1103,10 @@ int scannerTokenListFree(TokenList *tokenList)
 		while(first != NULL){
 			destroy = first;
 			first = first->rightPtr;
+			if(destroy->token.type == TOKEN_ID || destroy->token.type == TOKEN_STRINGVALUE)
+			{
+				free(destroy->token.attribute.string);
+			}
 			free(destroy);
 		}
 		tokenList->first = NULL;
