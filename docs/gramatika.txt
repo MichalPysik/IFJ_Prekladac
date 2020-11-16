@@ -36,10 +36,8 @@
 <id_next>       -> := <expression> <expr_next>
 <id_next>       -> = <expression> <expr_next>
 
-<param_first>   -> <expression> <param_next>
+<param_first>   -> <expression> <expr_next>
 <param_first>   -> ε
-<param_next>    -> , <expression> <param_next>
-<param_next>    -> ε
 
 
 <statement>     -> return <expression> <expr_next> <statement_list>
@@ -67,7 +65,7 @@
 <expr_next>     -> ε
 
 // priorita výrazů (expressionů)
-<expression>    -> ( <expression> )
+<expression>    -> ( <expression> <expr_next> )
 //aritmeticke operace
 <expression>    -> <expression> + <expression>
 <expression>    -> <expression> - <expression>

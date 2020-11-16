@@ -36,10 +36,8 @@
 <id_next>       -> TOKEN_INIT <expression> <expr_next>
 <id_next>       -> TOKEN_ASSIGN <expression> <expr_next>
 
-<param_first>   -> <expression> <param_next>
+<param_first>   -> <expression> <expr_next>
 <param_first>   -> ε
-<param_next>    -> TOKEN_COMMA <expression> <param_next>
-<param_next>    -> ε
 
 
 <statement>     -> TOKEN_KEYWORD_RETURN <expression> <expr_next> <statement_list>
@@ -67,7 +65,7 @@
 <expr_next>     -> ε
 
 // priorita výrazů (expressionů)
-<expression>    -> TOKEN_LROUNDBRACKET <expression> TOKEN_RROUNDBRACKET
+<expression>    -> TOKEN_LROUNDBRACKET <expression> <expr_next> TOKEN_RROUNDBRACKET
 //aritmeticke operace
 <expression>    -> <expression> TOKEN_ADD <expression>
 <expression>    -> <expression> TOKEN_SUB <expression>
