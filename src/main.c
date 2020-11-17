@@ -34,7 +34,7 @@ int main()
 	// generování výsledného kódu
 	generatorGenerateCode(&tokenList, &errorHandle);
 
-
+	
 	int result = getResult(errorHandle, &tokenList);
 	handleFreeError(scannerTokenListFree(&tokenList), __LINE__, __FILE__);
 	return result;

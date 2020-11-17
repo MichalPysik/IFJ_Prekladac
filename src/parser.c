@@ -218,7 +218,8 @@ int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, E
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
 
 
-
+	printf("<%d>\n", GrammmarRuleList[ROW(1)][ITEM(4)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
+	printf("<%d>\n", LLTable[NONTERM_ROW(2)][TERM_ITEM(1)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
 	// TODO - po další přednášce
 	
 	
