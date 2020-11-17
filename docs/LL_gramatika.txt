@@ -1,0 +1,55 @@
+//expression je v LL gramatice teď tady jako terminál, doufám, že to je správně
+
+1. <program>       -> package id EOL <program>
+2. <program>       -> func id ( <param_in_first> ) <funkce_body> EOL <program>
+3. <program>       -> EOL <program>
+4. <program>       -> EOF
+
+5. <param_in_first>-> id <type> <param_in_next>
+6. <param_in_first>-> ε
+7. <param_in_next> -> , id <type> <param_in_next>
+8. <param_in_next> -> ε
+
+9. <funkce_body>   -> { EOL <statement_list> }
+10. <funkce_body>   -> ( <type> <param_out_next> ) { EOL <statement_list> }
+
+11. <param_out_next>-> , <type> <param_out_next>
+12. <param_out_next>-> ε
+
+13. <statement_list>-> <statement> EOL <statement_list>
+14. <statement_list>-> ε
+
+
+15. <statement>     -> id <state_id_list> <statement_list>
+16. <statement>     -> return <expression> <expr_next> <statement_list>
+17. <statement>     -> if <if> <statement_list>
+18. <statement>     -> for <for> <statement_list>
+19. <statement>     -> ε
+
+20. <state_id_list> -> ( <param_first> )
+21. <state_id_list> -> := <expression>
+22. <state_id_list> -> = <expression>
+23. <state_id_list> -> , id <id_next>
+24. <id_next>       -> , id <id_next>
+25. <id_next>       -> := <expression> <expr_next>
+26. <id_next>       -> = <expression> <expr_next>
+
+27. <param_first>   -> <expression> <expr_next>
+28. <param_first>   -> ε
+
+
+
+
+29. <if>            -> <expression> { EOL <statement_list> } else { EOL <statement_list> }
+30. <for>           -> <for_definition> ; <expression> ; <for_assignment> { EOL <statement_list> }
+31. <for_definition>-> id := <expression>
+32. <for_definition>-> ε
+33. <for_assignment>-> id = <expression>
+34. <for_assignment>-> ε
+
+35. <type>          -> int
+36. <type>          -> float
+37. <type>          -> string
+
+38. <expr_next>     -> , <expression> <expr_next>
+39. <expr_next>     -> ε
