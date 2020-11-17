@@ -42,12 +42,10 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
-	currentToken.attribute.string[0] = '\0';
 	currentToken.pos_line = 0;
 	currentToken.pos_number = 0;
 	Token tempToken;
 	tempToken.type = TOKEN_EMPTY;
-	tempToken.attribute.string[0] = '\0';
 	tempToken.pos_line = 0;
 	tempToken.pos_number = 0;
 	int left_brackets_count = 0;
@@ -55,8 +53,7 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 		scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 		//******************************************************************************
 		if(currentToken.type == TOKEN_ID){ // máme ID...
-			char tokenIdName[STATIC_STRING_LENGHT] = "";
-			strncpy(tokenIdName, tokenList->active->token.attribute.string, STATIC_STRING_LENGHT-1);
+			char *tokenIdName = tokenList->active->token.attribute.string;
 			if(scannerTokenListGetPrev(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_KEYWORD_FUNC){ // ...a jedná se o definici funkce
 				if(symTableSearch(*globalSymTable, tokenIdName, NULL, errorHandle) == 0){ // pokud je již v tabulce, jedná se o redefinici -> error
 					if(scannerTokenListGetNext(tokenList, &tempToken, errorHandle) == ALL_OK && tempToken.type == TOKEN_LROUNDBRACKET){

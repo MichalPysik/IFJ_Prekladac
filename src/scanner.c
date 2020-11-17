@@ -1127,7 +1127,6 @@ int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle)
 	if(tokenList != NULL){
 		Token currentToken;
 		currentToken.type = TOKEN_EMPTY;
-		currentToken.attribute.string[0] = '\0';
 		currentToken.pos_line = 1;
 		currentToken.pos_number = 0;
 

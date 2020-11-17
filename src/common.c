@@ -49,8 +49,8 @@ int errorHandleInit(ErrorHandle *errorHandle)
 {
 	if(errorHandle != NULL){
 		errorHandle->errorID = ALL_OK;
-		strncpy(errorHandle->errorString, "", STATIC_STRING_LENGHT-1);
-		strncpy(errorHandle->errorPosFile, "", STATIC_STRING_LENGHT-1);
+		errorHandle->errorString[0] = '\0';
+		errorHandle->errorPosFile[0] = '\0';
 		errorHandle->errorPosLine = 0;
 		return 0;
 	}
@@ -66,8 +66,8 @@ int errorSet(int errorID, char *errorString, char *errorPosFile, int errorPosLin
 {// soubor a řádek by měl být (pro lepší info) přijímán z místa použití funkce a ne z vnitřku funkce - příklad: scannerTokenListInit(&tokenList, &errorHandle, __FILE__, __LINE__);
 	if(errorHandle != NULL){
 		errorHandle->errorID = errorID;
-		strncpy(errorHandle->errorString, errorString, STATIC_STRING_LENGHT-1);
-		strncpy(errorHandle->errorPosFile, errorPosFile, STATIC_STRING_LENGHT-1);
+		snprintf(errorHandle->errorString, STATIC_STRING_LENGHT, "%s", errorString); // snprintf(NULL, 0, "%d", x); -> returns max length
+		snprintf(errorHandle->errorPosFile, STATIC_STRING_LENGHT, "%s", errorPosFile);
 		errorHandle->errorPosLine = errorPosLine;
 		return 0;
 	}
