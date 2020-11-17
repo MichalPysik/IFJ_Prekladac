@@ -22,6 +22,7 @@ FILE *FILE_ERROR;
 #define STATIC_STRING_LENGHT 255
 
 
+
 #define ROW(x) (x-1)
 #define ITEM(x) (x-1)
 
@@ -165,6 +166,7 @@ static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 	{33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,34}, //<for_definition>
 	{ 0,35,36,37},	//<type>
 };
+
 
 /****************************************************** ERROR HANDLE ******************************************************************************/
 

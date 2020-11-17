@@ -166,11 +166,11 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 				scannerTokenListMoveNext(tokenList, errorHandle);
 				scannerTokenListGetNext(tokenList, &currentToken, errorHandle);
 				if(currentToken.type == TOKEN_INTVALUE){
-					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, true, INT, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, false, INT, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 				} else if(currentToken.type == TOKEN_FLOATVALUE){
-					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, true, FLOAT, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, false, FLOAT, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 				} else if(currentToken.type == TOKEN_STRINGVALUE){
-					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, true, STRING, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+					symTableInsert(globalSymTable, tokenIdName, symTableInitDataInLine(VAR, false, STRING, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
 				}
 			}*/
 		} else if(currentToken.type == TOKEN_LCURLYBRACKET){
@@ -216,13 +216,128 @@ int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, E
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
+	
+	// TODO vytvořit zásobník symbolTable a vložit globálníTable
+	
+	ParserStackPtr syntaxStack;
+	parserStackInit(&syntaxStack);
+	
+	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $
+	
+	Token currentToken;
+	currentToken.type = TOKEN_EMPTY;
+	currentToken.pos_line = 0;
+	currentToken.pos_number = 0;
+	
+	while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != TOKEN_EOF){
+		
+		if(STACK_DATA_TO_INT(parserStackPeek(&syntaxStack)) > TERM_EPSILON){
+			
+			// stackExpand
+			
+		} else {
+			
+			// stackCompare
+			
+		}
+		
+		scannerTokenListMoveNext(tokenList, errorHandle);
+	}
+	
+	parserStackFree(&syntaxStack);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// TESTS
+	//----------------------------------------------------------
 
 	printf("<%d>\n", GrammmarRuleList[ROW(1)][ITEM(4)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
 	printf("<%d>\n", LLTable[NONTERM_ROW(2)][TERM_ITEM(1)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
 	// TODO - po další přednášce
 	
+	ParserStackPtr syntaxStackTemp;
+	parserStackInit(&syntaxStackTemp);
+	
+	
+	parserStackPush(&syntaxStackTemp, STACK_TERM_TO_DATA(GrammmarRuleList[ROW(1)][ITEM(4)]));
+	parserStackPush(&syntaxStackTemp, STACK_TERM_TO_DATA(GrammmarRuleList[ROW(1)][ITEM(4)]));
+	parserStackPush(&syntaxStackTemp, STACK_TERM_TO_DATA(GrammmarRuleList[ROW(1)][ITEM(4)]));
+	
+	
+	printf("<%d>\n", STACK_DATA_TO_INT(parserStackPeek(&syntaxStackTemp)));
+	printf("<%d>\n", STACK_DATA_TO_INT(parserStackPop(&syntaxStackTemp)));
+	
+	
+	parserStackFree(&syntaxStackTemp);
 	
 	
 	return errorHandle->errorID;
+}
+
+
+void parserStackCompare(ParserStackPtr *stack) // syntaxStack, token, error
+{
+	
+}
+
+void parserStackExpand() // stackSyntax, token, stackSymtable, errorHandle
+{
+	// Prediktivní SA - obr. 110.1
+}
+
+
+/****************************************************** SYNTAX STACK ******************************************************************************/
+
+void parserStackInit(ParserStackPtr *stack)
+{
+	(*stack) = NULL;
+}
+
+ParserStackData parserStackPush(ParserStackPtr *stack, ParserStackData data)
+{
+    ParserStackPtr item = malloc(sizeof(struct parserStackNode));
+	if(item != NULL){
+		item->data = data;
+		item->next = (*stack);
+		(*stack) = item;
+		return STACK_INT_TO_DATA(0);
+	}
+	return STACK_INT_TO_DATA(-1);
+}
+
+ParserStackData parserStackPeek(ParserStackPtr *stack)
+{
+	if((*stack) != NULL){
+		return (*stack)->data;
+	}
+	return STACK_INT_TO_DATA(-1);
+}
+
+ParserStackData parserStackPop(ParserStackPtr *stack)
+{
+	ParserStackPtr top = (*stack);
+	if(top != NULL){
+		(*stack) = top->next;
+		ParserStackData data = top->data;
+		free(top);
+		return data;
+	}
+	return STACK_INT_TO_DATA(-1);
+}
+
+void parserStackFree(ParserStackPtr *stack)
+{
+	while(STACK_DATA_TO_INT(parserStackPop(stack)) >= 0){}
+	parserStackInit(stack);
 }
