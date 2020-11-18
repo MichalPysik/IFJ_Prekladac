@@ -3,12 +3,6 @@ Rozdělení práce:
 - 2 lidi na parseru
 - 1 člověk na generátor kódu
 
-!VYPRACOVAT DO POKUSNEHO ODEVZDANI NEBO OZNUK A OTEVRU SI CINSKOU RESTAURACI
-	- MICHAL TRAN
-!ANO A JA DAM TAKY OZNUK A BUDU POMAHAT VARIT
-	- MICHAL PYŠÍK
-
-
 Karel Jirgl (xjirgl00), Michal Tran (xtrant02)
 - Parser
 
