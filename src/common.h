@@ -103,13 +103,9 @@ typedef enum
 	NONTERM_param_in_next,
 	NONTERM_funkce_body,
 	NONTERM_param_out_next,
-	NONTERM_statement_list,
-	NONTERM_statement,
+	NONTERM_statements,
 	NONTERM_state_id_list,
 	NONTERM_id_next,
-	NONTERM_param_first,
-	NONTERM_if,
-	NONTERM_for,
 	NONTERM_for_definition,
 	NONTERM_for_assignment,
 	NONTERM_type,
@@ -189,41 +185,35 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_COMMA, TERM_ID, NONTERM_type, NONTERM_param_in_next},
 	{TERM_EPSILON},
 
-	{TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET}, //9
-	{TERM_LROUNDBRACKET, NONTERM_type, NONTERM_param_out_next, TERM_RROUNDBRACKET, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
+	{TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET}, //9
+	{TERM_LROUNDBRACKET, NONTERM_type, NONTERM_param_out_next, TERM_RROUNDBRACKET, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET},
 
 	{TERM_COMMA, NONTERM_type, NONTERM_param_out_next},
 	{TERM_EPSILON},
 	
-	{NONTERM_statement, TERM_EOL, NONTERM_statement_list},
-	{TERM_EPSILON},
-	
-	{TERM_ID, NONTERM_state_id_list, NONTERM_statement_list},
-	{TERM_KEYWORD_RETURN, NONTERM_expression, NONTERM_expr_next}, //16
-	{TERM_KEYWORD_IF, NONTERM_if, NONTERM_statement_list},
-	{TERM_KEYWORD_FOR, NONTERM_for, NONTERM_state_id_list},
+	//<statements>
+	{TERM_ID, NONTERM_state_id_list, NONTERM_statements},
+	{TERM_KEYWORD_RETURN, NONTERM_expression, NONTERM_expr_next, TERM_EOL, NONTERM_statements}, //14
+	{TERM_KEYWORD_IF, NONTERM_expression, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_KEYWORD_ELSE, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
+	{TERM_KEYWORD_FOR, NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
+	{TERM_EOL, NONTERM_statements},
 	{TERM_EPSILON},
 
-	{TERM_LROUNDBRACKET, NONTERM_param_first, TERM_RROUNDBRACKET},
+	{TERM_LROUNDBRACKET, NONTERM_expression, NONTERM_expr_next, TERM_RROUNDBRACKET},
 	{TERM_INIT, NONTERM_expression},
 	{TERM_ASSIGN, NONTERM_expression},
 	{TERM_COMMA, TERM_ID, NONTERM_id_next},
 
 	{TERM_COMMA, TERM_ID, NONTERM_id_next},
-	{TERM_INIT, NONTERM_expression, NONTERM_expr_next},//25
+	{TERM_INIT, NONTERM_expression, NONTERM_expr_next},//24
 	{TERM_ASSIGN, NONTERM_expression, NONTERM_expr_next},
 
-	{NONTERM_expression, NONTERM_expr_next},
-	{TERM_EPSILON},
-
-	{NONTERM_expression, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_LCURLYBRACKET, TERM_KEYWORD_ELSE, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
-	{NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},//30
 	{TERM_ID, TERM_INIT, NONTERM_expression},
 	{TERM_EPSILON},
 	{TERM_ID, TERM_ASSIGN, NONTERM_expression},
 	{TERM_EPSILON},
 
-	{TERM_KEYWORD_INT},//35
+	{TERM_KEYWORD_INT},//30
 	{TERM_KEYWORD_FLOAT64},
 	{TERM_KEYWORD_STRING},
 
@@ -236,21 +226,19 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 #define LL_TABLE__ROW_MAX_SIZE 20
 
 static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
-	{ 0, 0, 0, 0, 1, 2, 0, 0, 0, 3, 4}, //<program>
-	{ 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}, 	//<param_in_first>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 7}, 	//<param_in_next>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,10, 0, 9}, //<funkce_body>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,12, 0, 0,11}, 	//<param_out_next>
-	{13, 0, 0, 0, 0, 0,13,13,13,13, 0, 0, 0, 0,14}, //<statement_list>
-	{15, 0, 0, 0, 0, 0,17,18,16,19}, //<statement>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,20, 0, 0, 0,23, 0,21,22}, //<state_id_list>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,24, 0,25,26}, //<id_next>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,28, 0, 0, 0, 0, 0, 0}, //<param_first>
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //<if>
-	{30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30},	//<for>
-	{31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32}, //<for_assignment>
-	{33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,34}, //<for_definition>
-	{ 0,35,36,37}	//<type>
+	{ 1, 0, 3, 2, 0, 0, 4}, //<program>
+	{ 0, 5, 0, 0, 0, 6}, 	//<param_in_first>
+	{ 0, 0, 0, 0, 0, 8, 0, 7}, 	//<param_in_next>
+	{ 0, 0, 0, 0,10, 0, 0, 0, 9}, //<funkce_body>
+	{ 0, 0, 0, 0, 0,12, 0, 11}, 	//<param_out_next>
+	{ 0,13,17, 0, 0, 0, 0, 0, 0,18,14,15,16}, //<statements>
+	{ 0, 0, 0, 0,19, 0, 0,22, 0, 0, 0, 0, 0, 0,20,21}, //<state_id_list>
+	{ 0, 0, 0, 0, 0, 0, 0,23, 0, 0, 0, 0, 0, 0,24,25}, //<id_next>
+	{ 0,26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,27}, //<for_definition>
+	{ 0,28, 0, 0, 0, 0, 0, 0,29}, //<for_assignment>
+	{ 0,30,31,32}	//<type>
+	//,{0, 0,34, 0, 0,34, 0, 44} //<expr_next
+	//Pozor, číslování pravidel začíná od 1, ne od 0.
 };
 
 

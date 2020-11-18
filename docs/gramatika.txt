@@ -1,20 +1,18 @@
 // program
-<program>       -> package id EOL <program>
-<program>       -> func id ( <param_in_first> ) <funkce_body> EOL <program>
-<program>       -> EOL <program>
-<program>       -> EOF
+<program>        -> package id EOL <program>
+<program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
+<program>        -> EOL <program>
+<program>        -> EOF
 
-<param_in_first>-> id <type> <param_in_next>
-<param_in_first>-> ε
-<param_in_next> -> , id <type> <param_in_next>
-<param_in_next> -> ε
-
-
+<param_in_first> -> id <type> <param_in_next>
+<param_in_first> -> ε
+<param_in_next>  -> , id <type> <param_in_next>
+<param_in_next>  -> ε
 
 
 // tělo funkce
-<funkce_body>   -> { EOL <statement_list> }
-<funkce_body>   -> ( <type> <param_out_next> ) { EOL <statement_list> }
+<funkce_body>    -> { EOL <statements> }
+<funkce_body>   -> ( <type> <param_out_next> ) { EOL <statements> }
 
 <param_out_next>-> , <type> <param_out_next>
 <param_out_next>-> ε
@@ -22,13 +20,16 @@
 
 
 
-// příkazy
-<statement_list>-> <statement> EOL <statement_list>
-<statement_list>-> ε
+// příkazy, if, for
 
+<statements>    -> id <state_id_list> EOL <statements>
+<statements>    -> return <expression> <expr_next> EOL <statements>
+<statements>    -> if <expression> { EOL <statements> } else { EOL <statements> } EOL <statements>
+<statements>    -> for <for_definition> ; <expression> ; <for_assignment> { EOL <statements> } EOL <statements>
+<statements>    -> EOL <statements>
+<statements>    -> ε
 
-<statement>     -> id <state_id_list> <statement_list>
-<state_id_list> -> ( <param_first> )
+<state_id_list> -> ( <expression> <expr_next> )
 <state_id_list> -> := <expression>
 <state_id_list> -> = <expression>
 <state_id_list> -> , id <id_next>
@@ -36,28 +37,10 @@
 <id_next>       -> := <expression> <expr_next>
 <id_next>       -> = <expression> <expr_next>
 
-<param_first>   -> <expression> <expr_next>
-<param_first>   -> ε
-
-
-<statement>     -> return <expression> <expr_next> <statement_list>
-<statement>     -> if <if> <statement_list>
-<statement>     -> for <for> <statement_list>
-<statement>     -> ε
-
-
-
-
-// if statement
-<if>            -> <expression> { EOL <statement_list> } else { EOL <statement_list> }
-// loop
-<for>           -> <for_definition> ; <expression> ; <for_assignment> { EOL <statement_list> }
 <for_definition>-> id := <expression>
 <for_definition>-> ε
 <for_assignment>-> id = <expression>
 <for_assignment>-> ε
-
-
 
 
 // výrazy
@@ -80,6 +63,7 @@
 <expression>    -> <expression> <= <expression>
 // hodnoty
 <expression>    -> <value>
+
 <value>         -> id
 <value>         -> STRING
 <value>         -> INT
