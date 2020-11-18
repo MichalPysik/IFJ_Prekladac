@@ -21,7 +21,7 @@ int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle)
 	
 	
 	// tree test print
-	Print_tree(globalSymTable);
+//	Print_tree(globalSymTable);
 	
 	
 	handleFreeError(symTableDispose(&globalSymTable), __LINE__, __FILE__);
@@ -217,37 +217,60 @@ int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, E
 	
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
 	
-	// TODO vytvořit zásobník symbolTable a vložit globálníTable
+	
+	
+	ParserStackPtr symtableStack;
+	parserStackInit(&symtableStack);
+	
+	parserStackPush(&symtableStack, STACK_SYMTABLE_TO_DATA(globalSymTable)); // globalSymTable
+	
 	
 	ParserStackPtr syntaxStack;
 	parserStackInit(&syntaxStack);
 	
-	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $
+	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $ -> ukončovací symbol
+	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(NONTERM_program)); // S -> počáteční symbol
+	
 	
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
 	currentToken.pos_line = 0;
 	currentToken.pos_number = 0;
+
+
+
+	// TODO -> ověřit, že se funkce main nachází v tabulce -> odstranění TOKEN_KEYWORD_MAIN ze scanneru
+
+
+	parserStackExpand(&syntaxStack, tokenList, &symtableStack, errorHandle);
+
 	
+/*
 	while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != TOKEN_EOF){
 		
-		if(STACK_DATA_TO_INT(parserStackPeek(&syntaxStack)) > TERM_EPSILON){
+		//if(STACK_DATA_TO_INT(parserStackPeek(&syntaxStack)) > TERM_EPSILON){
 			
 			// stackExpand
 			
-		} else {
+		//} else {
 			
 			// stackCompare
 			
+		//}
+		printf("%s ", tokenTypes[currentToken.type]);
+		if(currentToken.type == TOKEN_EOL){
+			printf("\n");
 		}
 		
 		scannerTokenListMoveNext(tokenList, errorHandle);
-	}
+	}*/
 	
 	parserStackFree(&syntaxStack);
+	
+	parserStackFree(&symtableStack);
 
 
-
+	printf("----------------------------------------------------------\n");
 
 
 
@@ -262,7 +285,7 @@ int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, E
 	// TESTS
 	//----------------------------------------------------------
 
-	printf("<%d>\n", GrammmarRuleList[ROW(1)][ITEM(4)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
+	/*printf("<%d>\n", GrammmarRuleList[ROW(1)][ITEM(4)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
 	printf("<%d>\n", LLTable[NONTERM_ROW(2)][TERM_ITEM(1)]); // přístup do seznamu pravidel [řádek-1][pravidlo-1] -> GRAMMAR_RULE_LIST__ROW_MAX_SIZE
 	// TODO - po další přednášce
 	
@@ -279,7 +302,7 @@ int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, E
 	printf("<%d>\n", STACK_DATA_TO_INT(parserStackPop(&syntaxStackTemp)));
 	
 	
-	parserStackFree(&syntaxStackTemp);
+	parserStackFree(&syntaxStackTemp);*/
 	
 	
 	return errorHandle->errorID;
@@ -291,9 +314,94 @@ void parserStackCompare(ParserStackPtr *stack) // syntaxStack, token, error
 	
 }
 
-void parserStackExpand() // stackSyntax, token, stackSymtable, errorHandle
+int parserStackExpand(ParserStackPtr *syntaxStack, TokenList *tokenList, ParserStackPtr *symtableStack, ErrorHandle *errorHandle) // stackSyntax, token, stackSymtable, errorHandle
 {
+	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
+	
+	int result = 1; // 0 = ok; 1 = fail
+	int inExpr = 0;
+	
+	Token currentToken;
+	currentToken.type = TOKEN_EMPTY;
+	currentToken.pos_line = 0;
+	currentToken.pos_number = 0;
+	
+	scannerTokenListSetActiveFirst(tokenList, errorHandle);
+	
+	while(result != ALL_OK && scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK)
+	{
+		// na stacku je $
+		if(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)) == TERM_EOF){printf("STACK: END\n");
+			if(currentToken.type == TERM_EOF){
+				result = ALL_OK;
+			} else {
+				//result = SYNTAX_ERROR;
+				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - NO EOF", __FILE__, __LINE__, errorHandle);
+			}
+		// na stacku je terminal
+		} else if(IS_TERM(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)))){printf("STACK: TERM\n");
+			if(inExpr == 1){
+				inExpr = 0;
+				
+				printf("IN EXPRESSION:\n");
+				while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != STACK_DATA_TO_TERM(parserStackPeek(syntaxStack))){
+					printf("%s ", tokenTypes[currentToken.type]);
+					scannerTokenListMoveNext(tokenList, errorHandle);
+				}
+				printf("EXPRESSION END\n");
+				
+			} else {
+				printf("token: %s\n", tokenTypes[currentToken.type]);
+				printf("expected term: %s\n", termTypes[STACK_DATA_TO_TERM(parserStackPeek(syntaxStack))]);
+				// na vrcholu zásobníku je stejný terminál jako aktuální token
+				if(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)) == TERM_EPSILON){
+					parserStackPop(syntaxStack);
+				} else if(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
+					parserStackPop(syntaxStack);
+					scannerTokenListMoveNext(tokenList, errorHandle);
+				} else  {
+					errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - NOT SAME TERM", __FILE__, __LINE__, errorHandle);
+				}
+			}
+		// na stacku je neterminal
+		} else if(IS_NONTERM(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)))){printf("STACK: NONTERM\n");
+			if(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)) != NONTERM_expression){
+				printf("nonterm: %s; term: %s (%d)\n", termTypes[STACK_DATA_TO_TERM(parserStackPeek(syntaxStack))], tokenTypes[currentToken.type], currentToken.type);
+				printf("LL table: %d; %d\n", NONTERM_TO_TABLE(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack))), TERM_TO_TABLE(MAP_TOKEN_TO_TERM[currentToken.type]));
+				int LLtableResult = LLTable[NONTERM_TO_TABLE(STACK_DATA_TO_TERM(parserStackPeek(syntaxStack)))][TERM_TO_TABLE(MAP_TOKEN_TO_TERM[currentToken.type])];
+				// pravidlo nalezeno
+				if(LLtableResult != 0){
+					printf("r: %d\n", LLtableResult);
+					
+					LLtableResult--; // indexování v poli
+					
+					parserStackPop(syntaxStack);
+					
+					int i;
+					for(i = GRAMMAR_RULE_LIST__ROW_MAX_SIZE-1; i >= 0; i--) // stack push reversal
+					{
+						Term_type ruleItem = GrammmarRuleList[LLtableResult][i];
+						if(ruleItem != 0){
+							parserStackPush(syntaxStack, STACK_TERM_TO_DATA(ruleItem));
+							printf("term: %s; ", termTypes[STACK_DATA_TO_TERM(parserStackPeek(syntaxStack))]);
+						}
+					}
+					printf("\n");
+				} else {
+					// pravidlo nenalezeno
+					errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - LL TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
+				}
+			} else if(inExpr == 0){
+				parserStackPop(syntaxStack);
+				inExpr = 1;
+			}
+		}
+	}
+	
 	// Prediktivní SA - obr. 110.1
+	
+	return errorHandle->errorID;
 }
 
 

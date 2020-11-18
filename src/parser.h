@@ -16,6 +16,8 @@
 #define STACK_DATA_TO_TERM(x) ((Term_type)x.TERM_NONTERM)
 #define STACK_DATA_TO_SYMTABLE(x) ((SymTableBinTreePtr *)x.SYM_TABLE)
 
+
+
 typedef union {
 	char result;
 	Term_type TERM_NONTERM;
@@ -42,6 +44,8 @@ int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable, ErrorHandle *e
 /****************************************************** PARSER RUN ANALYZE ******************************************************************************/
 
 int parserRunAnalyze(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
+
+int parserStackExpand(ParserStackPtr *syntaxStack, TokenList *tokenList, ParserStackPtr *symtableStack, ErrorHandle *errorHandle);
 
 
 /****************************************************** SYNTAX STACK ******************************************************************************/

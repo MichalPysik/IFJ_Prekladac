@@ -22,16 +22,119 @@ FILE *FILE_ERROR;
 #define STATIC_STRING_LENGHT 255
 
 
-
+// test
 #define ROW(x) (x-1)
 #define ITEM(x) (x-1)
 
 #define NONTERM_ROW(x) (x-1)
 #define TERM_ITEM(x) (x-1)
+//test - end
+
+
+
+
+
+#define IS_TERM(x) (x < NONTERM_program)
+#define IS_NONTERM(x) (x > TERM_EPSILON)
+
+#define TERM_TO_TABLE(x) (x - TERM_ID)
+#define NONTERM_TO_TABLE(x) (x - NONTERM_program)
+
+
 
 typedef enum
 {
-	TERM_TYPE_EMPTY, //prazdny defaultni typ
+	TERM_EMPTY, //prazdny defaultni typ
+
+
+
+	// SEŘAZENO PODLE LL TABULKY
+	TERM_ID, //identifikator
+	TERM_KEYWORD_INT,
+	TERM_KEYWORD_FLOAT64,
+	TERM_KEYWORD_STRING,
+	TERM_KEYWORD_PACKAGE,
+	TERM_KEYWORD_FUNC,
+	TERM_KEYWORD_IF,
+	TERM_KEYWORD_FOR,
+	TERM_KEYWORD_RETURN,
+	TERM_EOL, //end of line - konec radku
+	TERM_EOF, //end of file - konec souboru
+	TERM_LROUNDBRACKET, //leva zavorka (
+	TERM_RROUNDBRACKET, //prava zavorka )
+	TERM_LCURLYBRACKET, //leva spicata zavorka {
+	TERM_RCURLYBRACKET, //prava spicata zavorka }
+	TERM_COMMA, //klasicka oddelovaci carka ,
+	TERM_SEMICOLON, // strednik ;
+	TERM_INIT, //inicializace promenne :=
+	TERM_ASSIGN, //prirazeni =
+	
+
+
+	// SEŘAZENO PODLE PRECEDENČNÍ TABULKY (TODO - neseřazeno)
+	TERM_INTVALUE, //celociselna hodnota
+	TERM_FLOATVALUE, //desetinna hodnota
+	TERM_STRINGVALUE, //hodnota string neboli retezec znaku
+
+	TERM_ADD, //scitani +
+	TERM_SUB, //odcitani -
+	TERM_MUL, //nasobeni *
+	TERM_DIV, //deleni /
+
+	TERM_EQ, //relacni operator ==
+	TERM_NEQ, //relacni operator !=
+	TERM_GT, //relacni operator >
+	TERM_LT, //relacni operator <
+	TERM_GTE, //relacni operator >=
+	TERM_LTE, //relacni operator <=
+	
+	
+	
+	// NEVYUŽITÉ TERMINALY
+	TERM_KEYWORD_ELSE,
+	TERM_KEYWORD_MAIN,
+	TERM_EPSILON,
+	
+	
+	
+	// SEŘAZENO PODLE LL TABULKY
+	NONTERM_program,
+	NONTERM_param_in_first,
+	NONTERM_param_in_next,
+	NONTERM_funkce_body,
+	NONTERM_param_out_next,
+	NONTERM_statement_list,
+	NONTERM_statement,
+	NONTERM_state_id_list,
+	NONTERM_id_next,
+	NONTERM_param_first,
+	NONTERM_if,
+	NONTERM_for,
+	NONTERM_for_definition,
+	NONTERM_for_assignment,
+	NONTERM_type,
+	NONTERM_expr_next,
+	
+	
+	
+	// NEVYUŽITÉ NETERMINALY
+	NONTERM_expression
+	
+} Term_type;
+
+static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_ID", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64", "TERM_KEYWORD_STRING",
+	"TERM_KEYWORD_PACKAGE", "TERM_KEYWORD_FUNC", "TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_KEYWORD_RETURN", "TERM_EOL", "TERM_EOF",
+	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_COMMA", "TERM_SEMICOLON", "TERM_INIT",
+	"TERM_ASSIGN", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ",
+	"TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", "TERM_LTE", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_EPSILON",
+	
+	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next", "NONTERM_statement_list",
+	"NONTERM_statement", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_param_first", "NONTERM_if", "NONTERM_for", "NONTERM_for_definition",
+	"NONTERM_for_assignment", "NONTERM_type", "NONTERM_expr_next", "NONTERM_expression"
+};
+
+static Term_type MAP_TOKEN_TO_TERM[] = {
+	TERM_EMPTY, //prazdny defaultni typ
 
 	TERM_KEYWORD_ELSE,
 	TERM_KEYWORD_FLOAT64,
@@ -42,7 +145,7 @@ typedef enum
 	TERM_KEYWORD_RETURN,
 	TERM_KEYWORD_STRING,
 	TERM_KEYWORD_PACKAGE,
-	TERM_KEYWORD_MAIN,
+	TERM_ID, // KEYWORD MAIN to ID -> kontrola až zvlášť v tabulce symbolů
 
 	TERM_ID, //identifikator
 	TERM_ASSIGN, //prirazeni =
@@ -70,27 +173,7 @@ typedef enum
 	TERM_LT, //relacni operator <
 	TERM_GTE, //relacni operator >=
 	TERM_LTE, //relacni operator <=
-	TERM_EPSILON,
-	
-	NONTERM_program,
-	NONTERM_param_in_first,
-	NONTERM_param_in_next,
-	NONTERM_funkce_body,
-	NONTERM_param_out_next,
-	NONTERM_statement_list,
-	NONTERM_statement,
-	NONTERM_state_id_list,
-	NONTERM_id_next,
-	NONTERM_param_first,
-	NONTERM_if,
-	NONTERM_for,
-	NONTERM_for_definition,
-	NONTERM_for_assignment,
-	NONTERM_type,
-	NONTERM_expr_next,
-	NONTERM_expression,
-	
-} Term_type;
+};
 
 
 #define GRAMMAR_RULE_LIST__ROW_MAX_SIZE 10
@@ -103,13 +186,16 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 
 	{TERM_ID, NONTERM_type, NONTERM_param_in_next},
 	{TERM_EPSILON},
-	{TERM_COMMA, TERM_ID, NONTERM_type, },
+	{TERM_COMMA, TERM_ID, NONTERM_type, NONTERM_param_in_next},
 	{TERM_EPSILON},
 
 	{TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET}, //9
-	{TERM_LROUNDBRACKET, NONTERM_type, NONTERM_param_out_next, TERM_RROUNDBRACKET, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
+	{TERM_LROUNDBRACKET, NONTERM_type, NONTERM_param_out_next, TERM_RROUNDBRACKET, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
 
 	{TERM_COMMA, NONTERM_type, NONTERM_param_out_next},
+	{TERM_EPSILON},
+	
+	{NONTERM_statement, TERM_EOL, NONTERM_statement_list},
 	{TERM_EPSILON},
 	
 	{TERM_ID, NONTERM_state_id_list, NONTERM_statement_list},
@@ -124,20 +210,20 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_COMMA, TERM_ID, NONTERM_id_next},
 
 	{TERM_COMMA, TERM_ID, NONTERM_id_next},
-	{TERM_INIT, NONTERM_expression, NONTERM_expr_next},
+	{TERM_INIT, NONTERM_expression, NONTERM_expr_next},//25
 	{TERM_ASSIGN, NONTERM_expression, NONTERM_expr_next},
 
 	{NONTERM_expression, NONTERM_expr_next},
 	{TERM_EPSILON},
 
 	{NONTERM_expression, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_LCURLYBRACKET, TERM_KEYWORD_ELSE, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
-	{NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},
+	{NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statement_list, TERM_RCURLYBRACKET},//30
 	{TERM_ID, TERM_INIT, NONTERM_expression},
 	{TERM_EPSILON},
 	{TERM_ID, TERM_ASSIGN, NONTERM_expression},
 	{TERM_EPSILON},
 
-	{TERM_KEYWORD_INT},
+	{TERM_KEYWORD_INT},//35
 	{TERM_KEYWORD_FLOAT64},
 	{TERM_KEYWORD_STRING},
 
@@ -164,7 +250,7 @@ static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 	{30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30},	//<for>
 	{31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32}, //<for_assignment>
 	{33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,34}, //<for_definition>
-	{ 0,35,36,37},	//<type>
+	{ 0,35,36,37}	//<type>
 };
 
 

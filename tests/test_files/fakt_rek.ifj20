@@ -1,7 +1,6 @@
 // Program 2: Vypocet faktorialu (rekurzivne)
 package main
 
-al := 123
 
 func factorial(n int) (int) {
 	dec_n := n - 1
