@@ -14,10 +14,12 @@ typedef enum
 	SSTATE_NUM,
 	SSTATE_NUM_UNDERSCORE,
 	SSTATE_NUM_REAL,
+	SSTATE_NUM_REAL_UNDERSCORE,
 	SSTATE_NUM_DOT,
 	SSTATE_NUM_EXPONENT,
 	SSTATE_NUM_EXPONENT_SIGN,
 	SSTATE_NUM_EXPONENT_AFTER,
+	SSTATE_NUM_EXPONENT_UNDERSCORE,
 	SSTATE_NUM_ZERO,
 	SSTATE_NUM_BIN_PREFIX,
 	SSTATE_NUM_OCT_PREFIX,
@@ -331,6 +333,10 @@ int scannerGetToken (Token *currentToken)
 					i++;
 					state = SSTATE_NUM_EXPONENT;
 				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_REAL_UNDERSCORE;
+				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
@@ -338,6 +344,22 @@ int scannerGetToken (Token *currentToken)
 					currentToken->attribute.real = atof(strBuffer);
 					currentToken->type = TOKEN_FLOATVALUE;
 					return ALL_OK;
+				}
+				break;
+
+
+			case(SSTATE_NUM_REAL_UNDERSCORE):
+				if (isdigit(currChar))
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM_REAL;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Lexical analysis error: Single underscore can be placed only between digits\n");
+					return LEX_ERROR;
 				}
 				break;
 
@@ -601,6 +623,10 @@ int scannerGetToken (Token *currentToken)
 					strBuffer[i] = currChar;
 					i++;
 				}
+				else if (currChar == '_')
+				{
+					state = SSTATE_NUM_EXPONENT_UNDERSCORE;
+				}
 				else
 				{
 					ungetc(currChar, FILE_INPUT);
@@ -608,6 +634,22 @@ int scannerGetToken (Token *currentToken)
 					currentToken->attribute.real = atof(strBuffer);
 					currentToken->type = TOKEN_FLOATVALUE;
 					return ALL_OK;
+				}
+				break;
+
+
+			case(SSTATE_NUM_EXPONENT_UNDERSCORE):
+				if (isdigit(currChar))
+				{
+					ungetc(currChar, FILE_INPUT);
+					state = SSTATE_NUM_EXPONENT_AFTER;
+				}
+				else
+				{
+					ungetc(currChar, FILE_INPUT);
+					currentToken->type = TOKEN_EMPTY;
+					fprintf(FILE_ERROR, "Lexical analysis error: Single underscores can be only between digits, or prefix and a digit\n");
+					return LEX_ERROR;
 				}
 				break;
 
@@ -691,7 +733,6 @@ int scannerGetToken (Token *currentToken)
 
 
 			case(SSTATE_STRING_HEX1):
-			{
 				if (isxdigit(currChar))
 				{
 					hexString[0] = tolower(currChar);
@@ -704,12 +745,10 @@ int scannerGetToken (Token *currentToken)
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
 				}
-			}
-			break;
+				break;
 
 
 			case(SSTATE_STRING_HEX2):
-			{
 				if (isxdigit(currChar))
 				{
 					hexString[1] = tolower(currChar);
@@ -727,8 +766,7 @@ int scannerGetToken (Token *currentToken)
 					fprintf(FILE_ERROR, "Lexical analysis error: Invalid hexadecimal sequence inside string\n");
 					return LEX_ERROR;
 				}
-			}
-			break;
+				break;
 
 
 			case(SSTATE_SLASH):
