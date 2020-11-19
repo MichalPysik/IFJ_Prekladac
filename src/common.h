@@ -37,7 +37,7 @@ FILE *FILE_ERROR;
 #define IS_TERM(x) (x < NONTERM_program)
 #define IS_NONTERM(x) (x > TERM_EPSILON)
 
-#define TERM_TO_TABLE(x) (x - TERM_ID)
+#define TERM_TO_TABLE(x) (x - TERM_KEYWORD_PACKAGE)
 #define NONTERM_TO_TABLE(x) (x - NONTERM_program)
 
 
@@ -49,26 +49,26 @@ typedef enum
 
 
 	// SEŘAZENO PODLE LL TABULKY
-	TERM_ID, //identifikator
-	TERM_KEYWORD_INT,
-	TERM_KEYWORD_FLOAT64,
-	TERM_KEYWORD_STRING,
 	TERM_KEYWORD_PACKAGE,
-	TERM_KEYWORD_FUNC,
-	TERM_KEYWORD_IF,
-	TERM_KEYWORD_FOR,
-	TERM_KEYWORD_RETURN,
+	TERM_ID, //identifikator
 	TERM_EOL, //end of line - konec radku
-	TERM_EOF, //end of file - konec souboru
+	TERM_KEYWORD_FUNC,
 	TERM_LROUNDBRACKET, //leva zavorka (
 	TERM_RROUNDBRACKET, //prava zavorka )
+	TERM_EOF, //end of file - konec souboru
+	TERM_COMMA, //klasicka oddelovaci carka ,
 	TERM_LCURLYBRACKET, //leva spicata zavorka {
 	TERM_RCURLYBRACKET, //prava spicata zavorka }
-	TERM_COMMA, //klasicka oddelovaci carka ,
+	TERM_KEYWORD_RETURN,
+	TERM_KEYWORD_IF,
+	TERM_KEYWORD_FOR,
 	TERM_SEMICOLON, // strednik ;
 	TERM_INIT, //inicializace promenne :=
 	TERM_ASSIGN, //prirazeni =
-	
+	TERM_KEYWORD_INT,
+	TERM_KEYWORD_FLOAT64,
+	TERM_KEYWORD_STRING,
+
 
 
 	// SEŘAZENO PODLE PRECEDENČNÍ TABULKY (TODO - neseřazeno)
@@ -118,14 +118,14 @@ typedef enum
 	
 } Term_type;
 
-static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_ID", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64", "TERM_KEYWORD_STRING",
-	"TERM_KEYWORD_PACKAGE", "TERM_KEYWORD_FUNC", "TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_KEYWORD_RETURN", "TERM_EOL", "TERM_EOF",
-	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_COMMA", "TERM_SEMICOLON", "TERM_INIT",
-	"TERM_ASSIGN", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ",
+static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_KEYWORD_PACKAGE", "TERM_ID", "TERM_EOL", "TERM_KEYWORD_FUNC",
+	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_EOF", "TERM_COMMA", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_KEYWORD_RETURN",
+	"TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_SEMICOLON", "TERM_INIT", "TERM_ASSIGN", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64",
+	"TERM_KEYWORD_STRING", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ",
 	"TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", "TERM_LTE", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_EPSILON",
 	
-	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next", "NONTERM_statement_list",
-	"NONTERM_statement", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_param_first", "NONTERM_if", "NONTERM_for", "NONTERM_for_definition",
+	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next",
+	"NONTERM_statements", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_for_definition",
 	"NONTERM_for_assignment", "NONTERM_type", "NONTERM_expr_next", "NONTERM_expression"
 };
 
@@ -172,7 +172,7 @@ static Term_type MAP_TOKEN_TO_TERM[] = {
 };
 
 
-#define GRAMMAR_RULE_LIST__ROW_MAX_SIZE 10
+#define GRAMMAR_RULE_LIST__ROW_MAX_SIZE 13
 
 static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_KEYWORD_PACKAGE, TERM_ID, TERM_EOL, NONTERM_program},
@@ -192,7 +192,7 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_EPSILON},
 	
 	//<statements>
-	{TERM_ID, NONTERM_state_id_list, NONTERM_statements},
+	{TERM_ID, NONTERM_state_id_list, TERM_EOL, NONTERM_statements},
 	{TERM_KEYWORD_RETURN, NONTERM_expression, NONTERM_expr_next, TERM_EOL, NONTERM_statements}, //14
 	{TERM_KEYWORD_IF, NONTERM_expression, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_KEYWORD_ELSE, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
 	{TERM_KEYWORD_FOR, NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
@@ -219,7 +219,6 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 
 	{TERM_COMMA, NONTERM_expression, NONTERM_expr_next},
 	{TERM_EPSILON}
-	//todo: Pravidla pro výrazy (expressions)
 };
 
 
@@ -230,14 +229,14 @@ static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 	{ 0, 5, 0, 0, 0, 6}, 	//<param_in_first>
 	{ 0, 0, 0, 0, 0, 8, 0, 7}, 	//<param_in_next>
 	{ 0, 0, 0, 0,10, 0, 0, 0, 9}, //<funkce_body>
-	{ 0, 0, 0, 0, 0,12, 0, 11}, 	//<param_out_next>
+	{ 0, 0, 0, 0, 0,12, 0,11}, 	//<param_out_next>
 	{ 0,13,17, 0, 0, 0, 0, 0, 0,18,14,15,16}, //<statements>
 	{ 0, 0, 0, 0,19, 0, 0,22, 0, 0, 0, 0, 0, 0,20,21}, //<state_id_list>
 	{ 0, 0, 0, 0, 0, 0, 0,23, 0, 0, 0, 0, 0, 0,24,25}, //<id_next>
 	{ 0,26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,27}, //<for_definition>
 	{ 0,28, 0, 0, 0, 0, 0, 0,29}, //<for_assignment>
-	{ 0,30,31,32}	//<type>
-	//,{0, 0,34, 0, 0,34, 0, 44} //<expr_next
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,30,31,32},	//<type>
+	{ 0, 0,34, 0, 0,34, 0,33} //<expr_next
 	//Pozor, číslování pravidel začíná od 1, ne od 0.
 };
 
