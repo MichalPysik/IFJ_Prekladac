@@ -44,11 +44,15 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 	currentToken.type = TOKEN_EMPTY;
 	currentToken.pos_line = 0;
 	currentToken.pos_number = 0;
+	
 	Token tempToken;
 	tempToken.type = TOKEN_EMPTY;
 	tempToken.pos_line = 0;
 	tempToken.pos_number = 0;
+	
 	int left_brackets_count = 0;
+	int prolog_exists = 0;
+	
 	do{
 		scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 		//******************************************************************************
@@ -136,12 +140,12 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 						}
 						
 						
+						/*// kontrola špičaté závorky a konce řádku -> kontroluje syntaktická analýza
 						scannerTokenListMoveNext(tokenList, errorHandle);
 						scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 						scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
 						
-						// kontrola špičaté závorky a konce řádku -> kontroluje syntaktická analýza
-						/*if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
+						if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
 							errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 						}
 						left_brackets_count++;*/
@@ -177,10 +181,19 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 			left_brackets_count++;
 		} else if(currentToken.type == TOKEN_RCURLYBRACKET){
 			left_brackets_count--;
+		} else if(currentToken.type == TOKEN_KEYWORD_PACKAGE){
+			prolog_exists++;
 		}
 		//******************************************************************************
 		if(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK){scannerTokenListMoveNext(tokenList, errorHandle);}
 	} while(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK);
+	
+	
+	// kontrola zda symtable obsahuje funkci main s 0 parametry a pouze jeden prolog
+	SymTableData data;
+	if(!(symTableSearch(*globalSymTable, "main", &data, errorHandle) == 1 && symTableParamListGetSize(&data.functionParamDataTypes, errorHandle) == 0 && symTableParamListGetSize(&data.functionReturnDataTypes, errorHandle) == 0 && prolog_exists != 0)){
+		errorSet(SEM_OTHER_ERROR, "parserPreRun: prolog or main function doesn't exist!", __FILE__, __LINE__, errorHandle);// redefinice funkce
+	}
 
 	return errorHandle->errorID;
 }
@@ -225,18 +238,10 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	currentToken.pos_number = 0;
 	
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
-	
-	
-	// TODO - kontrola zda symtable obsahuje funkci main s 0 parametry
-	
-	
-	// TODO - vyřešit symbolické tabulky (lokální rámce)
+
 	// symtable stack
 	ParserStackPtr symtableStack;
-	parserStackInit(&symtableStack);
-	
-	//parserStackPush(&symtableStack, STACK_SYMTABLE_TO_DATA(globalSymTable)); // globalSymTable - nebude v zásobníku
-	
+	parserStackInit(&symtableStack);	
 	
 	// syntax stack
 	ParserStackPtr syntaxStack;
@@ -268,7 +273,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 		} else if(IS_TERM(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)))){
 
 			// epsilon jen přeskočíme
-			if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_EPSILON){
+			if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_PSEUDO_EPSILON){
 				parserStackPop(&syntaxStack);
 			// jsme v EXPRESSION
 			} else if(inExpr == 1){
@@ -391,16 +396,19 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	
 	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
 		printf(" %s;", tokenTypes[currentToken.type]);
-		scannerTokenListMoveNext(expressionList, errorHandle);
+		
 		
 		// TODO - precedencni analyza
 		
-		// TODO - semanticka nalyza operatoru
+		// TODO - pravy rozbor
 		
+		// TODO - semanticka nalyza vyrazu
+		
+		
+		scannerTokenListMoveNext(expressionList, errorHandle);
 	}
-	errorHandleInit(errorHandle); // reset GetActive Error
-	printf("\n\n");
-	
+	// reset GetActive Error
+	errorHandleInit(errorHandle); 
 	// clear expressionList
 	handleFreeError(scannerTokenListFree(expressionList), __LINE__, __FILE__);
 	scannerTokenListInit(expressionList, errorHandle);
@@ -408,7 +416,7 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	parserStackFree(&statementStack);
 	
 	
-	
+	printf("\n\n");
 	// TODO
 	// vypsaní expr tokenů
 	/*Token currentToken;
@@ -437,6 +445,8 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
 	
+	//TokenList newTokenList = (*tokenList);
+	
 	// TODO
 	
 	return errorHandle->errorID;
@@ -445,7 +455,15 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 int parserLeftAnalysis(int ruleNumber)
 {
 	// TODO
-	//printf("r: %d\n", ruleNumber);
+	//printf("Lr: %d\n", ruleNumber);
+	
+	return 0;
+}
+
+int parserRightAnalysis(int ruleNumber)
+{
+	// TODO
+	//printf("Rr: %d\n", ruleNumber);
 	
 	return 0;
 }

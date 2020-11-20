@@ -35,7 +35,7 @@ FILE *FILE_ERROR;
 
 
 #define IS_TERM(x) (x < NONTERM_program)
-#define IS_NONTERM(x) (x > TERM_EPSILON)
+#define IS_NONTERM(x) (x > TERM_PSEUDO_EPSILON)
 
 #define TERM_TO_TABLE(x) (x - TERM_KEYWORD_PACKAGE)
 #define NONTERM_TO_TABLE(x) (x - NONTERM_program)
@@ -94,7 +94,8 @@ typedef enum
 	TERM_KEYWORD_ELSE,
 	TERM_KEYWORD_MAIN,
 	TERM_PSEUDO_DOLLAR,
-	TERM_EPSILON,
+	TERM_PSEUDO_HANDLE,
+	TERM_PSEUDO_EPSILON,
 	
 	
 	
@@ -123,7 +124,7 @@ static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_KEYWORD_PAC
 	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_EOF", "TERM_COMMA", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_KEYWORD_RETURN",
 	"TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_SEMICOLON", "TERM_INIT", "TERM_ASSIGN", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64",
 	"TERM_KEYWORD_STRING", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ",
-	"TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", "TERM_LTE", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_EPSILON",
+	"TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", "TERM_LTE", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_PSEUDO_EPSILON",
 	
 	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next",
 	"NONTERM_statements", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_for_definition",
@@ -182,15 +183,15 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_EOF},
 
 	{TERM_ID, NONTERM_type, NONTERM_param_in_next},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 	{TERM_COMMA, TERM_ID, NONTERM_type, NONTERM_param_in_next},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 
 	{TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET}, //9
 	{TERM_LROUNDBRACKET, NONTERM_type, NONTERM_param_out_next, TERM_RROUNDBRACKET, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET},
 
 	{TERM_COMMA, NONTERM_type, NONTERM_param_out_next},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 	
 	//<statements>
 	{TERM_ID, NONTERM_state_id_list, TERM_EOL, NONTERM_statements},
@@ -198,7 +199,7 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_KEYWORD_IF, NONTERM_expression, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_KEYWORD_ELSE, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
 	{TERM_KEYWORD_FOR, NONTERM_for_definition, TERM_SEMICOLON, NONTERM_expression, TERM_SEMICOLON, NONTERM_for_assignment, TERM_LCURLYBRACKET, TERM_EOL, NONTERM_statements, TERM_RCURLYBRACKET, TERM_EOL, NONTERM_statements},
 	{TERM_EOL, NONTERM_statements},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 
 	{TERM_LROUNDBRACKET, NONTERM_expression, NONTERM_expr_next, TERM_RROUNDBRACKET},
 	{TERM_INIT, NONTERM_expression},
@@ -210,16 +211,22 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_ASSIGN, NONTERM_expression, NONTERM_expr_next},
 
 	{TERM_ID, TERM_INIT, NONTERM_expression},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 	{TERM_ID, TERM_ASSIGN, NONTERM_expression},
-	{TERM_EPSILON},
+	{TERM_PSEUDO_EPSILON},
 
 	{TERM_KEYWORD_INT},//30
 	{TERM_KEYWORD_FLOAT64},
 	{TERM_KEYWORD_STRING},
 
 	{TERM_COMMA, NONTERM_expression, NONTERM_expr_next},
-	{TERM_EPSILON}
+	{TERM_PSEUDO_EPSILON}
+	
+	
+	
+	// <expression> pravidla
+	
+	// TODO
 };
 
 
@@ -241,6 +248,14 @@ static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 	//Pozor, číslování pravidel začíná od 1, ne od 0.
 };
 
+
+#define PRECEDENCE_TABLE__ROW_MAX_SIZE 14
+
+static char PrecedenceTable[][PRECEDENCE_TABLE__ROW_MAX_SIZE] = {
+	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>',}, //+
+	
+	// TODO
+};
 
 /****************************************************** ERROR HANDLE ******************************************************************************/
 

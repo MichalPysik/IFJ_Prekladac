@@ -51,6 +51,8 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 
 int parserLeftAnalysis(int ruleNumber);
 
+int parserRightAnalysis(int ruleNumber);
+
 
 /****************************************************** SYNTAX STACK ******************************************************************************/
 

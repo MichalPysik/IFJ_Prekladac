@@ -255,7 +255,7 @@ int symTableParamListGetSize(SymTableParamList *paramList, ErrorHandle *errorHan
 	
 	errorSet(INTERNAL_ERROR, "symTableParamListGetSize: SymTableParamList NULL", __FILE__, __LINE__, errorHandle);
 	
-	return -1;
+	return -2;
 }
 
 int symTableParamListFree(SymTableParamList *paramList)
