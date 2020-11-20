@@ -140,11 +140,11 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 						scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 						scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
 						
-						// kontrola špičaté závorky a konce řádku
-						if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
+						// kontrola špičaté závorky a konce řádku -> kontroluje syntaktická analýza
+						/*if(!(errorHandle->errorID == ALL_OK && currentToken.type == TOKEN_LCURLYBRACKET && tempToken.type == TOKEN_EOL)){
 							errorSet(SYNTAX_ERROR, "parserPreRun: spatny token v hlavicce funkce", __FILE__, __LINE__, errorHandle);
 						}
-						left_brackets_count++;
+						left_brackets_count++;*/
 						
 						
 						// přidání funkce do tabulky symbolů (musí být přidáno i při chybě pro uvolnění paměti)
@@ -227,6 +227,9 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	scannerTokenListSetActiveFirst(tokenList, errorHandle);
 	
 	
+	// TODO - kontrola zda symtable obsahuje funkci main s 0 parametry
+	
+	
 	// TODO - vyřešit symbolické tabulky (lokální rámce)
 	// symtable stack
 	ParserStackPtr symtableStack;
@@ -239,7 +242,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	ParserStackPtr syntaxStack;
 	parserStackInit(&syntaxStack);
 	
-	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $ -> ukončovací symbol
+	//parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $ -> ukončovací symbol -> už je součástí neterminálu <program>
 	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(NONTERM_program)); // S -> počáteční symbol
 	
 	
@@ -366,6 +369,45 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
+	
+	ParserStackPtr statementStack;
+	parserStackInit(&statementStack);
+	
+	parserStackPush(&statementStack, STACK_TERM_TO_DATA(TERM_PSEUDO_DOLLAR)); // koncový symbol a počáteční symbol
+
+	
+	Token currentToken;
+	currentToken.type = TOKEN_EMPTY;
+	currentToken.pos_line = 0;
+	currentToken.pos_number = 0;
+	
+	scannerTokenListSetActiveFirst(expressionList, errorHandle);
+	
+	// počáteční symbol je dollar
+	//scannerTokenListMoveNext(expressionList, errorHandle);
+	//scannerTokenListGetActive(expressionList, &currentToken, errorHandle);
+	//parserStackPush(&statementStack, STACK_TERM_TO_DATA(MAP_TOKEN_TO_TERM[currentToken.type])); // počáteční symbol
+	
+	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
+		printf(" %s;", tokenTypes[currentToken.type]);
+		scannerTokenListMoveNext(expressionList, errorHandle);
+		
+		// TODO - precedencni analyza
+		
+		// TODO - semanticka nalyza operatoru
+		
+	}
+	errorHandleInit(errorHandle); // reset GetActive Error
+	printf("\n\n");
+	
+	// clear expressionList
+	handleFreeError(scannerTokenListFree(expressionList), __LINE__, __FILE__);
+	scannerTokenListInit(expressionList, errorHandle);
+	
+	parserStackFree(&statementStack);
+	
+	
 	
 	// TODO
 	// vypsaní expr tokenů

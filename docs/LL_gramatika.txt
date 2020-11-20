@@ -1,5 +1,3 @@
-//expression je v LL gramatice teď tady jako terminál, doufám, že to je správně
-
 1. <program>        -> package id EOL <program>
 2. <program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
 3. <program>        -> EOL <program>

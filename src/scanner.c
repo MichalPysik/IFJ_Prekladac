@@ -88,10 +88,10 @@ bool keywordCheck (Token *currentToken)
 	{
 		currentToken->type = TOKEN_KEYWORD_PACKAGE;
 	}
-	else if (!strcmp(currentToken->attribute.string, "main"))
+	/*else if (!strcmp(currentToken->attribute.string, "main")) // není potřeba, jedná se o ID
 	{
 		currentToken->type = TOKEN_KEYWORD_MAIN;
-	}
+	}*/
 	else return false;
 
 	free(currentToken->attribute.string); //pokud to byl keyword tak uvolni pamet
