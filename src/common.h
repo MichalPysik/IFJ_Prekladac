@@ -34,11 +34,14 @@ FILE *FILE_ERROR;
 
 
 
+/****************************************************** SYNTAX ANALYSIS ******************************************************************************/
+
 #define IS_TERM(x) (x < NONTERM_program)
 #define IS_NONTERM(x) (x > TERM_PSEUDO_EPSILON)
 
 #define TERM_TO_TABLE(x) (x - TERM_KEYWORD_PACKAGE)
 #define NONTERM_TO_TABLE(x) (x - NONTERM_program)
+#define TERM_TO_PREC_TABLE(x) (x - TERM_ADD)
 
 
 
@@ -71,11 +74,7 @@ typedef enum
 
 
 
-	// SEŘAZENO PODLE PRECEDENČNÍ TABULKY (TODO - neseřazeno)
-	TERM_INTVALUE, //celociselna hodnota
-	TERM_FLOATVALUE, //desetinna hodnota
-	TERM_STRINGVALUE, //hodnota string neboli retezec znaku
-
+	// SEŘAZENO PODLE PRECEDENČNÍ TABULKY
 	TERM_ADD, //scitani +
 	TERM_SUB, //odcitani -
 	TERM_MUL, //nasobeni *
@@ -88,12 +87,18 @@ typedef enum
 	TERM_GTE, //relacni operator >=
 	TERM_LTE, //relacni operator <=
 	
+	TERM_PREC_LROUNDBRACKET, //leva zavorka (
+	TERM_PREC_RROUNDBRACKET, //prava zavorka )
 	
+	TERM_INTVALUE, //celociselna hodnota
+	TERM_FLOATVALUE, //desetinna hodnota
+	TERM_STRINGVALUE, //hodnota string neboli retezec znaku
+	TERM_IDVALUE, // ID pro precedenční tabulku
+	TERM_PSEUDO_DOLLAR,
 	
 	// NEVYUŽITÉ TERMINALY
 	TERM_KEYWORD_ELSE,
 	TERM_KEYWORD_MAIN,
-	TERM_PSEUDO_DOLLAR,
 	TERM_PSEUDO_HANDLE,
 	TERM_PSEUDO_EPSILON,
 	
@@ -123,8 +128,9 @@ typedef enum
 static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_KEYWORD_PACKAGE", "TERM_ID", "TERM_EOL", "TERM_KEYWORD_FUNC",
 	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_EOF", "TERM_COMMA", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_KEYWORD_RETURN",
 	"TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_SEMICOLON", "TERM_INIT", "TERM_ASSIGN", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64",
-	"TERM_KEYWORD_STRING", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ",
-	"TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", "TERM_LTE", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_PSEUDO_EPSILON",
+	"TERM_KEYWORD_STRING", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ", "TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", 
+	"TERM_LTE", "TERM_PREC_LROUNDBRACKET", "TERM_PREC_RROUNDBRACKET", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_IDVALUE", "TERM_PSEUDO_DOLLAR", "TERM_KEYWORD_ELSE",
+	"TERM_KEYWORD_MAIN", "TERM_PSEUDO_HANDLE", "TERM_PSEUDO_EPSILON",
 	
 	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next",
 	"NONTERM_statements", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_for_definition",
@@ -170,7 +176,49 @@ static Term_type MAP_TOKEN_TO_TERM[] = {
 	TERM_GT, //relacni operator >
 	TERM_LT, //relacni operator <
 	TERM_GTE, //relacni operator >=
-	TERM_LTE, //relacni operator <=
+	TERM_LTE //relacni operator <=
+};
+
+static Term_type MAP_TOKEN_TO_PREC_TERM[] = {
+	TERM_EMPTY, //prazdny defaultni typ
+
+	TERM_KEYWORD_ELSE,
+	TERM_KEYWORD_FLOAT64,
+	TERM_KEYWORD_FOR,
+	TERM_KEYWORD_FUNC,
+	TERM_KEYWORD_IF,
+	TERM_KEYWORD_INT,
+	TERM_KEYWORD_RETURN,
+	TERM_KEYWORD_STRING,
+	TERM_KEYWORD_PACKAGE,
+	TERM_IDVALUE, // KEYWORD MAIN to ID -> kontrola až zvlášť v tabulce symbolů
+
+	TERM_IDVALUE, //identifikator
+	TERM_ASSIGN, //prirazeni =
+	TERM_INIT, //inicializace promenne :=
+	TERM_COMMA, //klasicka oddelovaci carka ,
+	TERM_SEMICOLON, // strednik ;
+	TERM_PREC_LROUNDBRACKET, //leva zavorka (
+	TERM_PREC_RROUNDBRACKET, //prava zavorka )
+	TERM_LCURLYBRACKET, //leva spicata zavorka {
+	TERM_RCURLYBRACKET, //prava spicata zavorka }
+	TERM_EOL, //end of line - konec radku
+	TERM_EOF, //end of file - konec souboru
+	TERM_INTVALUE, //celociselna hodnota
+	TERM_FLOATVALUE, //desetinna hodnota
+	TERM_STRINGVALUE, //hodnota string neboli retezec znaku
+
+	TERM_ADD, //scitani +
+	TERM_SUB, //odcitani -
+	TERM_MUL, //nasobeni *
+	TERM_DIV, //deleni /
+
+	TERM_EQ, //relacni operator ==
+	TERM_NEQ, //relacni operator !=
+	TERM_GT, //relacni operator >
+	TERM_LT, //relacni operator <
+	TERM_GTE, //relacni operator >=
+	TERM_LTE //relacni operator <=
 };
 
 
@@ -220,19 +268,35 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_KEYWORD_STRING},
 
 	{TERM_COMMA, NONTERM_expression, NONTERM_expr_next},
-	{TERM_PSEUDO_EPSILON}
+	{TERM_PSEUDO_EPSILON},
 	
 	
 	
 	// <expression> pravidla
+	{TERM_LROUNDBRACKET, NONTERM_expression, TERM_RROUNDBRACKET},
 	
-	// TODO
+	{NONTERM_expression, TERM_ADD, NONTERM_expression},
+	{NONTERM_expression, TERM_SUB, NONTERM_expression},
+	{NONTERM_expression, TERM_MUL, NONTERM_expression},
+	{NONTERM_expression, TERM_DIV, NONTERM_expression},
+	
+	{NONTERM_expression, TERM_EQ, NONTERM_expression},
+	{NONTERM_expression, TERM_NEQ, NONTERM_expression},
+	{NONTERM_expression, TERM_GT, NONTERM_expression},
+	{NONTERM_expression, TERM_LT, NONTERM_expression},
+	{NONTERM_expression, TERM_GTE, NONTERM_expression},
+	{NONTERM_expression, TERM_LTE, NONTERM_expression},
+	
+	{TERM_INTVALUE},
+	{TERM_FLOATVALUE},
+	{TERM_STRINGVALUE},
+	{TERM_ID}
 };
 
 
 #define LL_TABLE__ROW_MAX_SIZE 20
 
-static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
+static char LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 	{ 1, 0, 3, 2, 0, 0, 4}, //<program>
 	{ 0, 5, 0, 0, 0, 6}, 	//<param_in_first>
 	{ 0, 0, 0, 0, 0, 8, 0, 7}, 	//<param_in_next>
@@ -249,25 +313,28 @@ static int LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 };
 
 
-#define PRECEDENCE_TABLE__ROW_MAX_SIZE 14
+#define PRECEDENCE_TABLE__ROW_MAX_SIZE 17
 
 static char PrecedenceTable[][PRECEDENCE_TABLE__ROW_MAX_SIZE] = {
-	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>',}, // +
-	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>',}, // -
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>',}, // *
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>',}, //'/'
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, //==
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, //!=
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, // >
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, // <
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, //>=
-	{ '<', '<', '<', '<', ' ', ' ', ' ', ' ', ' ', ' ', '<', '>', '<', '>',}, //<=
-	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '=', '<', ' ',}, //'('
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', ' ', '>', ' ', '>',}, //')'
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', ' ', '>', ' ', '>',}, //value
-	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', ' ', '<', ' ',}, //'$'
-
+	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // +
+	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // -
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // *
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, //'/'
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //==
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //!=
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, // >
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, // <
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //>=
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //<=
+	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '=', '<', '<', '<', '<',  0 }, //'('
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //')'
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //int
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //float
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //string
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //id
+	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  0 , '<', '<', '<', '<',  0 }  //'$'
 };
+
 
 /****************************************************** ERROR HANDLE ******************************************************************************/
 

@@ -54,6 +54,17 @@ int parserLeftAnalysis(int ruleNumber);
 int parserRightAnalysis(int ruleNumber);
 
 
+/****************************************************** PRECEDENT SYNTAX STACK ******************************************************************************/
+
+ParserStackData parserStackPrecedentTop(ParserStackPtr *stack);
+
+int parserStackPrecedentTopAddHandle(ParserStackPtr *stack);
+
+int parserStackPrecedentTopHasHandle(ParserStackPtr *stack);
+
+int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack);
+
+
 /****************************************************** SYNTAX STACK ******************************************************************************/
 
 void parserStackInit(ParserStackPtr *stack);

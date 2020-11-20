@@ -383,9 +383,11 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 
 	
 	Token currentToken;
-	currentToken.type = TOKEN_EMPTY;
+	currentToken.type = TOKEN_EOF;
 	currentToken.pos_line = 0;
 	currentToken.pos_number = 0;
+	
+	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token)
 	
 	scannerTokenListSetActiveFirst(expressionList, errorHandle);
 	
@@ -395,17 +397,48 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	//parserStackPush(&statementStack, STACK_TERM_TO_DATA(MAP_TOKEN_TO_TERM[currentToken.type])); // počáteční symbol
 	
 	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
-		printf(" %s;", tokenTypes[currentToken.type]);
-		
-		
-		// TODO - precedencni analyza
-		
-		// TODO - pravy rozbor
-		
-		// TODO - semanticka nalyza vyrazu
-		
-		
-		scannerTokenListMoveNext(expressionList, errorHandle);
+		// && 
+		if(currentToken.type == TOKEN_EOF){
+			break;
+			//if(STACK_DATA_TO_TERM(parserStackPeek(&statementStack)) == TERM_PSEUDO_DOLLAR){
+				
+			//} else {
+				// TODO chyba
+			//}
+			
+		} else {
+			Term_type stackTopTerm = STACK_DATA_TO_TERM(parserStackPrecedentTop(&statementStack));
+			Term_type tokenTerm = MAP_TOKEN_TO_PREC_TERM[currentToken.type];
+			char operation = PrecedenceTable[TERM_TO_PREC_TABLE(stackTopTerm)][TERM_TO_PREC_TABLE(tokenTerm)];
+			if(operation == '='){
+				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+				//scannerTokenListMoveNext(expressionList, errorHandle);
+			} else if(operation == '<'){
+				parserStackPrecedentTopAddHandle(&statementStack);
+				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+				//scannerTokenListMoveNext(expressionList, errorHandle);
+			} else if(operation == '>'){
+				
+			} else {
+				// TODO chyba
+			}
+			
+			
+			
+			
+			printf(" %s; %s; -- <%d> <%d>    ", termTypes[tokenTerm], termTypes[stackTopTerm], TERM_TO_PREC_TABLE(tokenTerm), TERM_TO_PREC_TABLE(stackTopTerm));
+			printf(" [%c];   ",operation);
+			
+			
+			// TODO - precedencni analyza
+			
+			// TODO - pravy rozbor
+			
+			// TODO - semanticka nalyza vyrazu
+			
+			
+			scannerTokenListMoveNext(expressionList, errorHandle);
+		}
 	}
 	// reset GetActive Error
 	errorHandleInit(errorHandle); 
@@ -466,6 +499,53 @@ int parserRightAnalysis(int ruleNumber)
 	//printf("Rr: %d\n", ruleNumber);
 	
 	return 0;
+}
+
+
+/****************************************************** PRECEDENT SYNTAX STACK ******************************************************************************/
+
+ParserStackData parserStackPrecedentTop(ParserStackPtr *stack)
+{
+	ParserStackPtr top = (*stack);
+	while(top != NULL && (!IS_TERM(STACK_DATA_TO_TERM(top->data)) || (STACK_DATA_TO_TERM(top->data)) == TERM_PSEUDO_HANDLE)){
+		top = top->next;
+	}
+	if(top != NULL){
+		return top->data;
+	}
+	return STACK_INT_TO_DATA(-1);
+}
+
+int parserStackPrecedentTopAddHandle(ParserStackPtr *stack)
+{
+	ParserStackPtr prevTop = (*stack);
+	ParserStackPtr top = (*stack);
+	while(top != NULL && !IS_TERM(STACK_DATA_TO_TERM(top->data))){
+		prevTop = top;
+		top = top->next;
+	}
+	if(top == prevTop){
+		return STACK_DATA_TO_INT(parserStackPush(stack, STACK_TERM_TO_DATA(TERM_PSEUDO_HANDLE)));
+	} else {
+		ParserStackPtr item = malloc(sizeof(struct parserStackNode));
+		if(item != NULL){
+			item->data = STACK_TERM_TO_DATA(TERM_PSEUDO_HANDLE);
+			item->next = top;
+			prevTop->next = item;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int parserStackPrecedentTopHasHandle(ParserStackPtr *stack)
+{
+	return (STACK_DATA_TO_INT(parserStackPrecedentTop(stack)) != -1);
+}
+
+int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
+{
+	// return rule;
 }
 
 

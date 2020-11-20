@@ -16,9 +16,8 @@
 45. <expression>    -> <expression> <= <expression>
 
 // hodnoty
-46. <expression>    -> <value>
-
-47. <value>         -> id
-48. <value>         -> STRING
-49. <value>         -> INT
-50. <value>         -> FLOAT
+//<expression>    -> <value>
+46. <expression>    -> INT
+47. <expression>    -> FLOAT
+48. <expression>    -> STRING
+49. <expression>    -> id
