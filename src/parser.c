@@ -384,7 +384,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 		}
 	}
 	
-	handleFreeError(scannerTokenListFree(&expressionList), __LINE__, __FILE__);
+	handleFreeError(parserTokenListFree(&expressionList), __LINE__, __FILE__);
 	
 	parserStackFree(&syntaxStack);
 	
@@ -448,7 +448,7 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 			}
 	}
 	// clear expressionList
-	handleFreeError(scannerTokenListFree(expressionList), __LINE__, __FILE__);
+	handleFreeError(parserTokenListFree(expressionList), __LINE__, __FILE__);
 	scannerTokenListInit(expressionList, errorHandle);
 	
 	parserStackFree(&statementStack);
@@ -485,6 +485,25 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 	
 	return errorHandle->errorID;
 }
+
+int parserTokenListFree(TokenList *tokenList)
+{
+	if(tokenList != NULL){
+		TokenListElementPtr first = tokenList->first;
+		TokenListElementPtr destroy;
+		while(first != NULL){
+			destroy = first;
+			first = first->rightPtr;
+			free(destroy);
+		}
+		tokenList->first = NULL;
+		tokenList->active = NULL;
+		tokenList->last = NULL;
+		return ALL_OK;
+	}
+	return INTERNAL_ERROR;
+}
+
 
 int parserLeftAnalysis(int ruleNumber)
 {
