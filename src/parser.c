@@ -22,6 +22,14 @@ int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle)
 	
 	// tree test print
 //	Print_tree(globalSymTable);
+
+	printf("\n\n-----------------------------------------------------------------------------------\n\n");
+	if(!errorExists(*errorHandle)) {
+		printf("\nSYNTAX OK!\n\n");
+	} else {
+		printf("\nSYNTAX ERROR!\n\n");
+	}
+	printf("\n\n-----------------------------------------------------------------------------------\n\n");
 	
 	
 	handleFreeError(symTableDispose(&globalSymTable), __LINE__, __FILE__);
@@ -276,20 +284,20 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 			// epsilon jen přeskočíme
 			if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_PSEUDO_EPSILON){
 				parserStackPop(&syntaxStack);
+			
 			// jsme v EXPRESSION
 			} else if(inExpr == 1){
-				printf("EXPR: (stack: %s) (token: %s) (prec: %d)\n",termTypes[STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))], tokenTypes[currentToken.type],TERM_TO_PREC_TABLE(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))));
+				
 				Term_type term = STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack));
+				// pokud jsme v EXPRESSION uvnitř závorky, ukládáme i: kulaté závorky, čárku a ID (proměnné)
 				if(BracketInExpr == 1 && (term >= TERM_ADD || term == TERM_LROUNDBRACKET || term == TERM_RROUNDBRACKET || term == TERM_COMMA || term == TERM_ID)){
 					// EXPRESSION - ADD TOKEN
 					parserStackPop(&syntaxStack); // stack pop neterminal
-					printf("SAVE\n");
+
 					scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 					scannerTokenListMoveNext(tokenList, errorHandle);
+				
 				} else {
-					
-					printf("HERE\n");
-					
 					// pokud tokeny EXPRESSION jsou již načteny, protože na stacku nebyl TERM, který by ukončil EXPRESSION
 					if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
 					
@@ -308,7 +316,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 					
 					// EXPRESSION - END
 				}
-				printf("end\n");
+				
 			// porovnání zásobníku - na vrcholu zásobníku je stejný terminál jako aktuální token
 			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
 				parserStackPop(&syntaxStack);
@@ -352,7 +360,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				// pokud ještě není na stacku TERM, který by ukončil EXPRESSION -> pokračujeme v převodu neterminálů
 				} else if(inExpr == 1){
 					// EXPRESSION - ADD TOKEN
-					if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;}
+					if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;} // vstupujeme v EXPRESSION do závorky
 					scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 					scannerTokenListMoveNext(tokenList, errorHandle);
 					
@@ -360,10 +368,14 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				} else {
 					errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - LL TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
 				}
+			
+			// pokud nejsme v EXPRESSION nebo pokud jsme v EXPRESSION, který má závorky a čárky
+			// pravidlo <expression> končí čárkou, a tak by <expression> skončil po prvním paramteru funkce -> př.: "id ( param1 ,"
+			// proto, pokud jsme uvnitř závorek, čteme všechno -> př.: "id ( param1 , prama2 , param3 )"
 			} else if(inExpr == 0 || BracketInExpr == 1){
 				// EXPRESSION - START
 				inExpr = 1;
-				if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;}
+				if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;} // vstupujeme v EXPRESSION do závorky
 				parserStackPop(&syntaxStack); // pop <expression> neterminal
 				
 				scannerTokenListAdd(&expressionList, currentToken, errorHandle);
@@ -378,13 +390,9 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	parserStackFree(&symtableStack);
 	
-	printf("\n\n-----------------------------------------------------------------------------------\n\n");
-	if(result == ALL_OK) {
-		printf("\nSYNTAX OK!\n\n");
-	} else {
-		printf("\nSYNTAX ERROR!\n\n");
+	if(result != ALL_OK && !errorExists(*errorHandle)) {
+		errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - UNKNOWN", __FILE__, __LINE__, errorHandle);
 	}
-	printf("\n\n-----------------------------------------------------------------------------------\n\n");
 	
 	return errorHandle->errorID;
 }
@@ -393,32 +401,8 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
-	
-	
-	
-	
-	
-	// vypsaní expr tokenů
-	Token currentToken2;
-	currentToken2.type = TOKEN_EMPTY;
-	currentToken2.pos_line = 0;
-	currentToken2.pos_number = 0;
-	
-	scannerTokenListSetActiveFirst(expressionList, errorHandle);
-	
-	while(scannerTokenListGetActive(expressionList, &currentToken2, errorHandle) == ALL_OK){
-		printf(" %s;", tokenTypes[currentToken2.type]);
-		scannerTokenListMoveNext(expressionList, errorHandle);
-	}
-	errorHandleInit(errorHandle); // reset GetActive Error
-	printf("\n\n");
-	
-	
-	
-	
-	
-	
-	
+
+
 	ParserStackPtr statementStack;
 	parserStackInit(&statementStack);
 	
@@ -436,90 +420,42 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token)
 	
 	scannerTokenListSetActiveFirst(expressionList, errorHandle);
-	
-	// počáteční symbol je dollar
-	//scannerTokenListMoveNext(expressionList, errorHandle);
-	//scannerTokenListGetActive(expressionList, &currentToken, errorHandle);
-	//parserStackPush(&statementStack, STACK_TERM_TO_DATA(MAP_TOKEN_TO_TERM[currentToken.type])); // počáteční symbol
-	
-	printf("EXPRESSION IN\n");
-	
+
 	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
 
 			Term_type stackTopTerm = STACK_DATA_TO_TERM(parserStackPrecedentTop(&statementStack));
 			Term_type tokenTerm = MAP_TOKEN_TO_PREC_TERM[currentToken.type];
 			char operation = PrecedenceTable[TERM_TO_PREC_TABLE(stackTopTerm)][TERM_TO_PREC_TABLE(tokenTerm)];
 			
-				
-			printf("  [%c] %s; %s; -- <%d> <%d>\n",operation, termTypes[tokenTerm], termTypes[stackTopTerm], TERM_TO_PREC_TABLE(tokenTerm), TERM_TO_PREC_TABLE(stackTopTerm));
-			
-			
-			
-			
 			if(stackTopTerm == TERM_PSEUDO_DOLLAR && tokenTerm == TERM_PSEUDO_DOLLAR){
-				printf("\nEND OK\n");
 				break;
 			} else if(operation == '='){
 				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
 				scannerTokenListMoveNext(expressionList, errorHandle);
+				
+				parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, errorHandle);
 			} else if(operation == '<'){
 				parserStackPrecedentTopAddHandle(&statementStack);
 				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
 				scannerTokenListMoveNext(expressionList, errorHandle);
+				
+				parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, errorHandle);
 			} else if(operation == '>'){
-				printf("    Rr: %d",parserStackPrecedentTopPopAndPushRule(&statementStack));
-				printf(" (STACK: %s) \n", termTypes[STACK_DATA_TO_TERM(parserStackPeek(&statementStack))]);
+				// pravý rozbor
+				parserRightAnalysis(parserStackPrecedentTopPopAndPushRule(&statementStack));
 			} else {
-				printf("\nERROR\n");
 				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - PRECEDDENT (LAST OK TOKEN = FIRST OK TOKEN AFTER EXPRESSION)", __FILE__, __LINE__, errorHandle);
 			}
-			
-			
-			
-		
-			// TODO - precedencni analyza
-			
-			// TODO - pravy rozbor
-			
-			// TODO - semanticka nalyza vyrazu
-			
-			
-			
-		
 	}
-	printf("\nEXPRESSION DONE\n");
-	// reset GetActive Error
-	//errorHandleInit(errorHandle); 
 	// clear expressionList
 	handleFreeError(scannerTokenListFree(expressionList), __LINE__, __FILE__);
 	scannerTokenListInit(expressionList, errorHandle);
 	
 	parserStackFree(&statementStack);
-	
-	
-	printf("\n\n");
-	// TODO
-	// vypsaní expr tokenů
-	/*Token currentToken;
-	currentToken.type = TOKEN_EMPTY;
-	currentToken.pos_line = 0;
-	currentToken.pos_number = 0;
-	
-	scannerTokenListSetActiveFirst(expressionList, errorHandle);
-	
-	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
-		printf(" %s;", tokenTypes[currentToken.type]);
-		scannerTokenListMoveNext(expressionList, errorHandle);
-	}
-	errorHandleInit(errorHandle); // reset GetActive Error
-	printf("\n\n");
-	
-	// clear expressionList
-	handleFreeError(scannerTokenListFree(expressionList), __LINE__, __FILE__);
-	scannerTokenListInit(expressionList, errorHandle);*/
-	
+
 	return errorHandle->errorID;
 }
+
 
 int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
@@ -528,6 +464,23 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 	
 	//TokenList newTokenList = (*tokenList);
 	
+	
+	// vypsaní expr tokenů
+	/*Token currentToken2;
+	currentToken2.type = TOKEN_EMPTY;
+	currentToken2.pos_line = 0;
+	currentToken2.pos_number = 0;
+	
+	scannerTokenListSetActiveFirst(expressionList, errorHandle);
+	
+	while(scannerTokenListGetActive(expressionList, &currentToken2, errorHandle) == ALL_OK){
+		printf(" %s;", tokenTypes[currentToken2.type]);
+		scannerTokenListMoveNext(expressionList, errorHandle);
+	}
+	errorHandleInit(errorHandle); // reset GetActive Error
+	printf("\n\n");*/
+	
+	
 	// TODO
 	
 	return errorHandle->errorID;
@@ -535,6 +488,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 
 int parserLeftAnalysis(int ruleNumber)
 {
+	// Levý rozbor
 	// TODO
 	//printf("Lr: %d\n", ruleNumber);
 	
@@ -543,6 +497,7 @@ int parserLeftAnalysis(int ruleNumber)
 
 int parserRightAnalysis(int ruleNumber)
 {
+	// Pravý rozbor
 	// TODO
 	//printf("Rr: %d\n", ruleNumber);
 	
@@ -602,13 +557,10 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
 		parserStackPop(stack);
 		top = top->next;
 	}
-	//printf("\nTOP: %d\n", top);
 	if(top != NULL && (STACK_DATA_TO_TERM(top->data)) == TERM_PSEUDO_HANDLE){
 		parserStackPop(stack);
 		int found = 0;
 		int i, j = 0;
-		
-		//printf(" (STACK: %s) ", termTypes[STACK_DATA_TO_TERM(parserStackPeek(&ruleStack))]);
 		
 		for(i = PREC_GRAMM_RULES_START; i < PREC_GRAMM_RULES_END && found == 0; i++)
 		{
@@ -616,24 +568,17 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
 			top = ruleStack;
 			j = 0;
 			
-			
-			
 			while(STACK_DATA_TO_TERM(parserStackPeek(&top)) != -1 && j < GRAMMAR_RULE_LIST__ROW_MAX_SIZE && found == 1){
-				//printf(" (STACK: %s - %d)(TABLE: %s) ", termTypes[STACK_DATA_TO_TERM(parserStackPeek(&top))], STACK_DATA_TO_TERM(parserStackPeek(&top)) , termTypes[GrammmarRuleList[i][j]]);
-		
+				
 				if(STACK_DATA_TO_TERM(parserStackPeek(&top)) != GrammmarRuleList[i][j]){
 					found = 0;
-					//printf("not found -- ");
 					break;
 				}
 				
 				j++;
 				top = top->next;
-				//printf("next: %d", STACK_DATA_TO_TERM(parserStackPeek(&top)));
 			}
-			//printf("\n");
 			if(found == 1){
-				
 				break;
 			}
 		}
@@ -642,20 +587,13 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
 		
 		if(found == 1){
 			found = i;
-			//printf("FOUND %d      ", found);
-			
 			for(i = 0; i < GRAMMAR_RULE_LIST__ROW_MAX_SIZE && GrammmarRuleList[found][i] != 0; i++)
 			{
-				//printf("PUSH %s\n", termTypes[GrammmarExprLeftRuleList[PREC_GRAMM_RULES_TO_RULE(found)]]);
 				parserStackPush(stack, STACK_TERM_TO_DATA(GrammmarExprLeftRuleList[PREC_GRAMM_RULES_TO_RULE(found)]));
-				
 			}
 			
-			
-			
-			return i;
+			return i+1;
 		}
-		//printf("NOT FOUND       ");
 		return -1;
 	}
 	parserStackFree(&ruleStack);
