@@ -231,6 +231,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	int result = 1; // 0 = ok; 1 = fail
 	int inExpr = 0;
+	int BracketInExpr = 0;
 	
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
@@ -277,23 +278,37 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				parserStackPop(&syntaxStack);
 			// jsme v EXPRESSION
 			} else if(inExpr == 1){
-				// pokud tokeny EXPRESSION jsou již načteny, protože na stacku nebyl TERM, který by ukončil EXPRESSION
-				if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
-				
-				// pokud na stacku se ihned nacházel TERM, který by ukončil expression -> nutno načíst expression tokeny až nyní
+				printf("EXPR: (stack: %s) (token: %s) (prec: %d)\n",termTypes[STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))], tokenTypes[currentToken.type],TERM_TO_PREC_TABLE(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))));
+				Term_type term = STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack));
+				if(BracketInExpr == 1 && (term >= TERM_ADD || term == TERM_LROUNDBRACKET || term == TERM_RROUNDBRACKET || term == TERM_COMMA || term == TERM_ID)){
+					// EXPRESSION - ADD TOKEN
+					parserStackPop(&syntaxStack); // stack pop neterminal
+					printf("SAVE\n");
+					scannerTokenListAdd(&expressionList, currentToken, errorHandle);
+					scannerTokenListMoveNext(tokenList, errorHandle);
 				} else {
-					while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) != MAP_TOKEN_TO_TERM[currentToken.type]){
-						// EXPRESSION - ADD TOKEN
-						scannerTokenListAdd(&expressionList, currentToken, errorHandle);
-						scannerTokenListMoveNext(tokenList, errorHandle);
+					
+					printf("HERE\n");
+					
+					// pokud tokeny EXPRESSION jsou již načteny, protože na stacku nebyl TERM, který by ukončil EXPRESSION
+					if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
+					
+					// pokud na stacku se ihned nacházel TERM, který by ukončil expression -> nutno načíst expression tokeny až nyní
+					} else {
+						while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) != MAP_TOKEN_TO_TERM[currentToken.type]){
+							// EXPRESSION - ADD TOKEN
+							scannerTokenListAdd(&expressionList, currentToken, errorHandle);
+							scannerTokenListMoveNext(tokenList, errorHandle);
+						}
 					}
+					inExpr = 0;
+					BracketInExpr = 0;
+					
+					parserRunPrecedentSyntaxAnalysis(&expressionList, &symtableStack, globalSymTable, errorHandle);
+					
+					// EXPRESSION - END
 				}
-				inExpr = 0;
-				
-				parserRunPrecedentSyntaxAnalysis(&expressionList, &symtableStack, globalSymTable, errorHandle);
-				
-				// EXPRESSION - END
-				
+				printf("end\n");
 			// porovnání zásobníku - na vrcholu zásobníku je stejný terminál jako aktuální token
 			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
 				parserStackPop(&syntaxStack);
@@ -337,6 +352,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				// pokud ještě není na stacku TERM, který by ukončil EXPRESSION -> pokračujeme v převodu neterminálů
 				} else if(inExpr == 1){
 					// EXPRESSION - ADD TOKEN
+					if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;}
 					scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 					scannerTokenListMoveNext(tokenList, errorHandle);
 					
@@ -344,9 +360,10 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				} else {
 					errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - LL TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
 				}
-			} else if(inExpr == 0){
+			} else if(inExpr == 0 || BracketInExpr == 1){
 				// EXPRESSION - START
 				inExpr = 1;
+				if(currentToken.type == TOKEN_LROUNDBRACKET){BracketInExpr = 1;}
 				parserStackPop(&syntaxStack); // pop <expression> neterminal
 				
 				scannerTokenListAdd(&expressionList, currentToken, errorHandle);
@@ -361,11 +378,13 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	parserStackFree(&symtableStack);
 	
+	printf("\n\n-----------------------------------------------------------------------------------\n\n");
 	if(result == ALL_OK) {
 		printf("\nSYNTAX OK!\n\n");
 	} else {
 		printf("\nSYNTAX ERROR!\n\n");
 	}
+	printf("\n\n-----------------------------------------------------------------------------------\n\n");
 	
 	return errorHandle->errorID;
 }
@@ -374,6 +393,30 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
+	
+	
+	
+	
+	
+	// vypsaní expr tokenů
+	Token currentToken2;
+	currentToken2.type = TOKEN_EMPTY;
+	currentToken2.pos_line = 0;
+	currentToken2.pos_number = 0;
+	
+	scannerTokenListSetActiveFirst(expressionList, errorHandle);
+	
+	while(scannerTokenListGetActive(expressionList, &currentToken2, errorHandle) == ALL_OK){
+		printf(" %s;", tokenTypes[currentToken2.type]);
+		scannerTokenListMoveNext(expressionList, errorHandle);
+	}
+	errorHandleInit(errorHandle); // reset GetActive Error
+	printf("\n\n");
+	
+	
+	
+	
+	
 	
 	
 	ParserStackPtr statementStack;

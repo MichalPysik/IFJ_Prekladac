@@ -80,6 +80,12 @@ typedef enum
 
 
 
+	// NEVYUŽITÉ TERMINALY
+	TERM_KEYWORD_ELSE,
+	TERM_KEYWORD_MAIN,
+	
+	
+	
 	// SEŘAZENO PODLE PRECEDENČNÍ TABULKY
 	TERM_ADD, //scitani +
 	TERM_SUB, //odcitani -
@@ -100,11 +106,8 @@ typedef enum
 	TERM_FLOATVALUE, //desetinna hodnota
 	TERM_STRINGVALUE, //hodnota string neboli retezec znaku
 	TERM_IDVALUE, // ID pro precedenční tabulku
+	TERM_PREC_COMMA,
 	TERM_PSEUDO_DOLLAR,
-	
-	// NEVYUŽITÉ TERMINALY
-	TERM_KEYWORD_ELSE,
-	TERM_KEYWORD_MAIN,
 	TERM_PSEUDO_HANDLE,
 	TERM_PSEUDO_EPSILON,
 	
@@ -134,9 +137,9 @@ typedef enum
 static char termTypes[][STATIC_STRING_LENGHT] = {"TERM_EMPTY", "TERM_KEYWORD_PACKAGE", "TERM_ID", "TERM_EOL", "TERM_KEYWORD_FUNC",
 	"TERM_LROUNDBRACKET", "TERM_RROUNDBRACKET", "TERM_EOF", "TERM_COMMA", "TERM_LCURLYBRACKET", "TERM_RCURLYBRACKET", "TERM_KEYWORD_RETURN",
 	"TERM_KEYWORD_IF", "TERM_KEYWORD_FOR", "TERM_SEMICOLON", "TERM_INIT", "TERM_ASSIGN", "TERM_KEYWORD_INT", "TERM_KEYWORD_FLOAT64",
-	"TERM_KEYWORD_STRING", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ", "TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", 
-	"TERM_LTE", "TERM_PREC_LROUNDBRACKET", "TERM_PREC_RROUNDBRACKET", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_IDVALUE", "TERM_PSEUDO_DOLLAR", "TERM_KEYWORD_ELSE",
-	"TERM_KEYWORD_MAIN", "TERM_PSEUDO_HANDLE", "TERM_PSEUDO_EPSILON",
+	"TERM_KEYWORD_STRING", "TERM_KEYWORD_ELSE", "TERM_KEYWORD_MAIN", "TERM_ADD", "TERM_SUB", "TERM_MUL", "TERM_DIV", "TERM_EQ", "TERM_NEQ", "TERM_GT", "TERM_LT", "TERM_GTE", 
+	"TERM_LTE", "TERM_PREC_LROUNDBRACKET", "TERM_PREC_RROUNDBRACKET", "TERM_INTVALUE", "TERM_FLOATVALUE", "TERM_STRINGVALUE", "TERM_IDVALUE",
+	"TERM_PREC_COMMA", "TERM_PSEUDO_DOLLAR", "TERM_PSEUDO_HANDLE", "TERM_PSEUDO_EPSILON",
 	
 	"NONTERM_program", "NONTERM_param_in_first", "NONTERM_param_in_next", "NONTERM_funkce_body", "NONTERM_param_out_next",
 	"NONTERM_statements", "NONTERM_state_id_list", "NONTERM_id_next", "NONTERM_for_definition",
@@ -202,7 +205,7 @@ static Term_type MAP_TOKEN_TO_PREC_TERM[] = {
 	TERM_IDVALUE, //identifikator
 	TERM_ASSIGN, //prirazeni =
 	TERM_INIT, //inicializace promenne :=
-	TERM_COMMA, //klasicka oddelovaci carka ,
+	TERM_PREC_COMMA, //klasicka oddelovaci carka ,
 	TERM_SEMICOLON, // strednik ;
 	TERM_PREC_LROUNDBRACKET, //leva zavorka (
 	TERM_PREC_RROUNDBRACKET, //prava zavorka )
@@ -343,23 +346,24 @@ static char LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 #define PRECEDENCE_TABLE__ROW_MAX_SIZE 18
 
 static char PrecedenceTable[][PRECEDENCE_TABLE__ROW_MAX_SIZE] = {
-	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // +
-	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // -
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // *
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, //'/'
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //==
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //!=
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, // >
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, // <
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //>=
-	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>'}, //<=
-	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '=', '<', '<', '<', '<',  0 }, //'('
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //')'
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //int
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //float
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //string
-	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>'}, //id
-	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  0 , '<', '<', '<', '<',  0 }  //'$'
+	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>', '>'}, // +
+	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>', '>'}, // -
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>', '>'}, // *
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>', '>'}, //'/'
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, //==
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, //!=
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, // >
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, // <
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, //>=
+	{ '<', '<', '<', '<',  0 ,  0 ,  0 ,  0 ,  0 ,  0 , '<', '>', '<', '<', '<', '<', '>', '>'}, //<=
+	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '=', '<', '<', '<', '<', '=',  0 }, //'('
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>', '>'}, //')'
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>', '>'}, //int
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>', '>'}, //float
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  0 , '>',  0 ,  0 ,  0 ,  0 , '>', '>'}, //string
+	{ '>', '>', '>', '>', '>', '>', '>', '>', '>', '>', '=', '>',  0 ,  0 ,  0 ,  0 , '>', '>'}, //id
+	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '=', '<', '<', '<', '<', '=',  0 }, // , - COMMA
+	{ '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  0 , '<', '<', '<', '<',  0 ,  0 }  //'$'
 };
 
 
