@@ -51,7 +51,7 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	errorHandleInit(&internalErrorHandle);
 	handleFreeError(scannerTokenListGetActive(tokenList, &currentToken, &internalErrorHandle), __LINE__, __FILE__);
 	
-	char tokenIdName[STATIC_STRING_LENGHT];
+	char tokenIdName[STATIC_STRING_LENGHT] = "";
 	if(currentToken.type == TOKEN_STRINGVALUE || currentToken.type == TOKEN_ID){
 		snprintf(tokenIdName, STATIC_STRING_LENGHT, "%s", currentToken.attribute.string);
 	} else if(currentToken.type == TOKEN_INTVALUE){
@@ -59,7 +59,7 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	} else if(currentToken.type == TOKEN_FLOATVALUE){
 		snprintf(tokenIdName, STATIC_STRING_LENGHT, "%f", currentToken.attribute.real);
 	}
-	return handleError(errorHandle, tokenTypes[currentToken.type], currentToken.pos_line, currentToken.pos_number, currentToken.attribute.string);
+	return handleError(errorHandle, tokenTypes[currentToken.type], currentToken.pos_line, currentToken.pos_number, tokenIdName);
 }
 
 

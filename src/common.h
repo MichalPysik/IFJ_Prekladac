@@ -43,6 +43,12 @@ FILE *FILE_ERROR;
 #define NONTERM_TO_TABLE(x) (x - NONTERM_program)
 #define TERM_TO_PREC_TABLE(x) (x - TERM_ADD)
 
+#define PREC_GRAMM_RULES_START 34
+#define PREC_GRAMM_RULES_END 49
+#define PREC_GRAMM_RULES_TO_TABLE(x) (x + 34)
+#define PREC_GRAMM_RULES_TO_RULE(x) (x - 34)
+#define PREC_GRAMM_RULES_MAX 15
+
 
 
 typedef enum
@@ -202,7 +208,7 @@ static Term_type MAP_TOKEN_TO_PREC_TERM[] = {
 	TERM_PREC_RROUNDBRACKET, //prava zavorka )
 	TERM_LCURLYBRACKET, //leva spicata zavorka {
 	TERM_RCURLYBRACKET, //prava spicata zavorka }
-	TERM_EOL, //end of line - konec radku
+	TERM_PSEUDO_DOLLAR, //end of line - konec radku
 	TERM_EOF, //end of file - konec souboru
 	TERM_INTVALUE, //celociselna hodnota
 	TERM_FLOATVALUE, //desetinna hodnota
@@ -290,7 +296,28 @@ static Term_type GrammmarRuleList[][GRAMMAR_RULE_LIST__ROW_MAX_SIZE] = {
 	{TERM_INTVALUE},
 	{TERM_FLOATVALUE},
 	{TERM_STRINGVALUE},
-	{TERM_ID}
+	{TERM_IDVALUE},
+};
+
+static Term_type GrammmarExprLeftRuleList[] = {
+	NONTERM_expression,
+	
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression,
+	NONTERM_expression
 };
 
 
@@ -313,7 +340,7 @@ static char LLTable[][LL_TABLE__ROW_MAX_SIZE] = {
 };
 
 
-#define PRECEDENCE_TABLE__ROW_MAX_SIZE 17
+#define PRECEDENCE_TABLE__ROW_MAX_SIZE 18
 
 static char PrecedenceTable[][PRECEDENCE_TABLE__ROW_MAX_SIZE] = {
 	{ '>', '>', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '<', '<', '<', '>'}, // +

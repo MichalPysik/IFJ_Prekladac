@@ -8,18 +8,18 @@
 #include "symtable.h"
 
 
-#define STACK_INT_TO_DATA(x) (ParserStackData)((char)x)
+#define STACK_INT_TO_DATA(x) (ParserStackData)((int)x)
 #define STACK_TERM_TO_DATA(x) (ParserStackData)((Term_type)x)
 #define STACK_SYMTABLE_TO_DATA(x) (ParserStackData)((SymTableBinTreePtr *)x)
 
-#define STACK_DATA_TO_INT(x) ((char)x.result)
+#define STACK_DATA_TO_INT(x) ((int)x.result)
 #define STACK_DATA_TO_TERM(x) ((Term_type)x.TERM_NONTERM)
 #define STACK_DATA_TO_SYMTABLE(x) ((SymTableBinTreePtr *)x.SYM_TABLE)
 
 
 
 typedef union {
-	char result;
+	int result;
 	Term_type TERM_NONTERM;
 	SymTableBinTreePtr *SYM_TABLE;
 } ParserStackData;
