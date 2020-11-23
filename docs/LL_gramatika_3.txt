@@ -1,0 +1,77 @@
+// možná oprava LL gramatiky, pokud nebude fungovat precedenční gramatika
+// EXPRESSION se zde chová jako terminál
+
+1. <program>        -> package id EOL <program>
+2. <program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
+3. <program>        -> EOL <program>
+4. <program>        -> EOF
+
+5. <param_in_first> -> id <type> <param_in_next>
+6. <param_in_first> -> ε
+7. <param_in_next>  -> , id <type> <param_in_next>
+8. <param_in_next>  -> ε
+
+9. <funkce_body>    -> { EOL <statements> }
+10. <funkce_body>   -> ( <type> <param_out_next> ) { EOL <statements> }
+
+11. <param_out_next>-> , <type> <param_out_next>
+12. <param_out_next>-> ε
+
+13. <type>          -> int
+14. <type>          -> float
+15. <type>          -> string
+
+
+
+16. <statements>    -> id <statement_id> EOL <statements>
+17. <statements>    -> return EXPRESSION <expr_next> EOL <statements>
+18. <statements>    -> if EXPRESSION { EOL <statements> } else { EOL <statements> } EOL <statements>
+19. <statements>    -> for <for_definition> ; EXPRESSION ; <for_assignment> { EOL <statements> } EOL <statements>
+20. <statements>    -> EOL <statements>
+21. <statements>    -> ε
+
+
+22. <statement_id>  -> ( <value_first> )
+23. <statement_id>  -> := <id_expression>
+24. <statement_id>  -> = <id_expression>
+25. <statement_id>  -> , id <id_next>
+
+26. <id_next>       -> , id <id_next>
+27. <id_next>       -> = <ids_expression>
+
+
+28. <for_definition>-> id := <id_expression>
+29. <for_definition>-> ε
+
+30. <for_assignment>-> id <for_assign_id>
+31. <for_assignment>-> ε
+32. <for_assign_id> -> , id <for_assign_id>
+33. <for_assign_id> -> = <ids_expression>
+
+
+
+34. <id_expression> -> id ( <value_first> )
+35. <id_expression> -> EXPRESSION
+
+36. <ids_expression>-> id ( <value_first> )
+37. <ids_expression>-> EXPRESSION <expr_next>
+
+38. <expr_next>     -> , EXPRESSION <expr_next>
+39. <expr_next>     -> ε
+
+
+
+40. <value_first>    -> INT <value_next>
+41. <value_first>    -> FLOAT <value_next>
+42. <value_first>    -> STRING <value_next>
+43. <value_first>    -> id <value_next>
+44. <value_first>    -> ε
+
+45. <value_next>     -> , <value> <value_next>
+46. <value_next>     -> ε
+
+
+47. <value>         -> INT
+48. <value>         -> FLOAT
+49. <value>         -> STRING
+50. <value>         -> id
