@@ -27,7 +27,7 @@
 18. <statements>    -> ε
 
 
-19. <statement_id>  -> ( <expression> <expr_next> )
+19. <statement_id>  -> ( <arg> <expr_next> )
 20. <statement_id>  -> := <expression_ids>
 21. <statement_id>  -> = <expression_ids>
 22. <statement_id>  -> , id <id_next>
