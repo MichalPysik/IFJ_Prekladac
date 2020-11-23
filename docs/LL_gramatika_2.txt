@@ -28,38 +28,37 @@
 
 
 19. <statement_id>  -> ( <expr_first> )
-20. <statement_id>  -> := <expression_ids>
-21. <statement_id>  -> = <expression_ids>
+20. <statement_id>  -> := <id_expression>
+21. <statement_id>  -> = <id_expression>
 22. <statement_id>  -> , id <id_next>
-
 23. <id_next>       -> , id <id_next>
-24. <id_next>       -> := <expression_ids>
-25. <id_next>       -> = <expression_ids>
+24. <id_next>       -> = <ids_expression>
 
 
-26. <for_definition>-> id <for_def_id>
-27. <for_definition>-> ε
-28. <for_def_id>    -> , id <for_def_id>
-29. <for_def_id>    -> := <expression_ids>
+25. <for_definition>-> id := <id_expression>
+26. <for_definition>-> ε
 
-30. <for_assignment>-> id <for_ass_id>
-31. <for_assignment>-> ε
-32. <for_ass_id>    -> , id <for_ass_id>
-33. <for_ass_id>    -> = <expression_ids>
+27. <for_assignment>-> id <for_assign_id>
+28. <for_assignment>-> ε
+29. <for_assign_id> -> , id <for_assign_id>
+30. <for_assign_id> -> = <ids_expression>
 
 
+31. <id_expression> -> id ( <expr_first> )
+32. <id_expression> -> <expression>
 
-34. <expression_ids>-> id ( <expr_first> )
-35. <expression_ids>-> <expression> <expr_next>
-
-36. <expr_first>    -> <expression> <expr_next>
-37. <expr_first>    -> ε
-
-38. <expr_next>     -> , <expression> <expr_next>
-39. <expr_next>     -> ε
+33. <ids_expression>-> id ( <expr_first> )
+34. <ids_expression>-> <expr_first>
 
 
+35. <expr_first>    -> <expression> <expr_next>
+36. <expr_first>    -> ε
 
-40. <type>          -> int
-41. <type>          -> float
-42. <type>          -> string
+37. <expr_next>     -> , <expression> <expr_next>
+38. <expr_next>     -> ε
+
+
+
+39. <type>          -> int
+40. <type>          -> float
+41. <type>          -> string
