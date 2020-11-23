@@ -28,8 +28,8 @@
 
 
 19. <statement_id>  -> ( <expression> <expr_next> )
-20. <statement_id>  -> := <expression_id>
-21. <statement_id>  -> = <expression_id>
+20. <statement_id>  -> := <expression_ids>
+21. <statement_id>  -> = <expression_ids>
 22. <statement_id>  -> , id <id_next>
 
 23. <id_next>       -> , id <id_next>
@@ -37,21 +37,23 @@
 25. <id_next>       -> = <expression_ids>
 
 
-26. <for_definition>-> id := <expression_id>
+26. <for_definition>-> id := <expression_ids>
 27. <for_definition>-> ε
-28. <for_assignment>-> id = <expression_id>
+28. <for_assignment>-> id = <expression_ids>
 29. <for_assignment>-> ε
 
 
-30. <expression_ids>-> id ( <expression> <expr_next> )
+30. <expression_ids>-> id ( <arg> <expr_next> )
 31. <expression_ids>-> <expression> <expr_next>
 
+32. <arg> -> <expression>
+33. <arg> -> ε
 
-32. <expr_next>     -> , <expression> <expr_next>
-33. <expr_next>     -> ε
+34. <expr_next>     -> , <expression> <expr_next>
+35. <expr_next>     -> ε
 
 
 
-34. <type>          -> int
-35. <type>          -> float
-36. <type>          -> string
+36. <type>          -> int
+37. <type>          -> float
+38. <type>          -> string
