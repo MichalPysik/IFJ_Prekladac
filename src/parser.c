@@ -669,7 +669,7 @@ int parserLeftAnalysis(int ruleNumber)
 {
 	// Levý rozbor (číslováno od 1)
 	// TODO
-	//printf("Lr: %d\n", ruleNumber);
+	printf("Lr: %d\n", ruleNumber);
 	
 	return 0;
 }
@@ -678,7 +678,7 @@ int parserRightAnalysis(int ruleNumber)
 {
 	// Pravý rozbor (číslováno od 1)
 	// TODO
-	//printf("Rr: %d\n", ruleNumber);
+	printf("Rr: %d\n", ruleNumber);
 	
 	return 0;
 }
@@ -762,6 +762,21 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
 			}
 		}
 		
+		// test
+		if(found == 0){
+			top = ruleStack;
+			j = 0;
+			while(STACK_DATA_TO_TERM(parserStackPeek(&top)) != -1 && j < GRAMMAR_RULE_LIST__ROW_MAX_SIZE){
+				printf("%s ",termTypes[STACK_DATA_TO_TERM(parserStackPeek(&top))]);
+				
+				j++;
+				top = top->next;
+			}
+			printf("\n\n");
+			
+		}
+		// test
+		
 		parserStackFree(&ruleStack);
 		
 		if(found == 1){
@@ -773,7 +788,7 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
 			
 			return i+1;
 		}
-		return -1;
+		return -2;
 	}
 	parserStackFree(&ruleStack);
 	return -1;

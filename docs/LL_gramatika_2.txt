@@ -1,4 +1,5 @@
 // možná oprava LL gramatiky, pokud nebude fungovat precedenční gramatika
+// <expression> se zde chová jako terminál
 
 1. <program>        -> package id EOL <program>
 2. <program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
@@ -17,37 +18,43 @@
 12. <param_out_next>-> ε
 
 
-13. <statements>    -> id <state_id_list> EOL <statements>
+
+13. <statements>    -> id <statement_id> EOL <statements>
 14. <statements>    -> return <expression> <expr_next> EOL <statements>
 15. <statements>    -> if <expression> { EOL <statements> } else { EOL <statements> } EOL <statements>
 16. <statements>    -> for <for_definition> ; <expression> ; <for_assignment> { EOL <statements> } EOL <statements>
 17. <statements>    -> EOL <statements>
 18. <statements>    -> ε
 
-19. <state_id_list> -> ( <expression> <expr_next> )
-20. <state_id_list> -> := <expre_id_list>
-21. <state_id_list> -> = <expre_id_list>
-22. <state_id_list> -> , id <id_next>
 
-
-
+19. <statement_id>  -> ( <expression> <expr_next> )
+20. <statement_id>  -> := <expression_id>
+21. <statement_id>  -> = <expression_id>
+22. <statement_id>  -> , id <id_next>
 
 23. <id_next>       -> , id <id_next>
-24. <id_next>       -> := <expre_id_list>
-25. <id_next>       -> = <expre_id_list>
+24. <id_next>       -> := <expression_ids>
+25. <id_next>       -> = <expression_ids>
 
 
-26. <for_definition>-> id := <expre_id_list>
+26. <for_definition>-> id := <expression_id>
 27. <for_definition>-> ε
-28. <for_assignment>-> id = <expre_id_list>
+28. <for_assignment>-> id = <expression_id>
 29. <for_assignment>-> ε
 
-<expre_id_list>		-> id ( <expression> <expr_next> )
-<expre_id_list>		-> <expression>
 
-30. <type>          -> int
-31. <type>          -> float
-32. <type>          -> string
+30. <expression_id> -> id ( <expression> <expr_next> )
+31. <expression_id> -> <expression>
 
-33. <expr_next>     -> , <expression> <expr_next>
-34. <expr_next>     -> ε
+32. <expression_ids>-> id ( <expression> <expr_next> )
+33. <expression_ids>-> <expression> <expr_next>
+
+
+34. <expr_next>     -> , <expression> <expr_next>
+35. <expr_next>     -> ε
+
+
+
+36. <type>          -> int
+37. <type>          -> float
+38. <type>          -> string
