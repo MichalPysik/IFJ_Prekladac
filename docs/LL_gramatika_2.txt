@@ -43,18 +43,15 @@
 29. <for_assignment>-> ε
 
 
-30. <expression_id> -> id ( <expression> <expr_next> )
-31. <expression_id> -> <expression>
-
-32. <expression_ids>-> id ( <expression> <expr_next> )
-33. <expression_ids>-> <expression> <expr_next>
+30. <expression_ids>-> id ( <expression> <expr_next> )
+31. <expression_ids>-> <expression> <expr_next>
 
 
-34. <expr_next>     -> , <expression> <expr_next>
-35. <expr_next>     -> ε
+32. <expr_next>     -> , <expression> <expr_next>
+33. <expr_next>     -> ε
 
 
 
-36. <type>          -> int
-37. <type>          -> float
-38. <type>          -> string
+34. <type>          -> int
+35. <type>          -> float
+36. <type>          -> string
