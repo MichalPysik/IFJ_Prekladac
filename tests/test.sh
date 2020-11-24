@@ -17,16 +17,19 @@ make
 
 # TESTS
 echo ""
-echo "./IFJ2020  < ./tests/test_files/faktorial.ifj20"
-./IFJ2020  < ./tests/test_files/faktorial.ifj20
+echo "./IFJ2020  < ./tests/test_files/retezce.ifj20"
+./IFJ2020  < ./tests/test_files/retezce.ifj20
+
 
 echo ""
 echo "./IFJ2020  < ./tests/test_files/fakt_rek.ifj20"
 ./IFJ2020  < ./tests/test_files/fakt_rek.ifj20
 
+
 echo ""
-echo "./IFJ2020  < ./tests/test_files/retezce.ifj20"
-./IFJ2020  < ./tests/test_files/retezce.ifj20
+echo "./IFJ2020  < ./tests/test_files/faktorial.ifj20"
+./IFJ2020  < ./tests/test_files/faktorial.ifj20
+
 
 
 # clean

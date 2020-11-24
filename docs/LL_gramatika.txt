@@ -1,3 +1,6 @@
+// možná oprava LL gramatiky, pokud nebude fungovat precedenční gramatika
+// EXPRESSION se zde chová jako terminál
+
 1. <program>        -> package id EOL <program>
 2. <program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
 3. <program>        -> EOL <program>
@@ -14,31 +17,61 @@
 11. <param_out_next>-> , <type> <param_out_next>
 12. <param_out_next>-> ε
 
+13. <type>          -> int
+14. <type>          -> float
+15. <type>          -> string
 
-13. <statements>    -> id <state_id_list> EOL <statements>
-14. <statements>    -> return <expression> <expr_next> EOL <statements>
-15. <statements>    -> if <expression> { EOL <statements> } else { EOL <statements> } EOL <statements>
-16. <statements>    -> for <for_definition> ; <expression> ; <for_assignment> { EOL <statements> } EOL <statements>
-17. <statements>    -> EOL <statements>
-18. <statements>    -> ε
 
-19. <state_id_list> -> ( <expression> <expr_next> )
-20. <state_id_list> -> := <expression>
-21. <state_id_list> -> = <expression>
-22. <state_id_list> -> , id <id_next>
 
-23. <id_next>       -> , id <id_next>
-24. <id_next>       -> := <expression> <expr_next>
-25. <id_next>       -> = <expression> <expr_next>
+16. <statements>    -> id <statement_id> EOL <statements>
+17. <statements>    -> return EXPRESSION <expr_next> EOL <statements>
+18. <statements>    -> if EXPRESSION { EOL <statements> } else { EOL <statements> } EOL <statements>
+19. <statements>    -> for <for_definition> ; EXPRESSION ; <for_assignment> { EOL <statements> } EOL <statements>
+20. <statements>    -> EOL <statements>
+21. <statements>    -> ε
 
-26. <for_definition>-> id := <expression>
-27. <for_definition>-> ε
-28. <for_assignment>-> id = <expression>
-29. <for_assignment>-> ε
 
-30. <type>          -> int
-31. <type>          -> float
-32. <type>          -> string
+22. <statement_id>  -> ( <arg_first> )
+23. <statement_id>  -> := <id_expression>
+24. <statement_id>  -> = <id_expression>
+25. <statement_id>  -> , id <id_next>
 
-33. <expr_next>     -> , <expression> <expr_next>
-34. <expr_next>     -> ε
+26. <id_next>       -> , id <id_next>
+27. <id_next>       -> = <ids_expression>
+
+
+28. <for_definition>-> id := <id_expression>
+29. <for_definition>-> ε
+
+30. <for_assignment>-> id <for_assign_id>
+31. <for_assignment>-> ε
+32. <for_assign_id> -> , id <for_assign_id>
+33. <for_assign_id> -> = <ids_expression>
+
+
+
+34. <id_expression> -> id ( <arg_first> )
+35. <id_expression> -> EXPRESSION
+
+36. <ids_expression>-> id ( <arg_first> )
+37. <ids_expression>-> EXPRESSION <expr_next>
+
+38. <expr_next>     -> , EXPRESSION <expr_next>
+39. <expr_next>     -> ε
+
+
+
+40. <arg_first>     -> INT <arg_next>
+41. <arg_first>     -> FLOAT <arg_next>
+42. <arg_first>     -> STRING <arg_next>
+43. <arg_first>     -> id <arg_next>
+44. <arg_first>     -> ε
+
+45. <arg_next>      -> , <arg> <arg_next>
+46. <arg_next>      -> ε
+
+
+47. <arg>           -> INT
+48. <arg>           -> FLOAT
+49. <arg>           -> STRING
+50. <arg>           -> id

@@ -7,7 +7,7 @@ func main() {
 	print(s1, "\n", s2)
 	s1len := 0
 	s1len = len(s1)
-	s1len = s1len - 4
+	s1len = (s1len - 4)
 	s1, _ = substr(s2, s1len, 4)
 	s1len = s1len + 1
 	print("4 znaky od", s1len, ". znaku v \"", s2, "\":", s1, "\n")
