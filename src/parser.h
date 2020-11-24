@@ -45,9 +45,9 @@ int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable, ErrorHandle *e
 
 int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
-int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, int *CodeBlockNumber, int *returnExists, int *inFor, int *VarDECorDEFparamCount, ErrorHandle *errorHandle);
+int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, int *CodeBlockNumber, int *returnExists, int *inFor, int *VarDECorDEFparamCount, ErrorHandle *errorHandle);
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
 int parserTokenListFree(TokenList *tokenList);
 
