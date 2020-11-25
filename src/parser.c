@@ -261,10 +261,16 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	// syntax stack
 	ParserStackPtr syntaxStack;
-	parserStackInit(&syntaxStack);
+	parserStackInit(&syntaxStack);	
+	
 	
 	//parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $ -> ukončovací symbol -> už je součástí neterminálu <program>
 	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(NONTERM_program)); // S -> počáteční symbol
+	
+	
+	// semantic stack
+	ParserStackPtr semanticStack;
+	parserStackInit(&semanticStack);
 	
 	
 	// expression token list
@@ -321,23 +327,23 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 					}
 				}
 				
-				scannerTokenListSetActiveFirst(&expressionList,errorHandle);
+				/*scannerTokenListSetActiveFirst(&expressionList,errorHandle);
 				while(scannerTokenListGetActive(&expressionList, &tempToken, errorHandle) == ALL_OK && printf("%s; ", termTypes[MAP_TOKEN_TO_TERM[tempToken.type]]) != 0 && expressionList.active != expressionList.last){
 					
 					scannerTokenListMoveNext(&expressionList, errorHandle);
 				}
-				printf("\n");
+				printf("\n");*/
 				
 				
 				inExpr = 0;
 				
-				parserRunPrecedentSyntaxAnalysis(&expressionList, &symtableStack, globalSymTable, errorHandle);
+				parserRunPrecedentSyntaxAnalysis(&expressionList, &semanticStack, &symtableStack, globalSymTable, errorHandle);
 				
 				// EXPRESSION - END
 				
 			// porovnání zásobníku - na vrcholu zásobníku je stejný terminál jako aktuální token
 			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
-				parserSemanticAnalysis(tokenList, &symtableStack, globalSymTable, errorHandle);
+				parserSemanticAnalysis(tokenList, &semanticStack, &symtableStack, globalSymTable, errorHandle);
 				
 				parserStackPop(&syntaxStack);
 				scannerTokenListMoveNext(tokenList, errorHandle);
@@ -411,6 +417,8 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	handleFreeError(parserTokenListFree(&expressionList), __LINE__, __FILE__);
 
+	parserStackFree(&semanticStack);
+	
 	parserStackFree(&syntaxStack);
 	
 	if(symtableStack != NULL){
@@ -430,7 +438,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 }
 
 
-int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
+int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 
@@ -462,12 +470,12 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 			if(stackTopTerm == TERM_PSEUDO_DOLLAR && tokenTerm == TERM_PSEUDO_DOLLAR){
 				break;
 			} else if(operation == '='){
-				parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, errorHandle);
+				parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, errorHandle);
 				
 				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
 				scannerTokenListMoveNext(expressionList, errorHandle);
 			} else if(operation == '<'){
-				parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, errorHandle);
+				parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, errorHandle);
 				
 				parserStackPrecedentTopAddHandle(&statementStack);
 				parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
@@ -494,23 +502,24 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 }
 
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
 	
-	// semantika
+	// sémantika
 	static int CodeBlockNumber = 1;
 	static int returnExists = 0;
 	static int inFor = 0;
 	
 	static int LeftSideVarCount = 0;
+	static int SemicolonCount = 0;
+	
 	static int inReturn = 0;
 	static int inDefinition = 0;
 	static int inAssignment = 0;
 	static int inFunctionCall = 0;
-	
-	
+	static int inExpression = 0;
 	
 	
 	
@@ -539,11 +548,12 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 	scannerTokenListGetPrev(tokenList, &prevPrevToken, &errorHandleGet);
 	scannerTokenListMoveNext(tokenList, &errorHandleMove);
 	
+	
+	
 	// výpis tokenů/u
 	//if(MAP_TOKEN_TO_TERM[currentToken.type] < TERM_PREC_ADD){
 		//printf("%s ",tokenTypes[currentToken.type]);if(currentToken.type == TOKEN_EOL){printf("\n");}
 	//}
-	
 	
 	
 	
@@ -675,18 +685,38 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 		inAssignment = 1;
 	}
 	
+	// EXPRESSION (PDOMÍNKA)                    (FOR CYKLUS)
+	if(currentToken.type == TOKEN_KEYWORD_IF || (inFor == 1 && SemicolonCount == 1)){
+		inExpression = 1;
+	}
 	
-	// POČET VÝSTUPNÍCH PROMĚNNÝCH
-	if(currentToken.type == TOKEN_ID && (inReturn == 0 && inDefinition == 0 && inAssignment == 0 && inFunctionCall == 0)){
-		LeftSideVarCount++;
+	// POČET STŘEDNÍKŮ
+	if(currentToken.type == TOKEN_SEMICOLON){
+		SemicolonCount++;
 	}
 	
 	
 	
-	// TODO - [možná sémantický zásobník] - v precedeční analýze
-	if(currentToken.type == TOKEN_ID || currentToken.type == TOKEN_COMMA || currentToken.type == TOKEN_INTVALUE || currentToken.type == TOKEN_FLOATVALUE || currentToken.type == TOKEN_STRINGVALUE 
-	|| currentToken.type == TOKEN_INIT || currentToken.type == TOKEN_ASSIGN || currentToken.type == TOKEN_KEYWORD_RETURN){
-		//TODO push semantický zásobník
+	// LEVÁ ČÁST PŘÍKAZU
+	if(inReturn == 0 && inDefinition == 0 && inAssignment == 0 && inFunctionCall == 0 && inExpression == 0){
+		
+		// POČET VÝSTUPNÍCH PROMĚNNÝCH
+		if(currentToken.type == TOKEN_ID){
+			LeftSideVarCount++;
+			
+			// push semantic stack
+			parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
+		}
+		
+	// PRAVÁ ČÁST PŘÍKAZU
+	} else if(currentToken.type == TOKEN_ID || currentToken.type == TOKEN_LROUNDBRACKET || currentToken.type == TOKEN_COMMA
+		|| currentToken.type == TOKEN_INTVALUE || currentToken.type == TOKEN_FLOATVALUE || currentToken.type == TOKEN_STRINGVALUE 
+		|| currentToken.type == TOKEN_INIT || currentToken.type == TOKEN_ASSIGN || currentToken.type == TOKEN_KEYWORD_RETURN
+		|| currentToken.type == TOKEN_ADD || currentToken.type == TOKEN_SUB || currentToken.type == TOKEN_MUL || currentToken.type == TOKEN_DIV
+		|| currentToken.type == TOKEN_EQ || currentToken.type == TOKEN_NEQ || currentToken.type == TOKEN_GT || currentToken.type == TOKEN_LT || currentToken.type == TOKEN_GTE || currentToken.type == TOKEN_LTE){
+		
+		// push semantic stack
+		parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 	}
 	
 	
@@ -696,44 +726,56 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 	// kotrola všech in kontrol
 	if(currentToken.type == TOKEN_EOL || currentToken.type == TOKEN_SEMICOLON){
 		
-		
-		// TODO
-		//kontrola semantického zásobníku, že typy všech operandů jsou stejný a operátory jsou stejného typu a operátory mohou pracovat s operandy
-		
-		
-		
-		// kontrola return
-		// kontrola, zda [return vrací správné typy a počet]
-		if(inReturn == 1){
-		
+		if(!(inReturn == 0 && inDefinition == 0 && inAssignment == 0 && inFunctionCall == 0 && inExpression == 0)){
+			printf("\n\n");
+			// TODO
+			//kontrola semantického zásobníku, že typy všech operandů jsou stejný a operátory jsou stejného typu a operátory mohou pracovat s operandy
+			while(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPop(semanticStack)).type]);
+			}
 		}
-
-		// VOLÁNÍ FUNKCE
-		//if(prevPrevToken != TOKEN_KEYWORD_FUNC && prevTOken == TOKEN_ID && currentToken == TOKEN_LROUNDBRACKET)
-		
-		
-		
-		// VOLÁNÍ FUNKCE
-		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s VarDECorDEFparamCount a [vstupní parametry jsou správného typu]
-		// [kotroloval bych na konci precedeční analýzy expressionu]
-		
-		
-		
-		// DEKLARACE PROMĚNNÉ
-		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
-		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 :=)
-		
-		
-		
-		// DEFINICE PROMĚNNÉ
-		// kontrola, že proměnná je v aktuální symtable a změna jejího typu podle hodnoty
-		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 =)
 		
 		
 		
 		// PROMĚNNÁ V EXPRESSION
 		// kontrola, že proměnná je v některé symtable na listu, a že [všechny typy v expression jsou stejné]
 		// [kotroloval bych v precedeční analýze expressionu]
+		if(inExpression == 1){
+			printf("EXPRESSION\n");
+		}
+		
+		
+		// RETURN
+		// kontrola, zda [return vrací správné typy a počet]
+		if(inReturn == 1){
+			printf("RETURN\n");
+		}
+		
+		
+		// VOLÁNÍ FUNKCE
+		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s VarDECorDEFparamCount a [vstupní parametry jsou správného typu]
+		// [kotroloval bych na konci precedeční analýzy expressionu]
+		if(inFunctionCall == 1){
+			printf("FUNCTION\n");
+		}
+		
+		
+		// DEKLARACE PROMĚNNÉ
+		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
+		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 :=)
+		if(inDefinition == 1){
+			printf("DEFINITION\n");
+		}
+		
+		
+		// DEFINICE PROMĚNNÉ
+		// kontrola, že proměnná je v aktuální symtable a změna jejího typu podle hodnoty
+		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 =)
+		if(inAssignment == 1){
+			printf("ASSIGNMENT\n");
+		}
+		
+		
 		
 		
 		
@@ -742,8 +784,13 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, 
 		inDefinition = 0;
 		inAssignment = 0;
 		inFunctionCall = 0;
+		inExpression = 0;
+		if(currentToken.type == TOKEN_EOL){
+			SemicolonCount = 0;
+		}
 		
-		//TODO vynulovat semantický zásobník
+		// clear semantic stack
+		parserStackFree(semanticStack);
 	}
 	
 	return errorHandle->errorID;
