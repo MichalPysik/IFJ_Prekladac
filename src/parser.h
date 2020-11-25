@@ -52,6 +52,10 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 
 int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
+int parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack);
+
+int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack);
+
 int parserTokenListFree(TokenList *tokenList);
 
 int parserLeftAnalysis(int ruleNumber);

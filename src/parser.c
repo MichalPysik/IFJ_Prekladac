@@ -325,15 +325,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 						scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 						scannerTokenListMoveNext(tokenList, errorHandle);
 					}
-				}
-				
-				/*scannerTokenListSetActiveFirst(&expressionList,errorHandle);
-				while(scannerTokenListGetActive(&expressionList, &tempToken, errorHandle) == ALL_OK && printf("%s; ", termTypes[MAP_TOKEN_TO_TERM[tempToken.type]]) != 0 && expressionList.active != expressionList.last){
-					
-					scannerTokenListMoveNext(&expressionList, errorHandle);
-				}
-				printf("\n");*/
-				
+				}				
 				
 				inExpr = 0;
 				
@@ -520,6 +512,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	static int inAssignment = 0;
 	static int inFunctionCall = 0;
 	static int inExpression = 0;
+	static char *inFunctionName = NULL;
 	
 	
 	
@@ -668,6 +661,12 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	}
 	
 	
+	// DEFINICE FUNKCE
+	if(prevPrevToken.type == TOKEN_KEYWORD_FUNC && prevToken.type == TOKEN_ID && currentToken.type == TOKEN_LROUNDBRACKET){
+		inFunctionName = prevToken.attribute.string;
+	}
+	
+	
 	// VOLÁNÍ FUNKCE
 	if(prevPrevToken.type != TOKEN_KEYWORD_FUNC && prevToken.type == TOKEN_ID && currentToken.type == TOKEN_LROUNDBRACKET){
 		inFunctionCall = 1;
@@ -726,6 +725,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	// kotrola všech in kontrol
 	if(currentToken.type == TOKEN_EOL || currentToken.type == TOKEN_SEMICOLON){
 		
+		// tisk zásobníku
 		if(!(inReturn == 0 && inDefinition == 0 && inAssignment == 0 && inFunctionCall == 0 && inExpression == 0)){
 			printf("\n\n");
 			// TODO
@@ -738,8 +738,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		
 		
 		// PROMĚNNÁ V EXPRESSION
-		// kontrola, že proměnná je v některé symtable na listu, a že [všechny typy v expression jsou stejné]
-		// [kotroloval bych v precedeční analýze expressionu]
+		// kontrola, že proměnné jsou v některé symtable na listu, a že [všechny typy v expression jsou stejné a správné]
 		if(inExpression == 1){
 			printf("EXPRESSION\n");
 		}
@@ -748,34 +747,29 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// RETURN
 		// kontrola, zda [return vrací správné typy a počet]
 		if(inReturn == 1){
-			printf("RETURN\n");
+			printf("RETURN (%s)\n", inFunctionName);
 		}
 		
 		
 		// VOLÁNÍ FUNKCE
-		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s VarDECorDEFparamCount a [vstupní parametry jsou správného typu]
-		// [kotroloval bych na konci precedeční analýzy expressionu]
+		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s LeftSideVarCount a [vstupní parametry jsou správného typu]
 		if(inFunctionCall == 1){
 			printf("FUNCTION\n");
 		}
 		
 		
-		// DEKLARACE PROMĚNNÉ
-		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
-		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 :=)
-		if(inDefinition == 1){
-			printf("DEFINITION\n");
-		}
-		
-		
-		// DEFINICE PROMĚNNÉ
-		// kontrola, že proměnná je v aktuální symtable a změna jejího typu podle hodnoty
-		// do proměnné VarDECorDEFparamCount se přidá počet výstupní proměnných (var1 , var2, var3 =)
+		// PŘIŘAZENÍ PROMĚNNÉ
+		// kontrola, že proměnné jsou v nějaké symtable na stacku a změna jejich typu podle hodnoty
 		if(inAssignment == 1){
 			printf("ASSIGNMENT\n");
 		}
 		
 		
+		// DEFINICE PROMĚNNÉ
+		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
+		if(inDefinition == 1){
+			printf("DEFINITION\n");
+		}
 		
 		
 		
@@ -794,6 +788,20 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	}
 	
 	return errorHandle->errorID;
+}
+
+
+int parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack)
+{
+	
+	return 0;
+}
+
+
+int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack)
+{
+	
+	return 0;
 }
 
 
