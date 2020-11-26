@@ -12,11 +12,13 @@
 #define STACK_TERM_TO_DATA(x) (ParserStackData)((Term_type)x)
 #define STACK_SYMTABLE_TO_DATA(x) (ParserStackData)((SymTableBinTreePtr)x)
 #define STACK_TOKEN_TO_DATA(x) (ParserStackData)((Token)x)
+#define STACK_TOKEN_TYPE_TO_DATA(x) (ParserStackData)((Token_type)x)
 
 #define STACK_DATA_TO_INT(x) ((int)x.result)
 #define STACK_DATA_TO_TERM(x) ((Term_type)x.TERM_NONTERM)
 #define STACK_DATA_TO_SYMTABLE(x) ((SymTableBinTreePtr)x.SYM_TABLE)
 #define STACK_DATA_TO_TOKEN(x) ((Token)x.token)
+#define STACK_DATA_TO_TOKEN_TYPE(x) ((Token_type)x.tokenType)
 
 
 
@@ -25,6 +27,7 @@ typedef union {
 	Term_type TERM_NONTERM;
 	SymTableBinTreePtr SYM_TABLE;
 	Token token;
+	Token_type tokenType;
 } ParserStackData;
 
 typedef struct parserStackNode {
@@ -57,6 +60,8 @@ int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack, ParserStackPtr
 Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack, ErrorHandle *errorHandle);
 
 IDdataType parserSemanticTokenTypeToVarType(Token_type tokenType);
+
+Token parserSemanticVarTypeToToken(IDdataType varDataType);
 
 int parserTokenListFree(TokenList *tokenList);
 
