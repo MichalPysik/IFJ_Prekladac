@@ -1,0 +1,7 @@
+
+package main
+
+func main() {
+	a := 10 + 10
+    print("10 + 10 = ", a, "\n")
+}
