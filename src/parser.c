@@ -730,8 +730,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			printf("\n\n");
 			// TODO
 			//kontrola semantického zásobníku, že typy všech operandů jsou stejný a operátory jsou stejného typu a operátory mohou pracovat s operandy
-			while(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
-				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPop(semanticStack)).type]);
+			
+			ParserStackPtr top = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&top)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+				top = top->next;
 			}
 		}
 		
@@ -741,6 +744,16 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// kontrola, že proměnné jsou v některé symtable na listu, a že [všechny typy v expression jsou stejné a správné]
 		if(inExpression == 1){
 			printf("EXPRESSION\n");
+			
+			parserSemanticChangeIDsToTypes(semanticStack, symtableStack, errorHandle);
+			
+			parserSemanticExpressionCheckOperatorsAndOperands(semanticStack, errorHandle);
+			
+			/*ParserStackPtr top = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&top)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+				top = top->next;
+			}*/
 		}
 		
 		
@@ -748,6 +761,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// kontrola, zda [return vrací správné typy a počet]
 		if(inReturn == 1){
 			printf("RETURN (%s)\n", inFunctionName);
+			// TODO 4
 		}
 		
 		
@@ -755,6 +769,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s LeftSideVarCount a [vstupní parametry jsou správného typu]
 		if(inFunctionCall == 1){
 			printf("FUNCTION\n");
+			// TODO 5
 		}
 		
 		
@@ -762,6 +777,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// kontrola, že proměnné jsou v nějaké symtable na stacku a změna jejich typu podle hodnoty
 		if(inAssignment == 1){
 			printf("ASSIGNMENT\n");
+			// TODO 3
 		}
 		
 		
@@ -769,6 +785,78 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
 		if(inDefinition == 1){
 			printf("DEFINITION\n");
+			
+			// expression stack
+			ParserStackPtr expressionStack;
+			parserStackInit(&expressionStack);	
+			
+			ParserStackPtr top = (*semanticStack);
+			while(top != NULL && STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_INIT){
+				top = top->next;
+				
+				parserStackPush(&expressionStack, parserStackPop(semanticStack));
+			}
+			
+			parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
+			
+			
+			/*printf("\n<");
+			top = expressionStack;
+			while(STACK_DATA_TO_INT(parserStackPeek(&top)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+				top = top->next;
+			}
+			printf(">\n");*/
+			
+			
+			Token_type newVarTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
+			//printf("\nTYPE: %s\n",tokenTypes[newVarTokenType]);
+			
+			parserStackFree(&expressionStack);
+			
+			
+			
+			IDdataType newVarDataType = parserSemanticTokenTypeToVarType(newVarTokenType);
+
+			parserStackPop(semanticStack); // pop TOKEN_INIT
+			
+			/*printf("\n[");
+			top = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&top)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+				top = top->next;
+			}
+			printf("]\n");*/
+			
+			if(newVarTokenType != TOKEN_EMPTY){
+			
+				if(STACK_DATA_TO_INT(parserStackPeek(symtableStack)) != -1 && STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
+					Token newVarIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)); // pop var id token
+					if(newVarIdToken.type == TOKEN_ID){
+						
+						// pop currentLocalSymtable
+						SymTableBinTreePtr currentLocalSymtable = STACK_DATA_TO_SYMTABLE(parserStackPop(symtableStack));
+						
+						if(symTableSearch(currentLocalSymtable, newVarIdToken.attribute.string, NULL, errorHandle) == 0){
+							symTableInsert(&currentLocalSymtable, newVarIdToken.attribute.string, symTableInitDataInLine(VAR, true, newVarDataType, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+							
+						} else {
+							// TODO SEMANTIC ERROR - VAR REDEFINITION
+							errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - VAR REDEFINITION", __FILE__, __LINE__, errorHandle);
+						}
+						
+						// push currentLocalSymtable
+						parserStackPush(symtableStack, STACK_SYMTABLE_TO_DATA(currentLocalSymtable));
+						
+					} else {
+						// TODO - error kontrola typu chyby
+						errorSet(INTERNAL_ERROR, "PARSER_ANALYZE: INTERNAL_ERROR", __FILE__, __LINE__, errorHandle);
+					}
+				} else {
+					// TODO - error kontrola typu chyby
+					errorSet(INTERNAL_ERROR, "PARSER_ANALYZE: INTERNAL_ERROR", __FILE__, __LINE__, errorHandle);
+				}
+			}
 		}
 		
 		
@@ -791,17 +879,153 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 }
 
 
-int parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack)
+int parserSemanticChangeIDsToTypes(ParserStackPtr *expressionStack, ParserStackPtr *symtableStack, ErrorHandle *errorHandle)
 {
+	ParserStackPtr top = (*expressionStack);
+	while(top != NULL){
+		
+		Token currentToken = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+		if(currentToken.type == TOKEN_ID){
+			
+			ParserStackPtr topSymtable = (*symtableStack);
+			while(topSymtable != NULL){
+				
+				SymTableBinTreePtr currentLocalSymtable = STACK_DATA_TO_SYMTABLE(parserStackPeek(&topSymtable));
+				
+				SymTableData data;
+				if(symTableSearch(currentLocalSymtable, currentToken.attribute.string, &data, errorHandle) == 1){
+					
+					if(data.idDataType == INT){
+						top->data.token.type = TOKEN_INTVALUE;
+					} else if(data.idDataType == FLOAT){
+						top->data.token.type = TOKEN_FLOATVALUE;
+					} else if(data.idDataType == STRING){
+						top->data.token.type = TOKEN_STRINGVALUE;
+					}
+					return 0;
+				}
+				
+				topSymtable = topSymtable->next;
+			}
+			
+			// TODO SEMANTIC ERROR - MISSING VAR
+			errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - MISSING VAR", __FILE__, __LINE__, errorHandle);
+			return -1;
+		}
+		
+		top = top->next;
+	}
 	
 	return 0;
 }
 
 
-int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack)
+Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack, ErrorHandle *errorHandle)
 {
+	ParserStackPtr top = (*semanticStack);
+	if(top->next != NULL){
+		
+		// COMPARE
+		if(TOKEN_EQ <= top->next->data.token.type && top->next->data.token.type <= TOKEN_LTE){
+			
+			top = (*semanticStack);
+			Token_type expressionTokenType = top->data.token.type;
+			while(top != NULL){
+				
+				if(!((TOKEN_EQ <= top->data.token.type && top->data.token.type <= TOKEN_LTE) || (top->data.token.type == expressionTokenType))){
+					// TODO error  type
+					errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME TYPE", __FILE__, __LINE__, errorHandle);
+					return TOKEN_EMPTY;
+				}
+				
+				top = top->next;
+			}
+			return expressionTokenType;
+			
+		// ACTION
+		} else if(TOKEN_ADD <= top->next->data.token.type && top->next->data.token.type <= TOKEN_DIV){
+			
+			// MATH INT
+			if(top->data.token.type == TOKEN_INTVALUE){
+				
+				top = (*semanticStack);
+				Token_type expressionTokenType = top->data.token.type;
+				while(top != NULL){
+					
+					if(!((TOKEN_ADD <= top->data.token.type && top->data.token.type <= TOKEN_DIV) || (top->data.token.type == expressionTokenType))){
+						// TODO error  type
+						errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
+						return TOKEN_EMPTY;
+					}
+					
+					top = top->next;
+				}
+				return expressionTokenType;
+				
+			// MATH FLOAT
+			} else if(top->data.token.type == TOKEN_FLOATVALUE){
+				
+				top = (*semanticStack);
+				Token_type expressionTokenType = top->data.token.type;
+				while(top != NULL){
+					
+					if(!((TOKEN_ADD <= top->data.token.type && top->data.token.type <= TOKEN_DIV) || (top->data.token.type == expressionTokenType))){
+						// TODO error  type
+						errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
+						return TOKEN_EMPTY;
+					}
+					
+					top = top->next;
+				}
+				return expressionTokenType;
+				
+			// STRING
+			} else if(top->data.token.type == TOKEN_STRINGVALUE){
+				
+				top = (*semanticStack);
+				Token_type expressionTokenType = top->data.token.type;
+				while(top != NULL){
+					
+					if(!((TOKEN_ADD == top->data.token.type) || (top->data.token.type == expressionTokenType))){
+						// TODO error  type
+						errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
+						return TOKEN_EMPTY;
+					}
+					
+					top = top->next;
+				}
+				return expressionTokenType;
+				
+			} else {
+				// TODO - error kontrola typu chyby
+				errorSet(INTERNAL_ERROR, "PARSER_ANALYZE: INTERNAL_ERROR_2", __FILE__, __LINE__, errorHandle);
+				return TOKEN_EMPTY;
+			}
+			
+		} else {
+			// TODO - error kontrola typu chyby
+			errorSet(INTERNAL_ERROR, "PARSER_ANALYZE: INTERNAL_ERROR_1", __FILE__, __LINE__, errorHandle);
+			return TOKEN_EMPTY;
+		}
+	} else {
+		return top->data.token.type;
+	}
 	
-	return 0;
+	return TOKEN_EMPTY;
+}
+
+
+IDdataType parserSemanticTokenTypeToVarType(Token_type tokenType)
+{
+	IDdataType varDataType = NIL;
+	if(tokenType == TOKEN_INTVALUE){
+		varDataType = INT;
+	} else if(tokenType == TOKEN_FLOATVALUE){
+		varDataType = FLOAT;
+	} else if(tokenType == TOKEN_STRINGVALUE){
+		varDataType = STRING;
+	}
+	return varDataType;
 }
 
 

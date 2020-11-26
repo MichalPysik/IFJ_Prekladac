@@ -44,10 +44,10 @@ typedef struct {
 typedef struct SymTableDataStruct{
 	IDtype idType;										// typ identifikátoru
 	bool idDefined;										// je identifikátor definovaný
-	IDdataType idDataType;								// datový typ proměnné
-	SymTableParamList functionParamDataTypes;			// ukazatel na lokální tabulku parametrů funkce (seznam)
-	SymTableParamList functionReturnDataTypes;			// ukazatel na lokální tabulku návratových parametrů funkce (seznam)
-	struct SymTableBinTreeNode *functionLocalSymTable;	// ukazatel na lokální tabulku symbolů funkce
+	IDdataType idDataType;								// datový typ [proměnné]
+	SymTableParamList functionParamDataTypes;			// seznam parametrů [funkce]
+	SymTableParamList functionReturnDataTypes;			// seznam návratových parametrů [funkce]
+	struct SymTableBinTreeNode *functionLocalSymTable;	// ukazatel na lokální tabulku symbolů [funkce]
 } SymTableData;
 
 // Uzel stromu
