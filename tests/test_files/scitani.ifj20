@@ -1,7 +1,24 @@
-
+// Program 4: Scitani jako funkce
 package main
 
+
+func factorial(a int, b int) (int) {
+	result := a + b
+    return result
+}
+
 func main() {
-	a := 10 + 10
-    print("10 + 10 = ", a, "\n")
+	print("Zadejte prvni cislo pro soucet: ")
+	a := 0
+	err := 0
+	a, err = inputi()
+    print("\nZadejte druhe cislo pro soucet: ")
+	b := 0
+	b, err = inputi()
+	if err == 0 {
+		c := add(a, b)
+        print(a, " + ", b, " = ", c)
+	} else {
+		print("Chyba pri nacitani celeho cisla!\n")
+	}
 }
