@@ -194,6 +194,17 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 			left_brackets_count--;
 		} else if(currentToken.type == TOKEN_KEYWORD_PACKAGE){
 			prolog_exists++;
+			
+			Token currentToken;
+			currentToken.type = TOKEN_EMPTY;
+			currentToken.pos_line = 0;
+			currentToken.pos_number = 0;
+			
+			scannerTokenListGetNext(tokenList, &currentToken, errorHandle);
+			
+			if(currentToken.type != TOKEN_ID || strcmp(currentToken.attribute.string,"main") != 0){
+				errorSet(SYNTAX_ERROR, "parserPreRun: prolog - wrong or missing!", __FILE__, __LINE__, errorHandle);
+			}
 		}
 		//******************************************************************************
 		if(currentToken.type != TOKEN_EOF && errorHandle->errorID == ALL_OK){scannerTokenListMoveNext(tokenList, errorHandle);}
@@ -1215,6 +1226,8 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 		// ACTION
 		} else if(TOKEN_ADD <= top->next->data.token.type && top->next->data.token.type <= TOKEN_DIV){
 			
+			Token_type prevTokenType = TOKEN_EMPTY;
+			
 			// MATH INT
 			if(top->data.token.type == TOKEN_INTVALUE){
 				
@@ -1226,8 +1239,12 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 						// error type
 						errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
 						return TOKEN_EMPTY;
+					} else if(prevTokenType == TOKEN_DIV && top->data.token.attribute.integer == 0){
+						errorSet(ZERO_DIVISION_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
+						return TOKEN_EMPTY;
 					}
 					
+					prevTokenType = top->data.token.type;
 					top = top->next;
 				}
 				return expressionTokenType;
@@ -1243,8 +1260,12 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 						// error type
 						errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
 						return TOKEN_EMPTY;
+					} else if(prevTokenType == TOKEN_DIV && top->data.token.attribute.real == 0.0){
+						errorSet(ZERO_DIVISION_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME OR THE RIGHT TYPE", __FILE__, __LINE__, errorHandle);
+						return TOKEN_EMPTY;
 					}
 					
+					prevTokenType = top->data.token.type;
 					top = top->next;
 				}
 				return expressionTokenType;
