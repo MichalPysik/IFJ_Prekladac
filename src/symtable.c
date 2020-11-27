@@ -134,6 +134,7 @@ int symTableDispose(SymTableBinTreePtr *RootPtr)
 		free(root->key);
 		symTableParamListFree(&(root->data.functionParamDataTypes));
 		symTableParamListFree(&(root->data.functionReturnDataTypes));
+		symTableDispose(&(root->data.functionLocalSymTable));
 		free(root);
 		(*RootPtr) = NULL;
 		return ALL_OK;
