@@ -213,14 +213,16 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 	
 	// kontrola zda symtable obsahuje funkci main s 0 parametry a pouze jeden prolog
 	SymTableData data;
-	if(symTableSearch(*globalSymTable, "main", &data, errorHandle) == 0){
+	if(!errorExists(*errorHandle) && symTableSearch(*globalSymTable, "main", &data, errorHandle) == 1){
+		if(symTableParamListGetSize(&data.functionParamDataTypes, errorHandle) != 0 || symTableParamListGetSize(&data.functionReturnDataTypes, errorHandle) != 0){
+			errorSet(SEM_FUNC_PARAM_RETURN_ERROR, "parserPreRun: main function has params!", __FILE__, __LINE__, errorHandle);
+		} else if(prolog_exists != 1){
+			errorSet(SYNTAX_ERROR, "parserPreRun: prolog - wrong count (maybe doesn't exist)!", __FILE__, __LINE__, errorHandle);
+		}
+	} else if(!errorExists(*errorHandle)){
 		errorSet(SEM_UNDEFINED_VAR_ERROR, "parserPreRun: main function doesn't exist!", __FILE__, __LINE__, errorHandle);
-	} else if(symTableParamListGetSize(&data.functionParamDataTypes, errorHandle) != 0 || symTableParamListGetSize(&data.functionReturnDataTypes, errorHandle) != 0){
-		errorSet(SEM_FUNC_PARAM_RETURN_ERROR, "parserPreRun: main function has params!", __FILE__, __LINE__, errorHandle);
-	} else if(prolog_exists != 1){
-		errorSet(SYNTAX_ERROR, "parserPreRun: prolog - wrong count (maybe doesn't exist)!", __FILE__, __LINE__, errorHandle);
 	}
-
+	
 	return errorHandle->errorID;
 }
 
