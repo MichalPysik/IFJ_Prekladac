@@ -7,6 +7,8 @@
 int handleError(ErrorHandle errorHandle, char *lastOKTokenType, int lastOKTokenPosLine, int lastOKTokenPosNumber, char *lastOKTokenString)
 {
 	if(errorHandle.errorID == ALL_OK){
+		fprintf(FILE_ERROR, "--------------------------------------------------------------------------------\n");
+		fprintf(FILE_ERROR, "Exit code: %d\n\n\n", errorHandle.errorID);
 		return ALL_OK;
 	}
 	

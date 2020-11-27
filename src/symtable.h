@@ -7,10 +7,6 @@
 
 
 
-//#define SYMTABLE_STACK_CHUNK_SIZE 100
-
-
-
 // Typ identifikátoru
 typedef enum {
 	VAR,	// proměnná
@@ -59,17 +55,6 @@ typedef struct SymTableBinTreeNode{
 } *SymTableBinTreePtr;
 
 
-
-
-
-
-// Pomocný zásobník na procházení stromu
-/*typedef struct BinTreeStack{
-	int size;							// velikost zásobníku
-	int top;							// index nejvyššího prvku
-	SymTableBinTreePtr *binTreeStack;	// zásobník ukazatelů na položky
-} *BinTreeStackPtr;
-*/
 
 /****************************************************** SYMTABLE TREE ******************************************************************************/
 

@@ -6,6 +6,7 @@
 #include "common.h"
 
 
+
 typedef enum
 {
 	TOKEN_EMPTY, //prazdny defaultni typ

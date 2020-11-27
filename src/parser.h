@@ -8,6 +8,7 @@
 #include "symtable.h"
 
 
+
 #define STACK_INT_TO_DATA(x) (ParserStackData)((int)x)
 #define STACK_TERM_TO_DATA(x) (ParserStackData)((Term_type)x)
 #define STACK_SYMTABLE_TO_DATA(x) (ParserStackData)((SymTableBinTreePtr)x)

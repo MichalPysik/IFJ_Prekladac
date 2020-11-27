@@ -21,7 +21,6 @@ FILE *FILE_ERROR;
 
 #define STATIC_STRING_LENGHT 255
 
-
 #define ROW(x) (x-1)
 #define ITEM(x) (x-1)
 
