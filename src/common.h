@@ -437,7 +437,7 @@ int errorHandleInit(ErrorHandle *errorHandle);
 
 int errorExists(ErrorHandle errorHandle);
 
-int errorSet(int errorID, char *errorString, char *errorPosFile, int errorPosLine, ErrorHandle *errorHandle);
+int errorSet(int errorID, char *errorString, const char *errorPosFile, int errorPosLine, ErrorHandle *errorHandle);
 
 
 #endif //defined _COMMON_H

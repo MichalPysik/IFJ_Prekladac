@@ -31,10 +31,10 @@ int handleError(ErrorHandle errorHandle, char *lastOKTokenType, int lastOKTokenP
 	}
 	fprintf(FILE_ERROR, "ERROR - %s\n", errorHandle.errorString);
 	fprintf(FILE_ERROR, "ERROR POSITION - file: %s; line: %d\n", errorHandle.errorPosFile, errorHandle.errorPosLine);
-	fprintf(FILE_ERROR, "LAST OK TOKEN - \"%s\"; type: %s; line: %d; token number: %d\n", lastOKTokenString, lastOKTokenType, lastOKTokenPosLine, lastOKTokenPosNumber);
+	fprintf(FILE_ERROR, "LAST OK TOKEN - \"%s\"; type: %s; token line: %d; token number: %d\n", lastOKTokenString, lastOKTokenType, lastOKTokenPosLine, lastOKTokenPosNumber);
 	fprintf(FILE_ERROR, "--------------------------------------------------------------------------------\n");
 	fprintf(FILE_ERROR, "Exit code: %d\n\n\n", errorHandle.errorID);
-	
+
 	return errorHandle.errorID;
 }
 
@@ -49,8 +49,8 @@ int errorHandleInit(ErrorHandle *errorHandle)
 {
 	if(errorHandle != NULL){
 		errorHandle->errorID = ALL_OK;
-		errorHandle->errorString[0] = '\0';
-		errorHandle->errorPosFile[0] = '\0';
+		memset(errorHandle->errorString, '\0', sizeof(char)*STATIC_STRING_LENGHT);
+		memset(errorHandle->errorPosFile, '\0', sizeof(char)*STATIC_STRING_LENGHT);
 		errorHandle->errorPosLine = 0;
 		return 0;
 	}
@@ -62,12 +62,12 @@ int errorExists(ErrorHandle errorHandle)
 	return (errorHandle.errorID != ALL_OK);
 }
 
-int errorSet(int errorID, char *errorString, char *errorPosFile, int errorPosLine, ErrorHandle *errorHandle)
+int errorSet(int errorID, char *errorString, const char *errorPosFile, int errorPosLine, ErrorHandle *errorHandle)
 {// soubor a řádek by měl být (pro lepší info) přijímán z místa použití funkce a ne z vnitřku funkce - příklad: scannerTokenListInit(&tokenList, &errorHandle, __FILE__, __LINE__);
 	if(errorHandle != NULL){
 		errorHandle->errorID = errorID;
-		snprintf(errorHandle->errorString, STATIC_STRING_LENGHT, "%s", errorString); // snprintf(NULL, 0, "%d", x); -> returns max length
-		snprintf(errorHandle->errorPosFile, STATIC_STRING_LENGHT, "%s", errorPosFile);
+		snprintf(errorHandle->errorString, STATIC_STRING_LENGHT, "%s", errorString); // snprintf(NULL, 0, "%d", x); -> returns max length of number value
+		snprintf(errorHandle->errorPosFile, STATIC_STRING_LENGHT, "%s", errorPosFile); // saves (STATIC_STRING_LENGHT-1) chars and last (STATIC_STRING_LENGHT) char sets to '\0'
 		errorHandle->errorPosLine = errorPosLine;
 		return 0;
 	}

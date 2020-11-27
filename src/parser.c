@@ -77,6 +77,9 @@ int parserPreRun(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, Error
 						// vytvoření functionLocalSymTable
 						SymTableBinTreePtr localSymTable;
 						symTableInit(&localSymTable);
+						// add blackhole var '_'
+						symTableInsert(&localSymTable, "_", symTableInitDataInLine(VAR, false, NIL, 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+						
 						// vytvoření functionParamDataTypes
 						SymTableParamList paramList;
 						symTableParamListInit(&paramList, errorHandle);
@@ -723,7 +726,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	
 	
 	// kotrola všech in kontrol
-	if(currentToken.type == TOKEN_EOL || currentToken.type == TOKEN_SEMICOLON){
+	if(currentToken.type == TOKEN_EOL || currentToken.type == TOKEN_EOF || currentToken.type == TOKEN_SEMICOLON){
 		
 		// tisk zásobníku
 		/*if(!(inReturn == 0 && inDefinition == 0 && inAssignment == 0 && inFunctionCall == 0 && inExpression == 0)){
@@ -742,7 +745,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		
 		// PROMĚNNÁ V EXPRESSION
 		// kontrola, že proměnné jsou v některé symtable na listu, a že [všechny typy v expression jsou stejné a správné]
-		if(inExpression == 1){
+		if(inExpression == 1 && !errorExists(*errorHandle)){
 			printf("EXPRESSION\n");
 			
 			parserSemanticChangeIDsToTypes(semanticStack, symtableStack, errorHandle);
@@ -759,30 +762,207 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		
 		// RETURN
 		// kontrola, zda [return vrací správné typy a počet]
-		if(inReturn == 1){
+		if(inReturn == 1 && !errorExists(*errorHandle)){
 			printf("RETURN (%s)\n", inFunctionName);
-			// TODO 4
 			
-			/*ParserStackPtr top = (*semanticStack);
-			while(STACK_DATA_TO_INT(parserStackPeek(&top)) != -1){
-				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+			
+			/*
+			ParserStackPtr topTemp = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+				topTemp = topTemp->next;
+			}printf("\n\n");
+			*/
+			
+			int functionParamNumber = 0;
+			
+			ParserStackPtr paramStack;
+			parserStackInit(&paramStack);
+			
+			
+			// expressions to value types - start
+			
+			ParserStackPtr expressionStack;
+			parserStackInit(&expressionStack);
+			
+			ParserStackPtr top = (*semanticStack);
+			ParserStackPtr topStart = (*semanticStack);
+			while(top != NULL){
+				//printf("\nTYPE: %s\n",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_KEYWORD_RETURN && topStart != (*semanticStack))){
+						parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
+						
+						Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
+						
+						parserStackPush(&paramStack, STACK_TOKEN_TYPE_TO_DATA(functionParamTokenType));
+						//IDdataType functionParamDataType = parserSemanticTokenTypeToVarType(functionParamTokenType);
+						
+						
+						
+						/*printf("\n<");
+						ParserStackPtr topTemp = expressionStack;
+						while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+							printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+							topTemp = topTemp->next;
+						}
+						printf(">\n");*/
+						
+						parserStackFree(&expressionStack);
+						functionParamNumber++;
+					
+					
+					
+				} else {
+					//printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)).type]);
+					
+					parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+					
+				}
+				
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_KEYWORD_RETURN){
+					break;
+				}
+				
 				top = top->next;
+				
+				parserStackPop(semanticStack);
+			}
+			
+			parserStackFree(&expressionStack);
+			
+			// expressions to value types - end
+			
+			parserStackPop(semanticStack); // pop TOKEN_KEYWORD_RETURN
+		
+			/*printf("RETURN 2:\n");
+			ParserStackPtr topTemp2 = (paramStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp2)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp2)).type]);
+				topTemp2 = topTemp2->next;
 			}printf("\n\n");*/
 			
-			/*SymTableData data;
-			if(symTableSearch(*globalSymTable, inFunctionName, &data, errorHandle) == 1){
-				
-				if(functionParamNumber == data.functionParamDataTypes.size || data.functionParamDataTypes.size == -1){
-							
 			
+			
+	
+
+			SymTableData data;
+			if(symTableSearch(*globalSymTable, inFunctionName, &data, errorHandle) == 1){
+				//printf("IN FUNC 3\n");
+				if(functionParamNumber == data.functionReturnDataTypes.size){
+					
+					
+					//printf("OUT COUNT: %d\n",data.functionReturnDataTypes.size);
+					
+					//TODO push output params on stack
+					
+					
+					if(data.functionReturnDataTypes.size != 0 && !errorExists(*errorHandle)){// if error not exists
+						
+						symTableParamListSetActiveFirst(&data.functionReturnDataTypes, errorHandle);
+						
+						IDdataType paramDataType;
+						//printf("\n<");
+						while(STACK_DATA_TO_INT(parserStackPeek(&paramStack)) != -1){
+							
+							symTableParamListGetActive(&data.functionReturnDataTypes, &paramDataType, errorHandle);
+							
+							if(parserSemanticTokenTypeToVarType(STACK_DATA_TO_TOKEN_TYPE(parserStackPeek(&paramStack))) != paramDataType){
+								// TODO - error kontrola typu chyby
+								errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - WRONG RETURN PARAM TYPE", __FILE__, __LINE__, errorHandle);
+								
+								break;
+							}
+							
+							//printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN_TYPE(parserStackPeek(&paramStack))]);
+							parserStackPop(&paramStack);
+							if(STACK_DATA_TO_INT(parserStackPeek(&paramStack)) != -1){
+								symTableParamListMoveNext(&data.functionReturnDataTypes, errorHandle);
+							}
+						}
+						//printf(">\n");
+					}
+					
+				} else {
+					// TODO - error kontrola typu chyby
+					errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - WRONG COUNT OF RETURN PARAMS", __FILE__, __LINE__, errorHandle);
 				}
-			}*/
+				
+			} else if(!errorExists(*errorHandle)){
+				// TODO - error kontrola typu chyby
+				errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - FUNCTION MISSING IN GLOBALSYMTABLE", __FILE__, __LINE__, errorHandle);
+			}
+					
+			//printf("ERROR: <%d>\n", errorHandle->errorID);
+			
+			parserStackFree(&paramStack);
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			/*
+			int functionParamNumber = 0;
+			
+			ParserStackPtr paramStack;
+			parserStackInit(&paramStack);
+			
+			ParserStackPtr expressionStack;
+			parserStackInit(&expressionStack);
+			
+			ParserStackPtr top = (*semanticStack);
+			ParserStackPtr topStart = (*semanticStack);
+			while(top != NULL){
+				//printf("\nTYPE: %s\n",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_LROUNDBRACKET && topStart != (*semanticStack))){
+						parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
+						
+						Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
+						
+						parserStackPush(&paramStack, STACK_TOKEN_TYPE_TO_DATA(functionParamTokenType));
+						//IDdataType functionParamDataType = parserSemanticTokenTypeToVarType(functionParamTokenType);
+						
+						
+						
+						parserStackFree(&expressionStack);
+						functionParamNumber++;
+					
+					
+					
+				} else {
+					//printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)).type]);
+					
+					parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+					
+				}
+				
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_LROUNDBRACKET){
+					break;
+				}
+				
+				top = top->next;
+				
+				parserStackPop(semanticStack);
+			}
+			
+			parserStackFree(&expressionStack);
+			
+			
+			
+			*/
+
 		}
 		
 		
 		// VOLÁNÍ FUNKCE
 		// kotrola, že funkce existuje v globalSymTable a vrací správný počet hodnot porovnáním s LeftSideVarCount a [vstupní parametry jsou správného typu]
-		if(inFunctionCall == 1){
+		if(inFunctionCall == 1 && !errorExists(*errorHandle)){
 			printf("FUNCTION\n");
 			
 			
@@ -790,6 +970,9 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			
 			ParserStackPtr paramStack;
 			parserStackInit(&paramStack);
+			
+			
+			// expressions to value types - start
 			
 			ParserStackPtr expressionStack;
 			parserStackInit(&expressionStack);
@@ -840,22 +1023,36 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			
 			parserStackFree(&expressionStack);
 			
+			
+			// expressions to value types - end
+			
+			
+			
 			parserStackPop(semanticStack); // pop TOKEN_LROUNDBRACKET
-		
+		/*
+			printf("FUNCTION2\n");
+			ParserStackPtr topTemp2 = (paramStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp2)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp2)).type]);
+				topTemp2 = topTemp2->next;
+			}printf("\n\n");
+			*/
+			
 			
 			if(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
+				//printf("IN FUNC\n");
 				Token functionIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)); // pop function id token
 				if(functionIdToken.type == TOKEN_ID){
 					
 					parserStackPop(semanticStack); // pop function name Token
-					
+					//printf("IN FUNC 2: %s\n", functionIdToken.attribute.string);
 					SymTableData data;
 					if(symTableSearch(*globalSymTable, functionIdToken.attribute.string, &data, errorHandle) == 1){
-						
+						//printf("IN FUNC 3\n");
 						if(functionParamNumber == data.functionParamDataTypes.size || data.functionParamDataTypes.size == -1){
 							
 							// TODO check input params
-							
+							//printf("IN COUNT: %d\n",data.functionParamDataTypes.size);
 							// pokud funkce nemá proměnný počet vstupních parametrů (print()) nebo 0 vstupních parametrů
 							if(data.functionParamDataTypes.size != -1 && data.functionParamDataTypes.size != 0){
 								
@@ -883,7 +1080,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 								//printf(">\n");
 							}
 							
-							
+							//printf("OUT COUNT: %d\n",data.functionReturnDataTypes.size);
 							
 							//TODO push output params on stack
 							
@@ -914,7 +1111,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 							errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - WRONG COUNT OF PARAMS", __FILE__, __LINE__, errorHandle);
 						}
 						
-					} else {
+					} else if(!errorExists(*errorHandle)){
 						// TODO - error kontrola typu chyby
 						errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - FUNCTION MISSING IN GLOBALSYMTABLE", __FILE__, __LINE__, errorHandle);
 					}
@@ -928,13 +1125,16 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				errorSet(INTERNAL_ERROR, "PARSER_ANALYZE: INTERNAL_ERROR", __FILE__, __LINE__, errorHandle);
 			}
 			
-
 			
-			
+			//printf("ERROR: <%d>\n", errorHandle->errorID);
 			
 			parserStackFree(&paramStack);
-			
-			
+			/*printf("FUNCTION3\n");
+			ParserStackPtr topTemp = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+				topTemp = topTemp->next;
+			}printf("\n\n");*/
 
 			
 		}
@@ -942,23 +1142,221 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		
 		// PŘIŘAZENÍ PROMĚNNÉ
 		// kontrola, že proměnné jsou v nějaké symtable na stacku a změna jejich typu podle hodnoty
-		if(inAssignment == 1){
+		if(inAssignment == 1 && !errorExists(*errorHandle)){
 			printf("ASSIGNMENT\n");
 			// TODO 3
 			
 			if(inFunctionCall == 0){
 				// TODO prepare
-				printf("\n<");
+				/*
 				ParserStackPtr topTemp = (*semanticStack);
 				while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
 					printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
 					topTemp = topTemp->next;
+				}printf("\n\n");*/
+				
+				
+				int functionParamNumber = 0;
+				
+				ParserStackPtr paramStack;
+				parserStackInit(&paramStack);
+				
+				
+				// expressions to value types - start
+				
+				ParserStackPtr expressionStack;
+				parserStackInit(&expressionStack);
+				
+				ParserStackPtr top = (*semanticStack);
+				ParserStackPtr topStart = (*semanticStack);
+				while(top != NULL){
+					//printf("\nTYPE: %s\n",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+						
+					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_ASSIGN && topStart != (*semanticStack))){
+							parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
+							
+							Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
+							
+							
+							Token tempToken;
+							tempToken.type = functionParamTokenType;
+							tempToken.pos_line = 0;
+							tempToken.pos_number = 0;
+							
+							
+							
+							parserStackPush(&paramStack, STACK_TOKEN_TO_DATA(tempToken));
+							//IDdataType functionParamDataType = parserSemanticTokenTypeToVarType(functionParamTokenType);
+							
+							
+							
+							/*printf("\n<");
+							ParserStackPtr topTemp = expressionStack;
+							while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+								printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+								topTemp = topTemp->next;
+							}
+							printf(">\n");*/
+							
+							parserStackFree(&expressionStack);
+							functionParamNumber++;
+						
+						
+						
+					} else if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_LROUNDBRACKET){// TOKEN_LROUNDBRACKET just pop
+						//printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)).type]);
+						
+						parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+						
+					}
+					
+					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_ASSIGN){
+						break;
+					}
+					
+					top = top->next;
+					
+					parserStackPop(semanticStack);
 				}
-				printf(">\n");
-			}
-			// TODO check 
+				
+				parserStackFree(&expressionStack);
+				
+				// expressions to value types - end
+				
+				//parserStackPop(semanticStack); // pop TOKEN_ASSIGN
 			
-			//parserSemanticChangeIDsToTypes(semanticStack, symtableStack, errorHandle);
+				/*printf("ASSIGNMENT 2:\n");
+				ParserStackPtr topTemp2 = (paramStack);
+				while(STACK_DATA_TO_INT(parserStackPeek(&topTemp2)) != -1){
+					printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp2)).type]);
+					topTemp2 = topTemp2->next;
+				}printf("\n\n");*/
+				
+				
+				parserSemanticChangeIDsToTypes(&paramStack, symtableStack, errorHandle);
+				
+				
+				while(STACK_DATA_TO_INT(parserStackPeek(&paramStack)) != -1){
+					parserStackPush(semanticStack, parserStackPop(&paramStack));
+				}
+				
+				
+				
+				parserStackFree(&paramStack);
+			
+			}
+			
+			
+			
+			// TODO change var types in symtable 
+			
+			
+			
+			
+			
+			ParserStackPtr leftSideStack;
+			parserStackInit(&leftSideStack);
+			
+			ParserStackPtr rightSideStack;
+			parserStackInit(&rightSideStack);
+			
+			// split left and right side of cmd
+			int assignTokenLoaded = 0;
+			while(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)).type == TOKEN_ASSIGN){
+					parserStackPop(semanticStack);
+					assignTokenLoaded = 1;
+				} else if(assignTokenLoaded == 0){
+					parserStackPush(&rightSideStack, parserStackPop(semanticStack));
+				} else if(assignTokenLoaded == 1){
+					parserStackPush(&leftSideStack, parserStackPop(semanticStack));
+				}
+			}
+			
+			
+			//find id in symtableStack and change var type
+			/*
+			
+			printf("LEFT SIDE:\n");
+			ParserStackPtr topTemp = leftSideStack;
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+				topTemp = topTemp->next;
+			}printf("\n\n");
+			
+			
+			printf("RIGHT SIDE:\n");
+			topTemp = rightSideStack;
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+				topTemp = topTemp->next;
+			}printf("\n\n");*/
+			
+			
+			
+			while(STACK_DATA_TO_INT(parserStackPeek(&leftSideStack)) != -1 && STACK_DATA_TO_INT(parserStackPeek(&rightSideStack)) != -1 && !errorExists(*errorHandle)){
+				
+				
+				Token currentToken = STACK_DATA_TO_TOKEN(parserStackPeek(&leftSideStack));
+				if(currentToken.type == TOKEN_ID && strcmp(currentToken.attribute.string,"_") != 0){
+					ParserStackPtr topSymtable = (*symtableStack);
+					while(topSymtable != NULL){
+						
+						SymTableBinTreePtr currentLocalSymtable = STACK_DATA_TO_SYMTABLE(parserStackPeek(&topSymtable));
+						
+						SymTableData data;
+						if(symTableSearch(currentLocalSymtable, currentToken.attribute.string, &data, errorHandle) == 1){
+							
+							symTableInsert(&currentLocalSymtable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, parserSemanticTokenTypeToVarType(STACK_DATA_TO_TOKEN(parserStackPeek(&rightSideStack)).type), 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+							
+							break;
+						}
+						
+						topSymtable = topSymtable->next;
+					}
+					if(topSymtable == NULL){
+						// TODO SEMANTIC ERROR - MISSING VAR
+						errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - ASSIGNMENT - MISSING VAR", __FILE__, __LINE__, errorHandle);
+					}
+				} else if(strcmp(currentToken.attribute.string,"_") != 0){
+					// TODO error wrong type
+					errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - ASSIGNMENT - WRONG TOKEN TYPE", __FILE__, __LINE__, errorHandle);
+				}
+				
+				
+				parserStackPop(&leftSideStack);
+				parserStackPop(&rightSideStack);
+			
+			}
+			
+			if((STACK_DATA_TO_INT(parserStackPeek(&leftSideStack)) != -1 || STACK_DATA_TO_INT(parserStackPeek(&rightSideStack)) != -1) && !errorExists(*errorHandle)){
+				//TODO ERROR wrong count of params
+				errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - ASSIGNMENT - WRONG COUNT OF PARAMS", __FILE__, __LINE__, errorHandle);
+				
+			}
+			
+				/*if(STACK_DATA_TO_TOKEN(parserStackPeek(leftSideStack)).type == STACK_DATA_TO_TOKEN(parserStackPeek(rightSideStack)).type){
+					parserStackPop(leftSideStack);
+					parserStackPop(rightSideStack);
+				} else if(!(STACK_DATA_TO_TOKEN(parserStackPeek(leftSideStack)).type == TOKEN_ID && strcmp(STACK_DATA_TO_TOKEN(parserStackPeek(leftSideStack)).attribute.string, "_") == 0)) {
+					// TODO error wrong type
+					errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - ASSIGNMENT - WRONG TYPE", __FILE__, __LINE__, errorHandle);
+				}*/
+			
+
+			
+			
+			parserStackFree(&leftSideStack);
+			parserStackFree(&rightSideStack);
+			
+			
+			
+			
+			
+			
+			
+			
+			
 			
 			
 			
@@ -967,8 +1365,22 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		
 		// DEFINICE PROMĚNNÉ
 		// kontrola, že proměnná není v aktuální symtable a její přidání s typem hodnoty do aktuální symtable
-		if(inDefinition == 1){
+		if(inDefinition == 1 && !errorExists(*errorHandle)){
 			printf("DEFINITION\n");
+			
+			
+			
+			/*
+			ParserStackPtr topTemp = (*semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&topTemp)) != -1){
+				printf("%s; ",tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&topTemp)).type]);
+				topTemp = topTemp->next;
+			}printf("\n\n");*/
+			
+			
+			
+			//printf("TU \n");
+			
 			
 			// expression stack
 			ParserStackPtr expressionStack;
@@ -980,7 +1392,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				
 				parserStackPush(&expressionStack, parserStackPop(semanticStack));
 			}
-			
+			//printf("TU \n");
 			parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
 			
 			
@@ -992,10 +1404,10 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			}
 			printf(">\n");*/
 			
-			
+			//printf("TU \n");
 			Token_type newVarTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
 			//printf("\nTYPE: %s\n",tokenTypes[newVarTokenType]);
-			
+			//printf("TU \n");
 			parserStackFree(&expressionStack);
 			
 			
@@ -1070,7 +1482,6 @@ int parserSemanticChangeIDsToTypes(ParserStackPtr *expressionStack, ParserStackP
 		
 		Token currentToken = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
 		if(currentToken.type == TOKEN_ID){
-			
 			ParserStackPtr topSymtable = (*symtableStack);
 			while(topSymtable != NULL){
 				
@@ -1086,15 +1497,16 @@ int parserSemanticChangeIDsToTypes(ParserStackPtr *expressionStack, ParserStackP
 					} else if(data.idDataType == STRING){
 						top->data.token.type = TOKEN_STRINGVALUE;
 					}
-					return 0;
+					break;
 				}
 				
 				topSymtable = topSymtable->next;
 			}
-			
-			// TODO SEMANTIC ERROR - MISSING VAR
-			errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - MISSING VAR", __FILE__, __LINE__, errorHandle);
-			return -1;
+			if(topSymtable == NULL){
+				// TODO SEMANTIC ERROR - MISSING VAR
+				errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - MISSING VAR", __FILE__, __LINE__, errorHandle);
+				return -1;
+			}
 		}
 		
 		top = top->next;

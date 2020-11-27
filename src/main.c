@@ -59,6 +59,7 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	} else if(currentToken.type == TOKEN_FLOATVALUE){
 		snprintf(tokenIdName, STATIC_STRING_LENGHT, "%f", currentToken.attribute.real);
 	}
+	
 	return handleError(errorHandle, tokenTypes[currentToken.type], currentToken.pos_line, currentToken.pos_number, tokenIdName);
 }
 
