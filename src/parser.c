@@ -388,7 +388,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				
 				// levý rozbor
 				if(inExpr == 0){// pokud nejsme v expression
-					parserLeftAnalysis(LLtableResult);
+					parserLeftAnalysis(LLtableResult, tokenList, &symtableStack, globalSymTable, errorHandle);
 				}
 				
 				LLtableResult--; // indexování v poli
@@ -496,7 +496,7 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 			int rightAnalysis = parserStackPrecedentTopPopAndPushRule(&statementStack);
 			if(rightAnalysis > 0){
 				// pravý rozbor
-				parserRightAnalysis(rightAnalysis);
+				parserRightAnalysis(rightAnalysis, expressionList, symtableStack, globalSymTable, errorHandle);
 			} else {
 				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - PRECEDENT TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
 			}
@@ -559,11 +559,6 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	scannerTokenListGetPrev(tokenList, &prevPrevToken, &errorHandleGet);
 	scannerTokenListMoveNext(tokenList, &errorHandleMove);
 	
-	
-	// výpis tokenů/u
-	//if(MAP_TOKEN_TO_TERM[currentToken.type] < TERM_PREC_ADD){
-		//printf("%s ",tokenTypes[currentToken.type]);if(currentToken.type == TOKEN_EOL){printf("\n");}
-	//}
 	
 	
 	// DEFINICE FUNKCE
@@ -727,6 +722,13 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		// push semantic stack
 		parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 	}
+	
+	
+	
+	
+	
+	// generate code
+	generatorGenerateCode(tokenList, symtableStack, globalSymTable, errorHandle);
 	
 	
 	
@@ -1356,20 +1358,26 @@ int parserTokenListFree(TokenList *tokenList)
 }
 
 
-int parserLeftAnalysis(int ruleNumber)
+int parserLeftAnalysis(int ruleNumber, TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	// Levý rozbor (číslováno od 1)
 	// TODO
 	//printf("Lr: %d\n", ruleNumber);
 	
+	// generate code
+	//generatorGenerateCode(ruleNumber, tokenList, symtableStack, globalSymTable, errorHandle);
+	
 	return 0;
 }
 
-int parserRightAnalysis(int ruleNumber)
+int parserRightAnalysis(int ruleNumber, TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
 {
 	// Pravý rozbor (číslováno od 1)
 	// TODO
 	//printf("Rr: %d\n", ruleNumber);
+	
+	// generate code
+	//generatorGenerateCode(ruleNumber, expressionList, symtableStack, globalSymTable, errorHandle);
 	
 	return 0;
 }

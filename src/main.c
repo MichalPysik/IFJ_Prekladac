@@ -32,7 +32,7 @@ int main()
 
 
 	// generování výsledného kódu
-	generatorGenerateCode(&tokenList, &errorHandle);
+	//generatorGenerateCode(&tokenList, &errorHandle);
 
 	
 	int result = getResult(errorHandle, &tokenList);

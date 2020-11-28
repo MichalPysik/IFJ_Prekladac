@@ -2,7 +2,7 @@
 // EXPRESSION se zde chová jako terminál
 
 1. <program>        -> package id EOL <program>
-2. <program>        -> func id ( <param_in_first> ) <funkce_body> EOL <program>
+2. <program>        -> func id ( <param_in_first> ) <funkce_body> <program>
 3. <program>        -> EOL <program>
 4. <program>        -> EOF
 

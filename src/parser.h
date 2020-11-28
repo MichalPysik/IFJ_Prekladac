@@ -5,36 +5,7 @@
 
 #include "common.h"
 #include "scanner.h"
-#include "symtable.h"
-
-
-
-#define STACK_INT_TO_DATA(x) (ParserStackData)((int)x)
-#define STACK_TERM_TO_DATA(x) (ParserStackData)((Term_type)x)
-#define STACK_SYMTABLE_TO_DATA(x) (ParserStackData)((SymTableBinTreePtr)x)
-#define STACK_TOKEN_TO_DATA(x) (ParserStackData)((Token)x)
-#define STACK_TOKEN_TYPE_TO_DATA(x) (ParserStackData)((Token_type)x)
-
-#define STACK_DATA_TO_INT(x) ((int)x.result)
-#define STACK_DATA_TO_TERM(x) ((Term_type)x.TERM_NONTERM)
-#define STACK_DATA_TO_SYMTABLE(x) ((SymTableBinTreePtr)x.SYM_TABLE)
-#define STACK_DATA_TO_TOKEN(x) ((Token)x.token)
-#define STACK_DATA_TO_TOKEN_TYPE(x) ((Token_type)x.tokenType)
-
-
-
-typedef union {
-	int result;
-	Term_type TERM_NONTERM;
-	SymTableBinTreePtr SYM_TABLE;
-	Token token;
-	Token_type tokenType;
-} ParserStackData;
-
-typedef struct parserStackNode {
-	ParserStackData data;
-	struct parserStackNode *next;
-} *ParserStackPtr;
+#include "generator.h"
 
 
 
@@ -66,9 +37,9 @@ Token parserSemanticVarTypeToToken(IDdataType varDataType);
 
 int parserTokenListFree(TokenList *tokenList);
 
-int parserLeftAnalysis(int ruleNumber);
+int parserLeftAnalysis(int ruleNumber, TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
-int parserRightAnalysis(int ruleNumber);
+int parserRightAnalysis(int ruleNumber, TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
 
 /****************************************************** PRECEDENT SYNTAX STACK ******************************************************************************/
