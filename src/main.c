@@ -32,7 +32,7 @@ int main()
 
 
 	// generování výsledného kódu
-	//generatorGenerateCode(&tokenList, &errorHandle);
+	// přímé volání z parseru
 
 	
 	int result = getResult(errorHandle, &tokenList);

@@ -23,9 +23,9 @@ int parserSymTableInitBuiltIn(SymTableBinTreePtr *globalSymTable, ErrorHandle *e
 
 int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
 
-int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
+int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle);
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle);
 
 int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, ErrorHandle *errorHandle);
 
@@ -37,9 +37,9 @@ Token parserSemanticVarTypeToToken(IDdataType varDataType);
 
 int parserTokenListFree(TokenList *tokenList);
 
-int parserLeftAnalysis(int ruleNumber, TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
+int parserLeftAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisStack);
 
-int parserRightAnalysis(int ruleNumber, TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle);
+int parserRightAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisStack);
 
 
 /****************************************************** PRECEDENT SYNTAX STACK ******************************************************************************/

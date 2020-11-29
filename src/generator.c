@@ -4,8 +4,7 @@
 
 
 
-//int generatorGenerateCode(int ruleNumber, TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
-int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ErrorHandle *errorHandle)
+int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
@@ -23,19 +22,34 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	// get current Token
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
+	
+	
+	//printf("--------------------------------------------------------------------------------\n");
+	
+	while(STACK_DATA_TO_INT(parserStackPeek(leftAndRightAnalysisStack)) >= 0){
+		printf("  rule: %d\n", STACK_DATA_TO_INT(parserStackPop(leftAndRightAnalysisStack)));
+		// TODO - udělal bych asi switch tady uvnitř while podle čísla pravidla
+	}
+	
+	//printf("--------------------------------------------------------------------------------\n");
+	
+	
+	
 	// výpis tokenů/u
 	/*
 	if(currentToken.type == TOKEN_EOL){
 		printf("\n");
 	}
 	else if (currentToken.type == TOKEN_ID){
-		printf("%s", currentToken.attribute.string);
+		printf("%s ", currentToken.attribute.string);
 	}
-
 	else{
-	printf("%s ",tokenTypes[currentToken.type]);
+		printf("%s ",tokenTypes[currentToken.type]);
 	}
 	*/
+	
+	
+	
 	int cnt = 0;
 	static bool inMain = false;
 	static int bracketCnt = 0;
