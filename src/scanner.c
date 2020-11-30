@@ -3,7 +3,7 @@
 #include "scanner.h"
 
 //tento buffer neni deklarovany v .h souboru umyslne!! je jen pro mistni ucely
-char strBuffer[1024];
+char strBuffer[2048];
 
 
 // Stavy konecneho automatu scanneru
@@ -881,7 +881,8 @@ int scannerGetToken (Token *currentToken)
 				else if (currChar == EOF)
 				{
 					currentToken->type = TOKEN_EOF;
-					return ALL_OK;
+					fprintf(FILE_ERROR, "Lexical analysis error: Block comment has to be ended before reaching End of File\n");
+					return LEX_ERROR;
 				}
 				break;
 
@@ -894,7 +895,8 @@ int scannerGetToken (Token *currentToken)
 				else if (currChar == EOF)
 				{
 					currentToken->type = TOKEN_EOF;
-					return ALL_OK;
+					fprintf(FILE_ERROR, "Lexical analysis error: Block comment has to be ended before reaching End of File\n");
+					return LEX_ERROR;
 				}
 				else if (currChar != '*')
 				{
