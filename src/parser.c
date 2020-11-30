@@ -361,7 +361,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				
 			// porovnání zásobníku - na vrcholu zásobníku je stejný terminál jako aktuální token
 			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
-				parserSemanticAnalysis(tokenList, &semanticStack, &symtableStack, globalSymTable, &leftAndRightAnalysisStack, errorHandle);
+				parserSemanticAnalysis(tokenList, &semanticStack, &symtableStack, globalSymTable, &leftAndRightAnalysisStack, NULL, errorHandle);
 				
 				parserStackPop(&syntaxStack);
 				scannerTokenListMoveNext(tokenList, errorHandle);
@@ -463,6 +463,14 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 
 
+	ParserStackPtr semanticRuleStack;
+	parserStackInit(&semanticRuleStack);
+	
+	
+	ParserStackPtr semanticPrecedentStack;
+	parserStackInit(&semanticPrecedentStack);
+	
+	
 	ParserStackPtr statementStack;
 	parserStackInit(&statementStack);
 	
@@ -482,26 +490,35 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	scannerTokenListSetActiveFirst(expressionList, errorHandle);
 
 	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
-
+		
 		Term_type stackTopTerm = STACK_DATA_TO_TERM(parserStackPrecedentTop(&statementStack));
 		Term_type tokenTerm = MAP_TOKEN_TO_PREC_TERM[currentToken.type];
 		char operation = PrecedenceTable[TERM_TO_PREC_TABLE(stackTopTerm)][TERM_TO_PREC_TABLE(tokenTerm)];
 		
 		if(stackTopTerm == TERM_PSEUDO_DOLLAR && tokenTerm == TERM_PSEUDO_DOLLAR){
+			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
 			break;
 		} else if(operation == '='){
-			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, errorHandle);
+			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
 			
+			parserStackPush(&semanticPrecedentStack, STACK_TOKEN_TO_DATA(currentToken));
 			parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+			
 			scannerTokenListMoveNext(expressionList, errorHandle);
 		} else if(operation == '<'){
-			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, errorHandle);
+			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
 			
 			parserStackPrecedentTopAddHandle(&statementStack);
+			//parserStackFree(&semanticRuleStack);
+			
+			parserStackPush(&semanticPrecedentStack, STACK_TOKEN_TO_DATA(currentToken));
 			parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+			
 			scannerTokenListMoveNext(expressionList, errorHandle);
 		} else if(operation == '>'){
-			int rightAnalysis = parserStackPrecedentTopPopAndPushRule(&statementStack);
+			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
+			
+			int rightAnalysis = parserStackPrecedentTopPopAndPushRule(&statementStack, &semanticPrecedentStack, &semanticRuleStack);
 			if(rightAnalysis > 0){
 				// pravý rozbor
 				parserRightAnalysis(rightAnalysis, leftAndRightAnalysisStack);
@@ -517,12 +534,16 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	scannerTokenListInit(expressionList, errorHandle);
 	
 	parserStackFree(&statementStack);
+	
+	parserStackFree(&semanticPrecedentStack);
+	
+	parserStackFree(&semanticRuleStack);
 
 	return errorHandle->errorID;
 }
 
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle)
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
@@ -1164,7 +1185,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	
 	
 	// call generator and generate code from token and rules
-	generatorGenerateCode(tokenList, symtableStack, globalSymTable, leftAndRightAnalysisStack, errorHandle);
+	generatorGenerateCode(tokenList, symtableStack, globalSymTable, leftAndRightAnalysisStack, semanticRuleStack, errorHandle);
 	
 	
 	return errorHandle->errorID;
@@ -1428,18 +1449,31 @@ int parserStackPrecedentTopHasHandle(ParserStackPtr *stack)
 	return (STACK_DATA_TO_INT(parserStackPrecedentTop(stack)) != -1);
 }
 
-int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack)
+int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr *semanticPrecedentStack, ParserStackPtr *semanticRuleStack)
 {
 	ParserStackPtr ruleStack;
 	parserStackInit(&ruleStack);
-	
+		
 	// pop
 	ParserStackPtr top = (*stack);
 	while(top != NULL && (STACK_DATA_TO_TERM(top->data)) != TERM_PSEUDO_HANDLE){
 		parserStackPush(&ruleStack, top->data);
-		parserStackPop(stack);
+		
+		if(STACK_DATA_TO_TOKEN(parserStackPeek(semanticPrecedentStack)).type != TOKEN_EMPTY){
+			parserStackPush(semanticRuleStack, parserStackPeek(semanticPrecedentStack));
+		}
+		parserStackPop(semanticPrecedentStack);
+		
 		top = top->next;
+		parserStackPop(stack);
 	}
+	
+	Token currentToken;
+	currentToken.type = TOKEN_EMPTY;
+	currentToken.pos_line = 0;
+	currentToken.pos_number = 0;
+	parserStackPush(semanticPrecedentStack, STACK_TOKEN_TO_DATA(currentToken));
+	
 	if(top != NULL && (STACK_DATA_TO_TERM(top->data)) == TERM_PSEUDO_HANDLE){
 		parserStackPop(stack);
 		int found = 0;

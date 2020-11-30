@@ -25,7 +25,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 
 int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle);
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle);
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle);
 
 int parserSemanticChangeIDsToTypes(ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, ErrorHandle *errorHandle);
 
@@ -50,7 +50,7 @@ int parserStackPrecedentTopAddHandle(ParserStackPtr *stack);
 
 int parserStackPrecedentTopHasHandle(ParserStackPtr *stack);
 
-int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack);
+int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr *semanticPrecedentStack, ParserStackPtr *semanticRuleStack);
 
 
 /****************************************************** SYNTAX STACK ******************************************************************************/
