@@ -769,7 +769,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			
 			parserSemanticChangeIDsToTypes(semanticStack, symtableStack, errorHandle);
 			
-			parserSemanticExpressionCheckOperatorsAndOperands(semanticStack, errorHandle);
+			Token_type expressionType = parserSemanticExpressionCheckOperatorsAndOperands(semanticStack, errorHandle);
+			if(!(TOKEN_EQ <= expressionType && expressionType <= TOKEN_LTE)){
+				// nikdy nenastane -> máme jako syntaktickou chybu
+				errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - WRONG TYPE IN IF or FOR expression", __FILE__, __LINE__, errorHandle);
+			}
 		}
 		
 		
@@ -1256,7 +1260,9 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 				
 				top = top->next;
 			}
-			return expressionTokenType;
+			
+			top = (*semanticStack);
+			return top->next->data.token.type;
 			
 		// ACTION
 		} else if(TOKEN_ADD <= top->next->data.token.type && top->next->data.token.type <= TOKEN_DIV){

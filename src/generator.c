@@ -116,8 +116,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	switch (currentToken.type)
 	{
 		case TOKEN_ID:
+		
+			// TOKEN SE JMÉNEM FUNKCE
+			if(inFunction == true && inFunctionName == NULL){
+				inFunctionName = currentToken.attribute.string;
+				printf("# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n", inFunctionName, inFunctionName);
+			}
 			
-
+			
+			
+			
 			// používat: strcmp() == 0 -> jinak se nemusí rovnat
 			/*if(strcmp(currentToken.attribute.string,"main") == 0 && previousToken.type == TOKEN_KEYWORD_FUNC){
 				inMain = true;
@@ -155,8 +163,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			bracketCnt++;
 			break;
 			
-		// UKONČENÍ DEFINICE FUNKCE
+		
 		case TOKEN_RCURLYBRACKET:
+			
+			// UKONČENÍ DEFINICE FUNKCE
 			bracketCnt--;
 			if(inFunction == true && bracketCnt == 0){
 				if(strcmp(inFunctionName, "main") == 0){
@@ -182,11 +192,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	// GENEROVÁNÍ PODLE ULOŽENÝCH DAT
 	
-	// TOKEN SE JMÉNEM FUNKCE
-	if(inFunction == true && inFunctionName == NULL){
-		inFunctionName = currentToken.attribute.string;
-		printf("# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n", inFunctionName, inFunctionName);
-	}
+	
+
 	
 	
 	
