@@ -18,21 +18,38 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	currentToken.type = TOKEN_EMPTY;
 	currentToken.pos_line = 0;
 	currentToken.pos_number = 0;
-
-	// get current Token
+	
+	
+	static int bracketCnt = 0;
+	static bool inFunction = false;
+	static char *inFunctionName = NULL;
+	static bool inExpression = false;
+	
+	
+	// get current and previous Token
+	scannerTokenListGetPrev(tokenList, &previousToken, errorHandle);
+	errorHandleInit(errorHandle);
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
 	
 	
-	static bool inExpression = false;
 	
 	
-	//printf("--------------------------------------------------------------------------------\n");
-	
+	// GENEROVÁNÍ PODLE PRAVIDEL
 	while(STACK_DATA_TO_INT(parserStackPeek(leftAndRightAnalysisStack)) >= 0){
 		int grammarRule = STACK_DATA_TO_INT(parserStackPop(leftAndRightAnalysisStack));
-		printf("  rule: %d\n", grammarRule);
-		// TODO - udělal bych switch asi tady uvnitř while podle čísla pravidla
+		//printf("  rule: %d\n", grammarRule);
+		
+		// ZAČÁTEK SOUBORU (PROLOG)
+		if(grammarRule == 1){
+			printf(".IFJcode20\n\n\n");
+		}
+		
+		
+		// DEFINICE FUNKCE
+		if(grammarRule == 2){
+			inFunction = true;
+		}
 		
 		
 		// VÝRAZY
@@ -50,7 +67,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				
 				ParserStackPtr top = (*semanticRuleStack);
 				while(top != NULL && tokenCount < 3){ // načte max první tři terminály
-					printf("    EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					//printf("    EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
 					
 					if(tokenCount == 0){
 						token1operator = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
@@ -76,7 +93,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(semanticRuleStack != NULL){
 				ParserStackPtr top = (*semanticRuleStack);
 				if(top != NULL && top->next == NULL && inExpression == false){
-					printf("    ALONE EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					//printf("    ALONE EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
 					
 					// TODO něco s výsledným výrazem
 					
@@ -91,7 +108,102 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 	}
 	
-	//printf("--------------------------------------------------------------------------------\n");
+	
+	
+	
+	
+	// GENEROVANÍ PODLE TOKENŮ
+	switch (currentToken.type)
+	{
+		case TOKEN_ID:
+			
+
+			// používat: strcmp() == 0 -> jinak se nemusí rovnat
+			/*if(strcmp(currentToken.attribute.string,"main") == 0 && previousToken.type == TOKEN_KEYWORD_FUNC){
+				inMain = true;
+				printf("CREATEFRAME\nPUSHFRAME\n");
+			}*/
+			/*
+			if(strcmp(currentToken.attribute.string,"print") == 0){
+				scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
+				scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
+				cnt+=2;
+
+				while (currentToken.type != TOKEN_RROUNDBRACKET)
+				{
+					if(currentToken.type == TOKEN_INTVALUE){
+						printf("WRITE int@%s\n",currentToken.attribute.integer);
+					}
+					else if(currentToken.type == TOKEN_STRINGVALUE){
+						printf("WRITE string@%s\n",currentToken.attribute.string);
+					}
+					else if(currentToken.type == TOKEN_FLOATVALUE){
+						printf("WRITE float@%s\n",currentToken.attribute.real);
+					}
+					scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
+					cnt++;
+				}
+			}
+			*/
+			//scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
+			break;
+		
+		
+		
+		
+		case TOKEN_LCURLYBRACKET:
+			bracketCnt++;
+			break;
+			
+		// UKONČENÍ DEFINICE FUNKCE
+		case TOKEN_RCURLYBRACKET:
+			bracketCnt--;
+			if(inFunction == true && bracketCnt == 0){
+				if(strcmp(inFunctionName, "main") == 0){
+					printf("POPFRAME\nEXIT int@0\n\n");
+				} else {
+					printf("POPFRAME\nRETURN\n\n");
+				}
+				
+				
+				inFunction = false;
+				inFunctionName = NULL;
+				
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	
+	
+	
+	
+	// GENEROVÁNÍ PODLE ULOŽENÝCH DAT
+	
+	// TOKEN SE JMÉNEM FUNKCE
+	if(inFunction == true && inFunctionName == NULL){
+		inFunctionName = currentToken.attribute.string;
+		printf("# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n", inFunctionName, inFunctionName);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// TODO
+	
 	
 	
 	
@@ -107,65 +219,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		printf("%s ",tokenTypes[currentToken.type]);
 	}
 	*/
-	
-	
-	
-	int cnt = 0;
-	static bool inMain = false;
-	static int bracketCnt = 0;
-
-	switch (currentToken.type)
-	{
-	case TOKEN_ID:
-		scannerTokenListGetPrev(tokenList, &previousToken, errorHandle);
-		errorHandleInit(errorHandle);
-
-		// používat: strcmp() == 0 -> jinak se nemusí rovnat
-		if(strcmp(currentToken.attribute.string,"main") == 0 && previousToken.type == TOKEN_KEYWORD_FUNC){
-			inMain = true;
-			printf(".IFJcode20\n\nCREATEFRAME\nPUSHFRAME\n");
-		}
-		/*
-		if(strcmp(currentToken.attribute.string,"print") == 0){
-			scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
-			scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
-			cnt+=2;
-
-			while (currentToken.type != TOKEN_RROUNDBRACKET)
-			{
-				if(currentToken.type == TOKEN_INTVALUE){
-					printf("WRITE int@%s\n",currentToken.attribute.integer);
-				}
-				else if(currentToken.type == TOKEN_STRINGVALUE){
-					printf("WRITE string@%s\n",currentToken.attribute.string);
-				}
-				else if(currentToken.type == TOKEN_FLOATVALUE){
-					printf("WRITE float@%s\n",currentToken.attribute.real);
-				}
-				scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
-				cnt++;
-			}
-		}
-		*/
-		//scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
-		break;
-
-	case TOKEN_LCURLYBRACKET:
-		bracketCnt++;
-	break;
-
-	case TOKEN_RCURLYBRACKET:
-		bracketCnt--;
-		if(inMain == true && bracketCnt == 0){
-			printf("POPFRAME\nRETURN\n");
-		}
-	break;
-
-	default:
-		break;
-	}
-
-	// TODO
 	
 	
 	
