@@ -705,6 +705,9 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	// VOLÁNÍ FUNKCE
 	if(prevPrevToken.type != TOKEN_KEYWORD_FUNC && prevToken.type == TOKEN_ID && currentToken.type == TOKEN_LROUNDBRACKET){
 		inFunctionCall = 1;
+		
+		// push semantic stack
+		parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 	}
 	
 	
@@ -742,7 +745,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		}
 		
 	// PRAVÁ ČÁST PŘÍKAZU
-	} else if(currentToken.type == TOKEN_ID || currentToken.type == TOKEN_LROUNDBRACKET || currentToken.type == TOKEN_COMMA
+	} else if(currentToken.type == TOKEN_ID || currentToken.type == TOKEN_COMMA
 		|| currentToken.type == TOKEN_INTVALUE || currentToken.type == TOKEN_FLOATVALUE || currentToken.type == TOKEN_STRINGVALUE 
 		|| currentToken.type == TOKEN_INIT || currentToken.type == TOKEN_ASSIGN || currentToken.type == TOKEN_KEYWORD_RETURN
 		|| currentToken.type == TOKEN_ADD || currentToken.type == TOKEN_SUB || currentToken.type == TOKEN_MUL || currentToken.type == TOKEN_DIV
