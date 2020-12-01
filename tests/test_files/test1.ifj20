@@ -1,0 +1,16 @@
+// Program 4: Scitani jako funkce
+package main
+
+
+func add(a int, b int) (int) {
+	result := a + b
+    return result
+}
+
+func main() {
+    a := 10 + 20 * 3
+	print("Zadejte ", a, "prvni\\cislo pro soucet: ")
+	b := 20
+    result := add(a, b)
+    print(result)
+}

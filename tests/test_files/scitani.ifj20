@@ -7,11 +7,6 @@ func add(a int, b int) (int) {
     return result
 }
 
-func factorial(a int, b int) (int) {
-	result := a + b
-    return result
-}
-
 func main() {
 	print("Zadejte prvni cislo pro soucet: ")
 	a := 0

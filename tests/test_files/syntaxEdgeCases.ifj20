@@ -11,7 +11,7 @@ func main() {
     //             (1.0+0.8)
     //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa := 5
     //f := 5.6 + 6.8 					// OK
-    //g := 6 + 5 > 0 					// ERR 5
+    //g := 6 + 5 > 0 					// ERR 5 //
     //h := 55 							// OK
     //i := 5 + ( 5 + (5)) 				// OK
     //j := (45) 						// OK
@@ -34,12 +34,12 @@ func main() {
     //j := fn()							// ERR 3
     //k := 9 + ahoj()					// ERR 2
     //l := -40							// ERR 2
-    //m := 36478 ** 2					// ERR 0 => NOT OK
+    m := 36478 ** 2					// ERR 0 => NOT OK
     //n = .0							// ERR 1
     //o = 0.							// ERR 1
     //p = .								// ERR 1
     //q = -5							// ERR 2
     //r = 5e							// ERR 1
     //s = 5e+							// ERR 1
-    t = 5e-								// ERR 1
+    //t = 5e-						    // ERR 1
 }
