@@ -4,6 +4,27 @@
 
 
 
+void printString(char* string){
+	for (int i = 0; string[i] != '\0'; i++){
+		if(string[i] <= 32)
+		{
+			if(string[i] < 10){
+				printf("\\00%d", string[i]);
+			}
+			else{
+				printf("\\0%d", string[i]);
+			}
+		}
+		else if (string[i] == 35) printf("\\035");
+		else if (string[i] == 92) printf("\\092");
+		else {
+			printf("%c", string[i]);
+		}
+	}
+	printf("\n");
+}
+
+
 int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -25,7 +46,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static char *inFunctionName = NULL;
 	static bool inExpression = false;
 	static bool inPrint = false;
-	
+	static bool inMain = false;
+	static bool singleExpression = false;
+	static int expressionCounter = 0;
+	static char* localFrameVariable;
 	
 	// get current and previous Token
 	scannerTokenListGetPrev(tokenList, &previousToken, errorHandle);
@@ -39,7 +63,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	// GENEROVÁNÍ PODLE PRAVIDEL
 	while(STACK_DATA_TO_INT(parserStackPeek(leftAndRightAnalysisStack)) >= 0){
 		int grammarRule = STACK_DATA_TO_INT(parserStackPop(leftAndRightAnalysisStack));
-		printf("  rule: %d\n", grammarRule);
+		//printf("  rule: %d\n", grammarRule);
 		
 		// ZAČÁTEK SOUBORU (PROLOG)
 		if(grammarRule == 1){
@@ -49,82 +73,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		
 		// DEFINICE FUNKCE
 		if(grammarRule == 2){
-			printf("# -----func %s--------------------------------\n", currentToken.attribute.string);
-			printf("LABEL %s\n\n", currentToken.attribute.string);
-			printf("CREATEFRAME\nPUSHFRAME\n\n");
+			//printf("\n# -----func %s--------------------------------\n", currentToken.attribute.string);
+			//printf("LABEL %s\n\n", currentToken.attribute.string);
+			//printf("CREATEFRAME\nPUSHFRAME\n\n");
 			inFunction = true;
 		}
 
 		if(grammarRule == 16){
-			//printf("Atributa: %s\n", currentToken.attribute.string);
-			//printf("Token Type: %s\n", tokenTypes[currentToken.type]);
-			//add(10, 5)
-			if(!strcmp(currentToken.attribute.string,"print")) inPrint = true;
 			
-
-			// Jestli je to print
-			/*
-			if(!strcmp(currentToken.attribute.string,"print") && currentToken.type == TOKEN_ID)
-			{
-				int shift_count = 0; //čítač posuvu
-				scannerTokenListMoveNext(tokenList, errorHandle); //ted jsme na "('
-				scannerTokenListMoveNext(tokenList, errorHandle); // hodnota do currentTokenu
-				shift_count += 2;
-
-				// Prochazeni parametru uvnitr funkce print
-				while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && currentToken.type != TOKEN_RROUNDBRACKET)
-				{ 
-					if(currentToken.type == TOKEN_STRINGVALUE){
-						printf("WRITE string@");
-						for (int i = 0; currentToken.attribute.string[i] != '\0'; i++){
-							if(currentToken.attribute.string[i] <= 32) //Pokud je white character
-							{
-								if(currentToken.attribute.string[i] < 10){
-									printf("\\00%d", currentToken.attribute.string[i]);
-								}
-								else{
-									printf("\\0%d", currentToken.attribute.string[i]);
-								}
-							}
-							else if (currentToken.attribute.string[i] == 35) printf("\\035");
-							else if (currentToken.attribute.string[i] == 92) printf("\\092");
-							else {
-								printf("%c", currentToken.attribute.string[i]);
-							}
-						}
-						printf("\n");
-					}
-					else if(currentToken.type == TOKEN_INTVALUE){
-						printf("WRITE int@%ld\n", currentToken.attribute.integer);
-					}
-					else if(currentToken.type == TOKEN_FLOATVALUE){
-						printf("WRITE float@%a\n", currentToken.attribute.real);
-					}
-					//BOOLTHEN exp
-					//else if(currentToken.type == TOKEN_BOOLVALUE){
-					//		printf("WRITE bool@%s, currentToken.attribute.bool ? "true" : "false")
-					//}
-					else if(currentToken.type == TOKEN_ID){
-						printf("WRITE LF@%s\n", currentToken.attribute.string);
-					}
-					scannerTokenListMoveNext(tokenList, errorHandle);// jsme s v carce
-					shift_count += 1;
-					scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
-
-					if(currentToken.type != TOKEN_RROUNDBRACKET && currentToken.type == TOKEN_COMMA)
-					{
-						scannerTokenListMoveNext(tokenList, errorHandle);// jsme v dalsim parametru
-						shift_count += 1;
-					}
-					
-				}
-
-				for(int i = 0; i < shift_count; i++) //Navrat ukazatele na puvodni token
-				{
-					scannerTokenListMovePrev(tokenList, errorHandle);
-				}
-				scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
-			}*/
+			if(!strcmp(currentToken.attribute.string,"print")) inPrint = true;
+		
 		}
 		
 		
@@ -133,12 +91,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			inExpression = true;
 			
 			if(semanticRuleStack != NULL){
-				Token token1operator; // OPERATOR
-				token1operator.type = TOKEN_EMPTY;
-				Token token2operand2; // OPERAND 2
-				token2operand2.type = TOKEN_EMPTY;
-				Token token3operand1; // OPERAND 1
-				token3operand1.type = TOKEN_EMPTY;
+				Token operator; // OPERATOR
+				operator.type = TOKEN_EMPTY;
+				Token operand2; // OPERAND 2
+				operand2.type = TOKEN_EMPTY;
+				Token operand1; // OPERAND 1
+				operand1.type = TOKEN_EMPTY;
 				int tokenCount = 0;
 				
 				ParserStackPtr top = (*semanticRuleStack);
@@ -146,11 +104,11 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					//printf("    EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
 					
 					if(tokenCount == 0){
-						token1operator = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+						operator = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
 					} else if(tokenCount == 1){
-						token2operand2 = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+						operand2 = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
 					} else if(tokenCount == 2){
-						token3operand1 = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+						operand1 = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
 					}
 					
 					
@@ -158,19 +116,57 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					parserStackPop(semanticRuleStack);
 					tokenCount++;
 				}
-				
+				// TISK INSTRUKCI VYRAZU
+				if(operator.type == TOKEN_MUL) printf("MUL TF@$vysledekVyrazu%d", expressionCounter);
+				else if(operator.type == TOKEN_DIV) printf("DIV TF@$vysledekVyrazu%d", expressionCounter);
+				else if(operator.type == TOKEN_ADD) printf("ADD TF@$vysledekVyrazu%d", expressionCounter);
+				else if(operator.type == TOKEN_SUB) printf("SUB TF@$vysledekVyrazu%d", expressionCounter);
+
+				if(operand2.type == TOKEN_INTVALUE) printf(" int@%ld ", operand2.attribute.integer);
+				else if(operand2.type == TOKEN_FLOATVALUE) printf("float@%a ", operand2.attribute.real);
+				else if(operand2.type == TOKEN_STRINGVALUE) {
+					printf(" string@");
+					printString(operand2.attribute.string);
+				}
+				else if(operand2.type == TOKEN_ID){
+					printf(" LF@%s", operand2.attribute.string);
+				}
+
+				if(operand1.type == TOKEN_INTVALUE) printf(" int@%ld\n", operand1.attribute.integer);
+				else if(operand1.type == TOKEN_FLOATVALUE) printf(" float@%a\n", operand1.attribute.real);
+				else if(operand1.type == TOKEN_STRINGVALUE) {
+					printf(" string@");
+					printString(operand1.attribute.string);
+				}
+				else if(operand1.type == TOKEN_ID){
+					printf(" LF@%s", operand1.attribute.string);
+				}
+					
+				/*
+				if(data.tokenType == TOKEN_MUL)printf("MUL %s", pomoc);
+				else if(data.tokenType == TOKEN_DIV) printf("DIV %s", pomoc);
+				else if(data.tokenType == TOKEN_ADD) printf("ADD %s", pomoc);
+				else if(data.tokenType == TOKEN_SUB) printf("SUB %s", pomoc);
+				else if(data.tokenType == TOKEN_INTVALUE) printf("int@%ld ", data.token.attribute.integer);
+				else if(data.tokenType == TOKEN_FLOATVALUE) printf("float@%a ", data.token.attribute.real);
+				else if(data.tokenType == TOKEN_STRINGVALUE) {
+					printf("string@");
+					printString(data.token.attribute.string);
+				}
+				*/
 				//TODO
 				// provedení operace podle čísla pravidla
 				// + něco s výsledným výrazem
 			}
 			
-		} else if(61 < grammarRule && currentToken.type == TOKEN_EOL){
+		} else if(grammarRule > 61 && currentToken.type == TOKEN_EOL){
+			
 			
 			if(semanticRuleStack != NULL){
 				ParserStackPtr top = (*semanticRuleStack);
 				if(top != NULL && top->next == NULL && inExpression == false){
 					//printf("    ALONE EXPRESSION: %s\n", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
-					
+					singleExpression = true;
 					// TODO něco s výsledným výrazem
 					
 					top = top->next;
@@ -180,13 +176,15 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 		
 		if(currentToken.type == TOKEN_EOL){
+			localFrameVariable = " ";
 			inExpression = false;
+			singleExpression = false;
 		}
 	}
 	
 	
 	
-	printf("%s", tokenTypes[currentToken.type]);
+	//printf(" %s \n", tokenTypes[currentToken.type]);
 	
 	// GENEROVANÍ PODLE TOKENŮ
 	switch (currentToken.type)
@@ -197,11 +195,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			//printf("%s\n", tmp);
 			printf("DEFVAR LF@%s\n", currentToken.attribute.string);
 			
+			
 			scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
-			if(currentToken.type == TOKEN_INTVALUE) printf("MOVE LF@\n");
-			else if(currentToken.type == TOKEN_STRINGVALUE) printf("MOVE string@\n");
-			else if(currentToken.type == TOKEN_FLOATVALUE) printf("MOVE float@\n");
 
+			//TODO - Tisk definice temporalni promenne (tiskne i pro single expression, coz nechceme)
+			if(currentToken.type != TOKEN_ID){
+				expressionCounter++; 
+				printf("DEFVAR TF@$vysledekVyrazu%d\n", expressionCounter);
+				localFrameVariable = currentToken.attribute.string; //ulozeni promenne pro prizazeni po vyhodnoceni vyrazu
+			}
+		
 			break;
 
 		case TOKEN_RROUNDBRACKET:
@@ -212,23 +215,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			if(inPrint == true){
 				printf("WRITE string@");
-				for (int i = 0; currentToken.attribute.string[i] != '\0'; i++){
-					if(currentToken.attribute.string[i] <= 32) //Pokud je white character
-					{
-						if(currentToken.attribute.string[i] < 10){
-							printf("\\00%d", currentToken.attribute.string[i]);
-						}
-						else{
-							printf("\\0%d", currentToken.attribute.string[i]);
-						}
-					}
-					else if (currentToken.attribute.string[i] == 35) printf("\\035");
-					else if (currentToken.attribute.string[i] == 92) printf("\\092");
-					else {
-						printf("%c", currentToken.attribute.string[i]);
-					}
-				}
-				printf("\n");
+				printString(currentToken.attribute.string);
 			}
 			break;
 
@@ -249,7 +236,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			// TOKEN SE JMÉNEM FUNKCE
 			if(inFunction == true && inFunctionName == NULL){
 				inFunctionName = currentToken.attribute.string;
-				printf("# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", inFunctionName, inFunctionName);
+				printf("\n# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", inFunctionName, inFunctionName);
 			}
 			
 			if(inPrint == true && strcmp(currentToken.attribute.string,"print")){
@@ -259,10 +246,11 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			
 			// používat: strcmp() == 0 -> jinak se nemusí rovnat
-			/*if(strcmp(currentToken.attribute.string,"main") == 0 && previousToken.type == TOKEN_KEYWORD_FUNC){
+			if(strcmp(currentToken.attribute.string,"main") == 0 && previousToken.type == TOKEN_KEYWORD_FUNC){
 				inMain = true;
-				printf("CREATEFRAME\nPUSHFRAME\n");
-			}*/
+				printf("\n# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", currentToken.attribute.string, currentToken.attribute.string);
+				//printf("CREATEFRAME\nPUSHFRAME\n");
+			}
 			/*
 			if(strcmp(currentToken.attribute.string,"print") == 0){
 				scannerTokenListMoveNext(tokenList, &currentToken, errorHandle);
@@ -323,9 +311,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 			*/
 	}	
-	
-	
-	
 	
 	
 	// GENEROVÁNÍ PODLE ULOŽENÝCH DAT
