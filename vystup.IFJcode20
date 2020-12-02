@@ -15,7 +15,6 @@ CREATEFRAME
 DEFVAR TF@$operand1
 DEFVAR TF@$operand2
 DEFVAR TF@$result
-
 MUL TF@$result int@5 int@10
 PUSHS TF@$result
 
@@ -23,16 +22,16 @@ MUL TF@$result int@20 int@3
 PUSHS TF@$result
 
 POPS TF@$operand1
-DIV TF@$result TF@operand1 int@7
+IDIV TF@$result TF@$operand1 int@7
 PUSHS TF@$result
 
 POPS TF@$operand1
-MUL TF@$result TF@operand1 int@69
+MUL TF@$result TF@$operand1 int@69
 PUSHS TF@$result
 
 POPS TF@$operand2
 POPS TF@$operand1
-SUB TF@$result TF@operand1 TF@operand2
+SUB TF@$result TF@$operand1 TF@$operand2
 PUSHS TF@$result
 
 MUL TF@$result int@10 int@8
@@ -40,14 +39,14 @@ PUSHS TF@$result
 
 POPS TF@$operand2
 POPS TF@$operand1
-SUB TF@$result TF@operand1 TF@operand2
+SUB TF@$result TF@$operand1 TF@$operand2
 PUSHS TF@$result
 
 POPS TF@$operand1
-DIV TF@$result TF@operand1 int@6
+IDIV TF@$result TF@$operand1 int@6
 PUSHS TF@$result
 
-MOVE LF@a TF@result
+MOVE LF@a TF@$result
+WRITE LF@a
 POPFRAME
 EXIT int@0
-
