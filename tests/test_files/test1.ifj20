@@ -4,5 +4,6 @@ package main
 func main() {
     a := 0
     err := 0
-    a, err = 10, 50
+    a, err = inputi()
+    print(a)
 }

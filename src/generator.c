@@ -42,6 +42,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 	
 	static int bracketCnt = 0;
+	static int variableCount = 0; 
+
 	static bool inFunction = false;
 	static char *inFunctionName = NULL;
 	static bool inExpression = false;
@@ -260,9 +262,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			break;
 		case TOKEN_INIT:
-			scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
+			//scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
 			//printf("%s\n", tmp);
-			printf("DEFVAR LF@%s\n", currentToken.attribute.string);
+			//printf("DEFVAR LF@%s\n", currentToken.attribute.string);
 			currentVariableID = currentToken.attribute.string;
 
 			//---------------------------Osetreni Vyrazu s jednou hodnotou-------------------------------------------------//
@@ -361,6 +363,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(leftSide == true){
 				ParserStackData data;
 				data.token = currentToken;
+				variableCount++;
 				//printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&variableStack, data);
 			}
@@ -369,8 +372,22 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				printf("WRITE LF@%s\n", currentToken.attribute.string);
 			}
 			
+
 			if(!strcmp(currentToken.attribute.string, "inputi")){
 				printf("\nCALL inputi\n");
+				ParserStackData data;
+				Token variableToken[variableCount];
+				for(int i = variableCount - 1; i >= 0; i--)
+				{
+					data = parserStackPop(&variableStack);
+					variableToken[i] = data.token;
+					
+				}
+				for(int i = 0; i < variableCount; i++)
+				{
+					printf("POPS LF@%s\n", variableToken[i].attribute.string);
+				}
+				
 				inputi = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "inputf")){
@@ -494,14 +511,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_EOL:
 			leftSide = false;
+			variableCount = 0;
 			//POPování zbytku proměnných, nemělo by se nikdy stát
+			/*
 			ParserStackPtr top = variableStack;
 			while(top != NULL){
 				//printf("POPPING %s", STACK_DATA_TO_TOKEN(parserStackPeek(&top)).attribute.string);
 				top = top->next;
 				parserStackPop(&variableStack);
 			}
-			
+			*/
 			break;
 
 		/*
