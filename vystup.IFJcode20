@@ -31,8 +31,8 @@ DEFVAR TF@$1
 READ TF@$1 int
 
 JUMPIFEQ $inputi_err TF@$1 nil@nil
-PUSHS TF@$1
 PUSHS int@0
+PUSHS TF@$1
 RETURN
 LABEL $inputi_err
 PUSHS int@1
