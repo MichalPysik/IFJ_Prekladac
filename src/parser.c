@@ -308,7 +308,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	{
 		// na stacku je ukončovací symbol - $
 		if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_EOF){
-
+		
 			// i aktuální token je ukončovací symbol
 			if(MAP_TOKEN_TO_TERM[currentToken.type] == TERM_EOF){
 				result = ALL_OK;
@@ -319,50 +319,27 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 		
 		// na stacku je terminal
 		} else if(IS_TERM(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)))){
-//printf("<%s - %s>\n", termTypes[STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))], termTypes[MAP_TOKEN_TO_TERM[currentToken.type]]);
+			
 			// epsilon jen přeskočíme
 			if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_PSEUDO_EPSILON){
 				parserStackPop(&syntaxStack);
 			
-			// začátek EXPRESSION
+			// jsme v EXPRESSION
 			}else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_EXPRESSION){
+				
 				// EXPRESSION - START
-				inExpr = 1;//printf("\nEXPRESSION START 1111111111111111111111111111111111111111111111111111111111111111111111\n\n");
 				parserStackPop(&syntaxStack); // pop EXPRESSION neterminal
 			
-				//printf(" - %s, ", tokenTypes[currentToken.type]);
 				scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 				scannerTokenListMoveNext(tokenList, errorHandle);
+				
 				// pokud se jedná o terminál z precedeční gramatiky
 				while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && TERM_PREC_ADD <= MAP_TOKEN_TO_PREC_TERM[currentToken.type] && MAP_TOKEN_TO_PREC_TERM[currentToken.type] <= TERM_PREC_IDVALUE){
 					// EXPRESSION - ADD TOKEN
-					//parserStackPop(&syntaxStack); // pop
+					
 					scannerTokenListAdd(&expressionList, currentToken, errorHandle);
 					scannerTokenListMoveNext(tokenList, errorHandle);
-					
-					//printf(" %s, ", tokenTypes[currentToken.type]);
 				}
-			/*	
-			// jsme v EXPRESSION
-			} else if(inExpr == 1){*/
-				/*if(TERM_PREC_ADD <= MAP_TOKEN_TO_PREC_TERM[currentToken.type] && MAP_TOKEN_TO_PREC_TERM[currentToken.type] <= TERM_PREC_IDVALUE){
-					
-					while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) != MAP_TOKEN_TO_TERM[currentToken.type]){
-						// EXPRESSION - ADD TOKEN
-						scannerTokenListAdd(&expressionList, currentToken, errorHandle);
-						scannerTokenListMoveNext(tokenList, errorHandle);
-					}
-					while(scannerTokenListGetActive(tokenList, &currentToken, errorHandle) == ALL_OK && STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type] && TERM_PREC_ADD <= MAP_TOKEN_TO_PREC_TERM[currentToken.type] && MAP_TOKEN_TO_PREC_TERM[currentToken.type] <= TERM_PREC_IDVALUE){
-						// EXPRESSION - ADD TOKEN
-						parserStackPop(&syntaxStack); // pop
-						
-						scannerTokenListAdd(&expressionList, currentToken, errorHandle);
-						scannerTokenListMoveNext(tokenList, errorHandle);
-					}
-				}*/
-				//printf("\nEXPRESSION END\n\n");
-				
-				inExpr = 0;
 				
 				parserRunPrecedentSyntaxAnalysis(&expressionList, &semanticStack, &symtableStack, globalSymTable, &leftAndRightAnalysisStack, errorHandle);
 				
@@ -394,19 +371,11 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 			// kotrola o jeden token dopředu, zda se jedná o volání funkce nebo expression
 			if((LLtableResult == 34 || LLtableResult == 36) && MAP_TOKEN_TO_TERM[currentToken.type] == TERM_ID && MAP_TOKEN_TO_TERM[tempToken.type] != TERM_LROUNDBRACKET){LLtableResult++;}
 			
-			// kotrola, zda začíná EXPRESSION
-			int LLtableResultExpression = LLTable[NONTERM_TO_TABLE(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)))][TERM_TO_TABLE(TERM_EXPRESSION)];
-			//printf("[%s - %s]\n", termTypes[STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack))], termTypes[MAP_TOKEN_TO_TERM[currentToken.type]]);
-			//printf("rule. %d\n",LLtableResult);
-			//printf("inExpr. %d\n",inExpr);
-			//printf("LLtableResultExpression. %d\n",LLtableResultExpression);
 			// pravidlo nalezeno
 			if(LLtableResult != 0){
 				
 				// levý rozbor
-				if(inExpr == 0){// pokud nejsme v expression
-					parserLeftAnalysis(LLtableResult, &leftAndRightAnalysisStack);
-				}
+				parserLeftAnalysis(LLtableResult, &leftAndRightAnalysisStack);
 				
 				LLtableResult--; // indexování v poli
 				
@@ -421,24 +390,8 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 					}
 				}
 			
-			// pokud ještě není na stacku TERM, který by ukončil EXPRESSION -> pokračujeme v převodu neterminálů
-			}/* else if(inExpr == 1){printf("TU5\n");
-				// EXPRESSION - ADD TOKEN
-				scannerTokenListAdd(&expressionList, currentToken, errorHandle);
-				scannerTokenListMoveNext(tokenList, errorHandle);
-				
-			// začátek EXPRESSION
-			} else if(LLtableResultExpression != 0){
-				// EXPRESSION - START
-				inExpr = 1;printf("\nEXPRESSION START 222222222222222222222222222222222222222222222222222222222222222222222222\n\n");
-				
-				parserStackPop(&syntaxStack); // pop EXPRESSION neterminal
-			
-				scannerTokenListAdd(&expressionList, currentToken, errorHandle);
-				scannerTokenListMoveNext(tokenList, errorHandle);
-			
-			// pravidlo nenalezeno
-			}*/ else {
+			// jinak chyba
+			} else {
 				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - LL TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
 			}
 		}
@@ -1255,9 +1208,6 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 	ParserStackPtr top = (*semanticStack);
 	if(top->next != NULL){
 		
-		Token_type prevPrevTokenType = TOKEN_EMPTY;
-		Token_type prevTokenType = TOKEN_EMPTY;
-		
 		// COMPARE
 		if(TOKEN_EQ <= top->next->data.token.type && top->next->data.token.type <= TOKEN_LTE){
 			
@@ -1270,13 +1220,6 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 					errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - OPERANDS OR OPERATORS ARE NOT THE SAME TYPE", __FILE__, __LINE__, errorHandle);
 					return TOKEN_EMPTY;
 				}
-				
-				//if((TOKEN_EQ <= top->data.token.type && top->data.token.type <= TOKEN_LTE) && ((prevTokenType == expressionTokenType && prevPrevTokenType == expressionTokenType) || ()))
-				
-				
-				
-				prevPrevTokenType = prevTokenType;
-				prevTokenType = top->data.token.type;
 				
 				top = top->next;
 			}
@@ -1511,13 +1454,19 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr 
 		// find
 		for(i = PREC_GRAMM_RULES_START-1; i < PREC_GRAMM_RULES_END && found == 0; i++)
 		{
-			found = 1;
 			top = ruleStack;
 			j = 0;
 			
-			while(STACK_DATA_TO_TERM(parserStackPeek(&top)) != -1 && j < GRAMMAR_RULE_LIST__ROW_MAX_SIZE && found == 1){
+			while(j < GRAMMAR_RULE_LIST__ROW_MAX_SIZE && found == 0){
 				
-				if(STACK_DATA_TO_TERM(parserStackPeek(&top)) != GrammmarRuleList[i][j]){
+				if(STACK_DATA_TO_TERM(parserStackPeek(&top)) == -1){
+					if(GrammmarRuleList[i][j] != 0){
+						found = 0;
+					} else {
+						found = 1;
+					}
+					break;
+				} else if(STACK_DATA_TO_TERM(parserStackPeek(&top)) != GrammmarRuleList[i][j]){
 					found = 0;
 					break;
 				}
