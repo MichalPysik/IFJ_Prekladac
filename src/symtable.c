@@ -281,6 +281,12 @@ int symTableParamListFree(SymTableParamList *paramList)
 
 /****************************************************** TEST PRINT TREE ******************************************************************************/
 
+/* Name: Print_tree
+*  Source: Algoritmy (IAL) - FIT (Fakulta Informacnich Technologii) - file: c401-test.c
+*  Date: 2005-10-01
+*  Authors: Martin Tucek, (Roman Lukas - 2006), (Karel Masarik - 2013)
+*  Edited: true
+*/
 void Print_tree2(SymTableBinTreePtr TempTree, char* sufix, char fromdir, char* space_size)
 {
 	if (TempTree != NULL)
@@ -323,3 +329,4 @@ void Print_tree(SymTableBinTreePtr TempTree)
 	printf("\n");
 	printf("=================================================\n");
 } 
+/* ******* Print_tree - end ******* */

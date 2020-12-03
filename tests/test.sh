@@ -36,6 +36,11 @@ echo "./IFJ2020  < ./tests/test_files/fakt_rek.ifj20"
 ./IFJ2020  < ./tests/test_files/fakt_rek.ifj20
 
 
+echo ""
+echo "./IFJ2020  < ./tests/test_files/test1.ifj20"
+./IFJ2020  < ./tests/test_files/test1.ifj20
+
+
 
 # clean
 make clean
