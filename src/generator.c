@@ -2,9 +2,6 @@
 
 #include "generator.h"
 
-
-
-
 void printString(char* string){
 	for (int i = 0; string[i] != '\0'; i++){
 		if(string[i] <= 32)
@@ -41,7 +38,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	previousToken.pos_line = 0;
 	previousToken.pos_number = 0;
 	
+	static ParserStackPtr variableStack = NULL;
 
+	
 	static int bracketCnt = 0;
 	static bool inFunction = false;
 	static char *inFunctionName = NULL;
@@ -49,7 +48,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool inPrint = false;
 	static bool inMain = false;
 	static bool singleExpression = false;
+	static bool leftSide = false;
 
+	//Vestavěné funkce
 	static bool inputi = false;
 	static bool inputf = false;
 	static bool inputs = false;
@@ -70,10 +71,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	errorHandleInit(errorHandle);
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
-
 	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
+	//printf("TOKEN: %s \n", tokenTypes[currentToken.type]);
+
 	static int grammarRule = 0;
+
 	// GENEROVÁNÍ PODLE PRAVIDEL
 	while(STACK_DATA_TO_INT(parserStackPeek(leftAndRightAnalysisStack)) >= 0){
 		grammarRule = STACK_DATA_TO_INT(parserStackPop(leftAndRightAnalysisStack));
@@ -95,8 +98,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		if(grammarRule == 16){
 			
+			if(currentToken.type == TOKEN_ID) leftSide = true;
 			if(!strcmp(currentToken.attribute.string,"print")) inPrint = true;
-		
+			
 		}
 		
 		
@@ -246,11 +250,15 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	}
 	
 	
-	//printf(" %s \n", tokenTypes[currentToken.type]);
+	
 	
 	// GENEROVANÍ PODLE TOKENŮ
 	switch (currentToken.type)
 	{
+		case TOKEN_ASSIGN:
+			leftSide = false;
+
+			break;
 		case TOKEN_INIT:
 			scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
 			//printf("%s\n", tmp);
@@ -349,51 +357,54 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				printf("\n# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", inFunctionName, inFunctionName);
 			}
 
+			// PUSHujeme do variableStacku proměnné na levé straně
+			if(leftSide == true){
+				ParserStackData data;
+				data.token = currentToken;
+				//printf("\nPUSHING: %s\n", data.token.attribute.string);
+				parserStackPush(&variableStack, data);
+			}
 			
 			if(inPrint == true && strcmp(currentToken.attribute.string,"print")){
 				printf("WRITE LF@%s\n", currentToken.attribute.string);
 			}
 			
 			if(!strcmp(currentToken.attribute.string, "inputi")){
-				SymTableData data;
-				//symTableSearch(globalSymTable, "inputs", &data, errorHandle);
-				//printf("Pocet parametru funkce inputi: %d\n", data.functionReturnDataTypes.size);
-				
-				printf("\nCALL inputi\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				printf("\nCALL inputi\n");
 				inputi = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "inputf")){
-				printf("\nCALL inputf\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				printf("\nCALL inputf\n");
 				inputf = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "inputs")){
-				printf("\nCALL inputs\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				printf("\nCALL inputs\n");
 				inputs = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "int2float")){
-				printf("\nCALL int2float\nPOPS LF@%s\n", currentVariableID);
+				printf("\nCALL int2float\n");
 				int2float = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "float2int")){
-				printf("\nCALL float2int\nPOPS LF@%s\n", currentVariableID);
+				printf("\nCALL float2int\n");
 				float2int = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "len")){
-				printf("\nCALL len\nPOPS LF@%s\n", currentVariableID);
+				printf("\nCALL len\n");
 				len = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "substr")){
 				//TODO
-				printf("\nCALL substr\nPOPS %s", currentVariableID);
+				printf("\nCALL substr\n");
 				substr = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "ord")){
 				//TODO 
-				printf("\nCALL ord\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				printf("\nCALL ord\n");
 				ord = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "chr")){
-				printf("\nCALL chr\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				printf("\nCALL chr\n");
 				chr = true;
 			}
 			
@@ -449,7 +460,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				
 				//!!! CHYBI OSETRENI VOLANI PRO VICE NAVRATOVYCH HODNOT napr a, err := inputi() nefunguje, protoze ma vice navratovych hodnot
 				if(inputi == true){//INPUT INT
-					printf("\n\n\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS int@0\nPUSHS TF@$1\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
+					printf("\n\n\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
 				}
 				printf("\n\n\n");
 				if(inputf == true){//INPUT FLOAT
@@ -479,6 +490,18 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf("\n\n\nLABEL chr\nCREATEFRAME\n\nDEFVAR TF@$0\nDEFVAR TF@$1\nDEFVAR TF@$2\n\nPOPS TF@$1\nLT TF@$compareResult TF@$1 int$0\nJUMPIFEQ $chr_error TF@$compareResult bool@true\nGT TF@$compareResult TF@$1 int$255\nJUMPIFEQ $chr_error TF@$compareResult bool@true\n\nINT2CHAR TF@$2\nPUSHS int@0\nPUSHS string@$2\nRETURN\n\nLABEL $chr_error\nPUSHS int@1\nPUSHS string@/000\nRETURN\n");
 				}
 			}
+			break;
+
+		case TOKEN_EOL:
+			leftSide = false;
+			//POPování zbytku proměnných, nemělo by se nikdy stát
+			ParserStackPtr top = variableStack;
+			while(top != NULL){
+				//printf("POPPING %s", STACK_DATA_TO_TOKEN(parserStackPeek(&top)).attribute.string);
+				top = top->next;
+				parserStackPop(&variableStack);
+			}
+			
 			break;
 
 		/*
