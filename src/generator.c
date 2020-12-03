@@ -262,9 +262,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			break;
 		case TOKEN_INIT:
-			//scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
-			//printf("%s\n", tmp);
-			//printf("DEFVAR LF@%s\n", currentToken.attribute.string);
+			scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
+			printf("DEFVAR LF@%s\n", currentToken.attribute.string);
 			currentVariableID = currentToken.attribute.string;
 
 			//---------------------------Osetreni Vyrazu s jednou hodnotou-------------------------------------------------//
