@@ -476,7 +476,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				
 				//!!! CHYBI OSETRENI VOLANI PRO VICE NAVRATOVYCH HODNOT napr a, err := inputi() nefunguje, protoze ma vice navratovych hodnot
 				if(inputi == true){//INPUT INT
-					printf("\n\n\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
+					printf("\n\n\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputi_err\nPUSHS int@0\nPUSHS int@1\nRETURN\n");
 				}
 				printf("\n\n\n");
 				if(inputf == true){//INPUT FLOAT
