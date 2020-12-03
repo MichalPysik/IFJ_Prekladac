@@ -1,0 +1,109 @@
+inputi (0 parametru, 2 navratove)
+inputf (0 parametru, 2 navratove)
+inputs (0 parametru, 2 navratove)
+
+print(0...n, 0)
+
+
+func int2float(i int) (float64)
+a := 0.0
+a = int2float(15)
+
+PUSHS int@15
+CALL int2float
+
+
+LABEL int2float
+
+CREATEFRAME
+DEFVAR TF@$1
+DEFVAR TF@$2
+POPS TF@$1
+
+INT2FLOAT TF@$2 TF@$1
+
+PUSHS TF@$2
+RETURN
+
+
+
+
+func float2int(i float) (int)
+a := 0.0
+a = float2int(15.99)
+
+PUSHS float@nejake hexa cislo
+CALL float2int
+
+LABEL float2int
+
+CREATEFRAME
+DEFVAR TF@$1
+DEFVAR TF@$2
+POPS TF@$1
+
+FLOAT2INT TF@$2 TF@$1
+
+PUSHS TF@$2
+RETURN
+--------------------------------------------------
+
+func len(s string) (int)
+
+LABEL len
+CREATEFRAME
+
+DEFVAR TF@s
+POPS TF@s
+
+DEFVAR TF@$1
+
+STRLEN TF@$1 TF@s
+
+PUSHS TF@$1
+
+RETURN
+--------------------------------------------------
+
+func chr(i int) (string, int)
+i := 65 // A
+letter := ""
+err := 0
+letter, err = chr(i)
+
+PUSHS int@i
+CALL chr
+POPS
+POPS
+
+LABEL chr
+CREATEFRAME
+
+DEFVAR TF@$0
+DEFVAR TF@$1
+DEFVAR TF@$2
+
+POPS TF@$1
+LT TF@$compareResult TF@$1 int$0
+JUMPIFEQ $chr_error TF@$compareResult bool@true
+GT TF@$compareResult TF@$1 int$255
+JUMPIFEQ $chr_error TF@$compareResult bool@true
+
+INT2CHAR TF@$2
+PUSHS int@0
+PUSHS string@$2
+RETURN
+
+LABEL $chr_error
+PUSHS int@1 
+PUSHS string@/000
+RETURN
+--------------------------------------------------
+func substr(s string, i int, n int) (string, int) // TODO
+– Vrátí podřetězec zadaného řetězce 𝑠. Druhým parametrem 𝑖 je dán začátek požadovaného podřetězce
+(počítáno od nuly) a třetí parametr 𝑛 určuje délku podřetězce. Je-li index 𝑖 mimo
+meze 0 až len(s) nebo 𝑛 < 0, vrací funkce v příznaku chyby hodnotu 1. Je-li 𝑛 >
+len(s)−𝑖, jsou jako řetězec vráceny od 𝑖-tého znaku všechny zbývající znaky řetězce
+
+---------------------------------------------------
+func ord(s string, i int) (int, int) // TODO

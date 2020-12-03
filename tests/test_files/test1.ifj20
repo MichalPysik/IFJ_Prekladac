@@ -2,6 +2,7 @@
 package main
 
 func main() {
-    a := ((5 * 10) - (20 * 3) / 7 * 69 - 10 * 8)/6
-    print(a)
+    a := 0
+    err := 0
+    a, err = 10, 50
 }

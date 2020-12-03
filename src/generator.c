@@ -4,6 +4,7 @@
 
 
 
+
 void printString(char* string){
 	for (int i = 0; string[i] != '\0'; i++){
 		if(string[i] <= 32)
@@ -48,6 +49,18 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool inPrint = false;
 	static bool inMain = false;
 	static bool singleExpression = false;
+
+	static bool inputi = false;
+	static bool inputf = false;
+	static bool inputs = false;
+	static bool int2float = false;
+	static bool float2int = false;
+	static bool len = false;
+	static bool substr = false;
+	static bool ord = false;
+	static bool chr = false;
+
+
 	static int expressionCounter = 0;
 	static char* currentVariableID;
 	static Token_type expressionType = TOKEN_EMPTY;
@@ -57,10 +70,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	errorHandleInit(errorHandle);
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
-	
+
 	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
-	static int grammarRule  =0;
+	static int grammarRule = 0;
 	// GENEROVÁNÍ PODLE PRAVIDEL
 	while(STACK_DATA_TO_INT(parserStackPeek(leftAndRightAnalysisStack)) >= 0){
 		grammarRule = STACK_DATA_TO_INT(parserStackPop(leftAndRightAnalysisStack));
@@ -88,6 +101,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		
 		
 		// VÝRAZY
+		// VÍCE OPERANDŮ
 		if(52 <= grammarRule && grammarRule <= 61){
 			if(inExpression == false){
 				expressionType = TOKEN_EMPTY;
@@ -126,7 +140,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					parserStackPop(semanticRuleStack);
 					tokenCount++;
 				}
-				//printf("\n %s %s \n", tokenTypes[operand1.type],tokenTypes[operand2.type]);
 				if(operand2.type == TOKEN_EMPTY){
 					printf("POPS TF@$operand2\n");
 				}
@@ -134,15 +147,31 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf("POPS TF@$operand1\n");
 				}
 
-				// TISK INSTRUKCI VYRAZU
-				if(operator.type == TOKEN_MUL) printf("MUL TF@$result");
-				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_FLOATVALUE){printf("DIV TF@$result");}
-				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_INTVALUE){printf("IDIV TF@$result");}
-				else if(operator.type == TOKEN_ADD) printf("ADD TF@$result");
-				else if(operator.type == TOKEN_SUB) printf("SUB TF@$result");
 
-				if(operand1.type == TOKEN_INTVALUE) printf(" int@%ld", operand1.attribute.integer);
-				else if(operand1.type == TOKEN_FLOATVALUE) printf("float@%a", operand1.attribute.real);
+				// TISK INSTRUKCI VYRAZU
+				if(operator.type == TOKEN_MUL){
+					printf("MUL TF@$result");
+				}
+				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_FLOATVALUE){
+					printf("DIV TF@$result");
+				}
+				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_INTVALUE){
+					printf("IDIV TF@$result");
+				}
+				else if(operator.type == TOKEN_ADD){
+					printf("ADD TF@$result");
+				}
+				else if(operator.type == TOKEN_SUB){
+					printf("SUB TF@$result");
+				}
+
+				// OPERAND 1
+				if(operand1.type == TOKEN_INTVALUE) {
+					printf(" int@%ld", operand1.attribute.integer);
+				}
+				else if(operand1.type == TOKEN_FLOATVALUE) {
+					printf("float@%a", operand1.attribute.real);
+				}
 				else if(operand1.type == TOKEN_STRINGVALUE) {
 					printf(" string@");
 					printString(operand1.attribute.string);
@@ -154,8 +183,13 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf(" TF@$operand1");
 				}
 
-				if(operand2.type == TOKEN_INTVALUE) printf(" int@%ld\n", operand2.attribute.integer);
-				else if(operand2.type == TOKEN_FLOATVALUE) printf(" float@%a\n", operand2.attribute.real);
+				// OPERAND 2
+				if(operand2.type == TOKEN_INTVALUE){
+					printf(" int@%ld\n", operand2.attribute.integer);
+				} 
+				else if(operand2.type == TOKEN_FLOATVALUE){
+					printf(" float@%a\n", operand2.attribute.real);
+				}
 				else if(operand2.type == TOKEN_STRINGVALUE) {
 					printf(" string@\n");
 					printString(operand2.attribute.string);
@@ -168,43 +202,46 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 					
 				printf("PUSHS TF@$result\n\n");
-				/*
-				if(data.tokenType == TOKEN_MUL)printf("MUL %s", pomoc);
-				else if(data.tokenType == TOKEN_DIV) printf("DIV %s", pomoc);
-				else if(data.tokenType == TOKEN_ADD) printf("ADD %s", pomoc);
-				else if(data.tokenType == TOKEN_SUB) printf("SUB %s", pomoc);
-				else if(data.tokenType == TOKEN_INTVALUE) printf("int@%ld ", data.token.attribute.integer);
-				else if(data.tokenType == TOKEN_FLOATVALUE) printf("float@%a ", data.token.attribute.real);
-				else if(data.tokenType == TOKEN_STRINGVALUE) {
-					printf("string@");
-					printString(data.token.attribute.string);
-				}
-				*/
-				//TODO
-				// provedení operace podle čísla pravidla
-				// + něco s výsledným výrazem
 			}
-			
+		// POUZE 1 OPERAND
 		} else if(grammarRule > 61 && currentToken.type == TOKEN_EOL){
-			
 			
 			if(semanticRuleStack != NULL){
 				ParserStackPtr top = (*semanticRuleStack);
 				if(top != NULL && top->next == NULL && inExpression == false){
-					//printf("CREATEFRAME\n");
-					//printf("");
+					
+					/*printf("MOVE LF@%s ", currentVariableID);
+
+					Token expressionValue;
+					expressionValue.type = TOKEN_EMPTY;
+					expressionValue = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+					
+					if(expressionValue.type == TOKEN_INTVALUE){
+						printf(" int@%ld\n", expressionValue.attribute.integer);
+					} 
+					else if(expressionValue.type == TOKEN_FLOATVALUE){
+						printf(" float@%a\n", expressionValue.attribute.real);
+					}
+					else if(expressionValue.type == TOKEN_STRINGVALUE) {
+						printf(" string@\n");
+						printString(expressionValue.attribute.string);
+					}
+					else if(expressionValue.type == TOKEN_ID){
+						printf(" LF@%s\n", expressionValue.attribute.string);
+					}*/
+
 					top = top->next;
 					parserStackPop(semanticRuleStack);
 				}
 			}
 		}
-		
 	}
 	
 	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 51){
 		inExpression = false;
-		singleExpression = false;
 		printf("MOVE LF@%s TF@$result\n", currentVariableID);
+		
+		//singleExpression = false;
 		//currentVariableID = NULL;
 	}
 	
@@ -215,19 +252,65 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	switch (currentToken.type)
 	{
 		case TOKEN_INIT:
-	
 			scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
 			//printf("%s\n", tmp);
 			printf("DEFVAR LF@%s\n", currentToken.attribute.string);
 			currentVariableID = currentToken.attribute.string;
-			
-			scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
 
-			//TODO - Tisk definice temporalni promenne (tiskne i pro single expression, coz nechceme)
-			if(currentToken.type != TOKEN_ID){
-				//currentVariableID = currentToken.attribute.string; //ulozeni promenne pro prizazeni po vyhodnoceni vyrazu
+			//---------------------------Osetreni Vyrazu s jednou hodnotou-------------------------------------------------//
+			//!!!!!!!!!!!!!!!!!!!!jeste nefunguje pro proměnné + není odzkoušeno přiřazení a := -1
+			int shiftCount = 0;
+			Token singleExpressionToken;
+
+			scannerTokenListMoveNext(tokenList, errorHandle); //presunuti na prvni hodnotu za :=
+			shiftCount++;
+			scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+
+			while(1){//dokud nedojdeme na nejakou hodnotu)
+				if(currentToken.type != TOKEN_LROUNDBRACKET){
+					singleExpressionToken = currentToken;
+					break;
+				}
+				
+				scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
+				shiftCount++;
+				scannerTokenListGetActive(tokenList, &currentToken, errorHandle); //peeknuti za ni, abychom vedeli jestli to je jen jedna hodnota
+
 			}
-		
+			bool isMultiExpression = false;
+			while(currentToken.type != TOKEN_EOL){ //cekujeme jestli je po hodnote znamenko operatoru, je => je to multiExpression
+				if(currentToken.type == TOKEN_ADD ||
+				   currentToken.type == TOKEN_SUB ||
+				   currentToken.type == TOKEN_MUL ||
+				   currentToken.type == TOKEN_DIV ){
+					isMultiExpression = true;
+					break;
+				}
+				scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
+				shiftCount++;
+				scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+			}
+
+
+			//navrat na puvodni token
+			for (int i = 0; i < shiftCount; i++){scannerTokenListMovePrev(tokenList, errorHandle);}
+			scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+
+			
+			if(isMultiExpression == false/*singleValueExpression == true*/){
+				//printf("DEFVAR LF@%s\n", currentVariableID);
+				if(singleExpressionToken.type == TOKEN_INTVALUE) printf("MOVE LF@%s int@%ld\n", currentVariableID, singleExpressionToken.attribute.integer);
+				else if(singleExpressionToken.type == TOKEN_FLOATVALUE) printf("MOVE LF@%s float@%a\n", currentVariableID, singleExpressionToken.attribute.real);
+				else if(singleExpressionToken.type == TOKEN_STRINGVALUE) {
+					printf("MOVE LF@%s string@", currentVariableID);
+					printString(singleExpressionToken.attribute.string);
+				}
+			}
+			isMultiExpression = false;
+			//////////// Osetreni Vyrazu s jednou hodnotou ////////////
+
+
+			scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
 			break;
 
 		case TOKEN_RROUNDBRACKET:
@@ -269,6 +352,49 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			if(inPrint == true && strcmp(currentToken.attribute.string,"print")){
 				printf("WRITE LF@%s\n", currentToken.attribute.string);
+			}
+			
+			if(!strcmp(currentToken.attribute.string, "inputi")){
+				SymTableData data;
+				//symTableSearch(globalSymTable, "inputs", &data, errorHandle);
+				//printf("Pocet parametru funkce inputi: %d\n", data.functionReturnDataTypes.size);
+				
+				printf("\nCALL inputi\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				inputi = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "inputf")){
+				printf("\nCALL inputf\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				inputf = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "inputs")){
+				printf("\nCALL inputs\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				inputs = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "int2float")){
+				printf("\nCALL int2float\nPOPS LF@%s\n", currentVariableID);
+				int2float = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "float2int")){
+				printf("\nCALL float2int\nPOPS LF@%s\n", currentVariableID);
+				float2int = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "len")){
+				printf("\nCALL len\nPOPS LF@%s\n", currentVariableID);
+				len = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "substr")){
+				//TODO
+				printf("\nCALL substr\nPOPS %s", currentVariableID);
+				substr = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "ord")){
+				//TODO 
+				printf("\nCALL ord\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				ord = true;
+			}
+			if(!strcmp(currentToken.attribute.string, "chr")){
+				printf("\nCALL chr\nPOPS LF@%s\nPOPS LF@err\n", currentVariableID);
+				chr = true;
 			}
 			
 			// používat: strcmp() == 0 -> jinak se nemusí rovnat
@@ -320,7 +446,38 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 						
 				inFunction = false;
 				inFunctionName = NULL;
-						
+				
+				//!!! CHYBI OSETRENI VOLANI PRO VICE NAVRATOVYCH HODNOT napr a, err := inputi() nefunguje, protoze ma vice navratovych hodnot
+				if(inputi == true){//INPUT INT
+					printf("\n\n\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS int@0\nPUSHS TF@$1\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
+				}
+				printf("\n\n\n");
+				if(inputf == true){//INPUT FLOAT
+					printf("\n\n\nLABEL inputf\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 float\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS int@0\nPUSHS TF@$1\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
+				}
+				printf("\n\n\n");
+				if(inputs == true){//INPUT STRING
+					printf("\n\n\nLABEL inputs\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 string\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS int@0\nPUSHS TF@$1\nRETURN\nLABEL $inputi_err\nPUSHS int@1\nPUSHS int@0\nRETURN\n");
+				}
+
+				if(int2float == true){//INPUT STRING
+					printf("\n\n\nLABEL int2float\n\nCREATEFRAME\nDEFVAR TF@$1\nDEFVAR TF@$2\nPOPS TF@$1\n\nINT2FLOAT TF@$2 TF@$1\n\nPUSHS TF@$2\nRETURN\n");
+				}
+				if(float2int == true){//INPUT STRING
+					printf("\n\n\nLABEL float2int\n\nCREATEFRAME\nDEFVAR TF@$1\nDEFVAR TF@$2\nPOPS TF@$1\n\nFLOAT2INT TF@$2 TF@$1\n\nPUSHS TF@$2\nRETURN\n");
+				}
+				if(len == true){//INPUT STRING
+					printf("\n\n\nLABEL len\nCREATEFRAME\n\nDEFVAR TF@s\nPOPS TF@s\n\nDEFVAR TF@$1\n\nSTRLEN TF@$1 TF@s\n\nPUSHS TF@$1\n\nRETURN\n");
+				}
+				if(substr == true){//INPUT STRING
+					printf("\n\n\nTODO");
+				}
+				if(ord == true){//INPUT STRING
+					printf("\n\n\nTODO");
+				}
+				if(chr == true){//INPUT STRING
+					printf("\n\n\nLABEL chr\nCREATEFRAME\n\nDEFVAR TF@$0\nDEFVAR TF@$1\nDEFVAR TF@$2\n\nPOPS TF@$1\nLT TF@$compareResult TF@$1 int$0\nJUMPIFEQ $chr_error TF@$compareResult bool@true\nGT TF@$compareResult TF@$1 int$255\nJUMPIFEQ $chr_error TF@$compareResult bool@true\n\nINT2CHAR TF@$2\nPUSHS int@0\nPUSHS string@$2\nRETURN\n\nLABEL $chr_error\nPUSHS int@1\nPUSHS string@/000\nRETURN\n");
+				}
 			}
 			break;
 
@@ -346,22 +503,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	
 	// GENEROVÁNÍ PODLE ULOŽENÝCH DAT
-	
-	
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	
 	// TODO
@@ -381,7 +523,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		printf("%s ",tokenTypes[currentToken.type]);
 	}
 	*/
-	
+	//Print_tree(globalSymTable);
 	
 	
 	return errorHandle->errorID;
