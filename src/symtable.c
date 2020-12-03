@@ -328,5 +328,5 @@ void Print_tree(SymTableBinTreePtr TempTree)
 	}
 	printf("\n");
 	printf("=================================================\n");
-} 
+}
 /* ******* Print_tree - end ******* */
