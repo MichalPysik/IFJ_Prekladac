@@ -2,8 +2,8 @@
 package main
 
 func main() {
-    a := 0
-    err := 0
-    a, err = inputi()
-    print(a)
+    a := 10.5
+    b := 0
+    b = float2int(a)
+    print(b)
 }
