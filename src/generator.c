@@ -6,7 +6,19 @@
 void pushArguments(ParserStackPtr *argStack, int argCount){
 	ParserStackData data;
 	for(int i = 0; i < argCount; i++){
-		printf("PUSHS LF@%s\n", data.token.attribute.string);
+		data = parserStackPop(argStack);
+		if(data.token.type == TOKEN_INTVALUE){
+            printf("PUSHS int@%ld\n", data.token.attribute.integer);
+		}
+		else if (data.token.type == TOKEN_FLOATVALUE){
+			printf("PUSHS float@%a\n", data.token.attribute.real);
+		}
+		else if (data.token.type == TOKEN_STRINGVALUE){
+			printf("PUSHS string@%s\n", data.token.attribute.string);
+		}
+		else if(data.token.type == TOKEN_ID){
+			printf("PUSHS LF@%s\n", data.token.attribute.string);
+		}
 	}
 }
 
@@ -67,12 +79,14 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 	static bool inFunction = false;
 	static char *inFunctionName = NULL;
+	static char *inFunctionCallName = NULL;
 	static bool inExpression = false;
 	static bool inPrint = false;
 	static bool inMain = false;
 	static bool singleExpression = false;
 	static bool leftSide = false;
-	static bool inArguments = false; 
+	static bool inArguments = false;
+	static bool inFunctionCall = false;
 
 	//Vestavěné funkce
 	static bool inputi = false;
@@ -97,9 +111,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
-	///////////////////////////////////////////printf("TOKEN: %s", tokenTypes[currentToken.type]);
-	if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
-	printf("\n");
+
+	 //printf("TOKEN: %s", tokenTypes[currentToken.type]);
+	//if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
+	//printf("\n");
 
 	static int grammarRule = 0;
 
@@ -127,6 +142,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(currentToken.type == TOKEN_ID) leftSide = true;
 			if(!strcmp(currentToken.attribute.string,"print")) inPrint = true;
 			
+		}
+
+		if(grammarRule == 34 || grammarRule == 36){
+			inFunctionCall = true;
 		}
 		
 		
@@ -372,18 +391,38 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				printf("WRITE string@");
 				printString(currentToken.attribute.string);
 			}
+			if(inArguments == true){
+				ParserStackData data;
+				data.token = currentToken;
+				argCount++;
+				//printf("\nPUSHING: %s\n", data.token.attribute.string);
+				parserStackPush(&argumentStack, data);
+			}
 			break;
 
 		case TOKEN_INTVALUE:
 			if(inPrint == true){
 				printf("WRITE int@%ld\n", currentToken.attribute.integer);
 			}
-			
+			if(inArguments == true && inFunctionCall == true){
+				ParserStackData data;
+				data.token = currentToken;
+				argCount++;
+				//printf("\nPUSHING: %ld\n", currentToken.attribute.integer);
+				parserStackPush(&argumentStack, data);
+			}
 			break;
 
 		case TOKEN_FLOATVALUE:
 			if(inPrint == true){
 				printf("WRITE int@%a\n", currentToken.attribute.real);
+			}
+			if(inArguments == true){
+				ParserStackData data;
+				data.token = currentToken;
+				argCount++;
+				//printf("\nPUSHING: %f\n", data.token.attribute.real);
+				parserStackPush(&argumentStack, data);
 			}
 			
 			break;
@@ -394,13 +433,34 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(inFunction == true && inFunctionName == NULL){
 				inFunctionName = currentToken.attribute.string;
 				printf("\n# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", inFunctionName, inFunctionName);
+				SymTableData data;
+				int i = 0;
+				symTableSearch(*globalSymTable, inFunctionName, &data, errorHandle);
+				data.functionParamDataTypes.active = data.functionParamDataTypes.first;
+
+				while(data.functionParamDataTypes.active != NULL){
+					if(data.functionParamDataTypes.active->dataType == INT){
+						printf("\nDEFVAR LF@$%d\nPOPS LF@$%d\n", i, i);
+					}
+					else if(data.functionParamDataTypes.active->dataType == FLOAT){
+						printf("\nDEFVAR LF@$%d\nPOPS LF@$%d\n", i, i);
+					}
+					else if(data.functionParamDataTypes.active->dataType == STRING){
+						printf("\nDEFVAR LF@$%d\nPOPS LF@$%d\n", i, i);
+					}
+					data.functionParamDataTypes.active = data.functionParamDataTypes.active->rightPtr;
+					i++;
+				}
+
+				
 			}
+
 
 			if(inArguments == true){
 				ParserStackData data;
 				data.token = currentToken;
 				argCount++;
-				//printf("\nPUSHING: %s\n", data.token.attribute.string);
+				printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&argumentStack, data);
 			}
 
@@ -567,22 +627,65 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 			*/
 			break;
-
 		
 		case TOKEN_LROUNDBRACKET:
-			if(previousToken.type == TOKEN_ID){
-				inArguments == true;
+			//printf("PREVIOUS: %s", tokenTypes[previousToken.type]);
+			//printf("inFunctionCall: %d", inFunctionCall);
+			if(inFunctionCall == true && previousToken.type == TOKEN_ID){
+				inFunctionCallName = previousToken.attribute.string;
+				inArguments = true;
 			}
 			break;
 
 		case TOKEN_RROUNDBRACKET:
-			if(inArguments == true || inPrint == true) {
-				inArguments == false;
-				inPrint == false;
+			if(inArguments == true) {
+				inArguments = false;
+				inFunctionCall = false;
+				pushArguments(&argumentStack, argCount);
+				argCount = 0;
+				printf("\nCALL %s\n", inFunctionCallName);
+			}
+			if(inPrint == true){
+				inPrint = false;
 			}
 			break;
-		/*
-		case TOKEN_STRINGVALUE:
+
+		case TOKEN_KEYWORD_RETURN:
+			if(inFunction == true && inFunctionName != "main"){
+				Token tempToken;
+				tempToken.type = TOKEN_EMPTY;
+				tempToken.pos_line = 0;
+				tempToken.pos_number = 0;
+				int shiftCounter = 0;
+
+				scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
+				while(tempToken.type != TOKEN_EOL){
+					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
+					if(tempToken.type == TOKEN_ID){
+						printf("PUSHS LF@%s\n", tempToken.attribute.string);
+					}
+					else if(tempToken.type == TOKEN_INTVALUE){
+						printf("PUSHS int@%ld\n", tempToken.attribute.integer);
+					}
+					else if(tempToken.type == TOKEN_FLOATVALUE)
+					{
+						printf("PUSHS float@%a\n", tempToken.attribute.real);
+					}
+					else if (tempToken.type == TOKEN_STRINGVALUE)
+					{
+						printf("PUSHS string@%s\n", tempToken.attribute.string);
+					}
+					scannerTokenListMoveNext(tokenList, errorHandle);
+					shiftCounter++;
+				}
+
+				//navrat
+				for(int i = 0; i < shiftCounter; i++){
+					scannerTokenListMovePrev(tokenList, errorHandle);
+				}
+
+			}
+			break;
 
 		case TOKEN_KEYWORD_IF:
 			
@@ -595,7 +698,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		
 		default:
 			break;
-			*/
 	}	
 	
 	

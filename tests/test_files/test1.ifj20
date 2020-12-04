@@ -1,9 +1,17 @@
 // Program 4: Scitani jako funkce
 package main
 
+func add(a int, b int) (int, int) {
+    c := a
+    err := 0
+    return c, err
+}
+
 func main() {
-    a := 10.5
-    b := 0
-    b = float2int(a)
-    print(b)
+    a := 10
+    b := 5.5
+    vysl := 0
+    err := 0
+    vysl, err = add(5, 5)
+    print(vysl)
 }
