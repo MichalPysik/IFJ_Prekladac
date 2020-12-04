@@ -2,42 +2,21 @@
 
 #include "generator.h"
 
-/****************************************************** TEST PRINT TREE ******************************************************************************/
-
-/* Name: Print_tree
-*  Source: Algoritmy (IAL) - FIT (Fakulta Informacnich Technologii) - file: c401-test.c
-*  Date: 2005-10-01
-*  Authors: Martin Tucek, (Roman Lukas - 2006), (Karel Masarik - 2013)
-*  Edited: true
-*/
-void print_tree2(SymTableBinTreePtr TempTree, char* sufix, char fromdir, char* space_size)
+void printTreeParams(SymTableBinTreePtr TempTree)
 {
-	if (TempTree != NULL)
-	{
-		char* suf2 = (char*) malloc(strlen(sufix) + 4);
-		strcpy(suf2, sufix);
-		suf2 = strcat(suf2, space_size);
-		if (fromdir == 'L') {
-			suf2 = strcat(suf2, "  |");
-			printf("%s\n", suf2);
-		} else {
-			suf2 = strcat(suf2, "   ");
-		}
-		Print_tree2(TempTree->rightPtr, suf2, 'R', space_size);
-		printf("%s%s  +-[%s][%d,%d]\n", sufix, space_size, TempTree->key, TempTree->data.functionParamDataTypes.size, TempTree->data.functionReturnDataTypes.size);
-		strcpy(suf2, sufix);
-		suf2 = strcat(suf2, space_size);
-		if (fromdir == 'R') {
-			suf2 = strcat(suf2, "  |");
-		} else {
-			suf2 = strcat(suf2, "   ");
-		}
-		Print_tree2(TempTree->leftPtr, suf2, 'L', space_size);
-		if (fromdir == 'R') {
-			printf("%s\n", suf2);
-		} 
-		free(suf2);
+	if (TempTree == NULL) 
+          return; 
+  
+	if(strcmp(TempTree->key, "_")){
+		printf("\nDEFVAR LF@%s\nPOPS LF@%s\n", TempTree->key, TempTree->key);
 	}
+    //printf("PARAM: %s \n", TempTree->key);   
+  
+     /* then recur on left sutree */
+    printTreeParams(TempTree->leftPtr);   
+  
+     /* now recur on right subtree */
+    printTreeParams(TempTree->rightPtr); 
 }
 
 
@@ -466,7 +445,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_ID:
-			printf("Token: %s,  Name: %s\n", tokenTypes[currentToken.type], currentToken.attribute.string);
+			//printf("Token: %s,  Name: %s\n", tokenTypes[currentToken.type], currentToken.attribute.string);
 			// TOKEN SE JMÉNEM FUNKCE
 			if(inFunction == true && inFunctionName == NULL){
 				inFunctionName = currentToken.attribute.string;
@@ -475,13 +454,13 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				SymTableData varData;
 				int i = 0;
 				symTableSearch(*globalSymTable, inFunctionName, &data, errorHandle);
+				printTreeParams(data.functionLocalSymTable);
 
-
-				data.functionParamDataTypes.active = data.functionParamDataTypes.first;
-
+				//data.functionParamDataTypes.active = data.functionParamDataTypes.first;
+				/*
 				while(data.functionParamDataTypes.active != NULL){
 					if(data.functionParamDataTypes.active->dataType == INT){
-						//Print_tree(data.functionLocalSymTable);
+						printTreeParams(data.functionLocalSymTable);
 						//printf("data.key: %s\n", data.functionLocalSymTable->key);
 						//printf("\nDEFVAR LF@$%d\nPOPS LF@$%d\n", i, i);
 					}
@@ -494,7 +473,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					
 					data.functionParamDataTypes.active = data.functionParamDataTypes.active->rightPtr;
 					i++;
-				}
+				}*/
 				
 				
 			}
@@ -504,7 +483,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				ParserStackData data;
 				data.token = currentToken;
 				argCount++;
-				printf("\nPUSHING: %s\n", data.token.attribute.string);
+				//printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&argumentStack, data);
 			}
 
@@ -688,6 +667,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				pushArguments(&argumentStack, argCount);
 				argCount = 0;
 				printf("\nCALL %s\n", inFunctionCallName);
+				printPops(&variableStack, variableCount);
 			}
 			if(inPrint == true){
 				inPrint = false;
@@ -705,20 +685,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
 				while(tempToken.type != TOKEN_EOL){
 					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
-					if(tempToken.type == TOKEN_ID){
-						printf("ID PUSHS LF@%s\n", tempToken.attribute.string);
-					}
-					else if(tempToken.type == TOKEN_INTVALUE){
-						printf("INT PUSHS int@%ld\n", tempToken.attribute.integer);
-					}
-					else if(tempToken.type == TOKEN_FLOATVALUE)
-					{
-						printf("FLOAT64 PUSHS float@%a\n", tempToken.attribute.real);
-					}
-					else if (tempToken.type == TOKEN_STRINGVALUE)
-					{
-						printf("STRING PUSHS string@%s\n", tempToken.attribute.string);
-					}
 					scannerTokenListMoveNext(tokenList, errorHandle);
 					shiftCounter++;
 				}
@@ -726,6 +692,21 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				//navrat
 				for(int i = 0; i < shiftCounter; i++){
 					scannerTokenListMovePrev(tokenList, errorHandle);
+					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
+					if(tempToken.type == TOKEN_ID){
+						printf("PUSHS LF@%s\n", tempToken.attribute.string);
+					}
+					else if(tempToken.type == TOKEN_INTVALUE){
+						printf("PUSHS int@%ld\n", tempToken.attribute.integer);
+					}
+					else if(tempToken.type == TOKEN_FLOATVALUE)
+					{
+						printf("PUSHS float@%a\n", tempToken.attribute.real);
+					}
+					else if (tempToken.type == TOKEN_STRINGVALUE)
+					{
+						printf("PUSHS string@%s\n", tempToken.attribute.string);
+					}
 				}
 
 			}
