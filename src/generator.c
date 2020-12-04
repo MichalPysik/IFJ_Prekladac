@@ -2,26 +2,24 @@
 
 #include "generator.h"
 
-void printTreeParams(SymTableBinTreePtr TempTree)
+void preorderTreeParamsTraversal(SymTableBinTreePtr TempTree)
 {
 	if (TempTree == NULL) 
-          return; 
-  
+        return; 
+
 	if(strcmp(TempTree->key, "_")){
 		printf("\nDEFVAR LF@%s\nPOPS LF@%s\n", TempTree->key, TempTree->key);
 	}
     //printf("PARAM: %s \n", TempTree->key);   
-  
-     /* then recur on left sutree */
-    printTreeParams(TempTree->leftPtr);   
-  
-     /* now recur on right subtree */
-    printTreeParams(TempTree->rightPtr); 
+
+    preorderTreeParamsTraversal(TempTree->leftPtr);   
+    preorderTreeParamsTraversal(TempTree->rightPtr); 
 }
 
 
 void pushArguments(ParserStackPtr *argStack, int argCount){
 	ParserStackData data;
+	printf("\n");
 	for(int i = 0; i < argCount; i++){
 		data = parserStackPop(argStack);
 		if(data.token.type == TOKEN_INTVALUE){
@@ -129,7 +127,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
 
-	 //printf("TOKEN: %s", tokenTypes[currentToken.type]);
+	//printf("TOKEN: %s ", tokenTypes[currentToken.type]);
 	//if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
 	//printf("\n");
 
@@ -142,7 +140,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		
 		// ZAČÁTEK SOUBORU (PROLOG)
 		if(grammarRule == 1){
-			printf(".IFJcode20\n\n\nJUMP main\n\n");
+			printf(".IFJcode20\nJUMP main\n\n");
 		}
 		
 		
@@ -171,10 +169,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		if(52 <= grammarRule && grammarRule <= 61){
 			if(inExpression == false){
 				expressionType = TOKEN_EMPTY;
-				printf("CREATEFRAME\n");
+				printf("\nCREATEFRAME\n");
 				printf("DEFVAR TF@$operand1\n");
 				printf("DEFVAR TF@$operand2\n");
-				printf("DEFVAR TF@$result\n");
+				printf("DEFVAR TF@$result\n\n");
 			}
 			inExpression = true;
 			
@@ -236,7 +234,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf(" int@%ld", operand1.attribute.integer);
 				}
 				else if(operand1.type == TOKEN_FLOATVALUE) {
-					printf("float@%a", operand1.attribute.real);
+					printf(" float@%a", operand1.attribute.real);
 				}
 				else if(operand1.type == TOKEN_STRINGVALUE) {
 					printf(" string@");
@@ -266,8 +264,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				else if(operand2.type == TOKEN_EMPTY){
 					printf(" TF@$operand2\n");
 				}
-					
-				printf("PUSHS TF@$result\n\n");
+				
+				if(operand1.type != TOKEN_EMPTY && operand2.type != TOKEN_EMPTY){
+					printf("PUSHS TF@$result\n\n");
+				}
 			}
 		// POUZE 1 OPERAND
 		} else if(grammarRule > 61 && currentToken.type == TOKEN_EOL){
@@ -326,7 +326,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			bool isMultiVariable = false;
 
 			if(currentToken.type == TOKEN_INIT){
-				printf("DEFVAR LF@%s\n", currentToken.attribute.string);
+				printf("\nDEFVAR LF@%s\n", currentToken.attribute.string);
 			}
 			else{//currentToken.type == TOKEN_ASSIGN
 				leftSide = false;
@@ -393,9 +393,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 				isMultiExpression = false;
 				//////////// Osetreni Vyrazu s jednou hodnotou ////////////
-
-				//má to tady být???
-				//scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
 			}
 			else{isMultiVariable = false;}
 			break;
@@ -405,7 +402,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		case TOKEN_STRINGVALUE:
 
 			if(inPrint == true){
-				printf("WRITE string@");
+				printf("\nWRITE string@");
 				printString(currentToken.attribute.string);
 			}
 			if(inArguments == true){
@@ -419,7 +416,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_INTVALUE:
 			if(inPrint == true){
-				printf("WRITE int@%ld\n", currentToken.attribute.integer);
+				printf("\nWRITE int@%ld\n", currentToken.attribute.integer);
 			}
 			if(inArguments == true && inFunctionCall == true){
 				ParserStackData data;
@@ -432,7 +429,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_FLOATVALUE:
 			if(inPrint == true){
-				printf("WRITE int@%a\n", currentToken.attribute.real);
+				printf("\nWRITE int@%a\n", currentToken.attribute.real);
 			}
 			if(inArguments == true){
 				ParserStackData data;
@@ -449,12 +446,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			// TOKEN SE JMÉNEM FUNKCE
 			if(inFunction == true && inFunctionName == NULL){
 				inFunctionName = currentToken.attribute.string;
-				printf("\n# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n\n", inFunctionName, inFunctionName);
+				printf("# --- func %s ------------------------------\nLABEL %s\nCREATEFRAME\nPUSHFRAME\n\n", inFunctionName, inFunctionName);
 				SymTableData data;
 				SymTableData varData;
 				int i = 0;
 				symTableSearch(*globalSymTable, inFunctionName, &data, errorHandle);
-				printTreeParams(data.functionLocalSymTable);
+				preorderTreeParamsTraversal(data.functionLocalSymTable);
 
 				//data.functionParamDataTypes.active = data.functionParamDataTypes.first;
 				/*
@@ -498,62 +495,31 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			//BUILT IN FUNKCE
 			if(inPrint == true && strcmp(currentToken.attribute.string,"print")){
-				printf("WRITE LF@%s\n", currentToken.attribute.string);
+				printf("\nWRITE LF@%s\n", currentToken.attribute.string);
 			}
-
-			if(!strcmp(currentToken.attribute.string, "inputi")){
-				printf("\nCALL inputi\n");
-				printPops(&variableStack, variableCount);
-				inputi = true;
-			}
-			if(!strcmp(currentToken.attribute.string, "inputf")){
-				printf("\nCALL inputf\n");
-				printPops(&variableStack, variableCount);
-				inputf = true;
-			}
-			if(!strcmp(currentToken.attribute.string, "inputs")){
-				printf("\nCALL inputs\n");
-				printPops(&variableStack, variableCount);
-				inputs = true;
-			}
+			if(!strcmp(currentToken.attribute.string, "inputi")){inputi = true;}
+			if(!strcmp(currentToken.attribute.string, "inputf")){inputf = true;}
+			if(!strcmp(currentToken.attribute.string, "inputs")){inputs = true;}
 			if(!strcmp(currentToken.attribute.string, "int2float")){
-				//symTableSearch(*globalSymTable, "int2float", &data, errorHandle);
-				//printf("int2float pocet params: %d", data.functionParamDataTypes.size);
-				//pushArguments(tokenList, currentToken);
+				/*symTableSearch(*globalSymTable, "int2float", &data, errorHandle);
+				printf("int2float pocet params: %d", data.functionParamDataTypes.size);
+				pushArguments(tokenList, currentToken);
 				printf("\nCALL int2float\n");
-				printPops(&variableStack, variableCount);
+				printPops(&variableStack, variableCount);*/
 				int2float = true;
 			}
 			if(!strcmp(currentToken.attribute.string, "float2int")){
-				printf("\nCALL float2int\n");
-				//symTableSearch(*globalSymTable, "float2int", &data, errorHandle);
-				//printf("float2int pocet params: %d, jmeno: ", data.functionParamDataTypes.size, data.functionParamDataTypes.active);
+				/*printf("\nCALL float2int\n");
+				symTableSearch(*globalSymTable, "float2int", &data, errorHandle);
+				printf("float2int pocet params: %d, jmeno: ", data.functionParamDataTypes.size, data.functionParamDataTypes.active);
 				printf("\nCALL float2float\n");
-				printPops(&variableStack, variableCount);
+				printPops(&variableStack, variableCount);*/
 				float2int = true;
 			}
-			if(!strcmp(currentToken.attribute.string, "len")){
-				printf("\nCALL len\n");
-				printPops(&variableStack, variableCount);
-				len = true;
-			}
-			if(!strcmp(currentToken.attribute.string, "substr")){
-				//TODO
-				printf("\nCALL substr\n");
-				printPops(&variableStack, variableCount);
-				substr = true;
-			}
-			if(!strcmp(currentToken.attribute.string, "ord")){
-				//TODO 
-				printf("\nCALL ord\n");
-				printPops(&variableStack, variableCount);
-				ord = true;
-			}
-			if(!strcmp(currentToken.attribute.string, "chr")){
-				printf("\nCALL chr\n");
-				printPops(&variableStack, variableCount);
-				chr = true;
-			}
+			if(!strcmp(currentToken.attribute.string, "len")){len = true;}
+			if(!strcmp(currentToken.attribute.string, "substr")){substr = true;}
+			if(!strcmp(currentToken.attribute.string, "ord")){ord = true;}
+			if(!strcmp(currentToken.attribute.string, "chr")){chr = true;}
 			
 			// používat: strcmp() == 0 -> jinak se nemusí rovnat
 			/*
@@ -596,9 +562,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			bracketCnt--;
 			if(inFunction == true && bracketCnt == 0){
 				if(strcmp(inFunctionName, "main") == 0){
-					printf("POPFRAME\nEXIT int@0\n\n");
+					printf("\n\nPOPFRAME\nEXIT int@0\n\n");
 					} else {
-						printf("POPFRAME\nRETURN\n\n");
+						printf("\n\nPOPFRAME\nRETURN\n\n");
 					}
 			
 						
@@ -606,33 +572,31 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				inFunctionName = NULL;
 
 				if(inputi == true){//INPUT INT
-					printf("\n\n%s", FUNC_INPUTI);
+					printf("\n%s", FUNC_INPUTI);
 				}
-				printf("\n\n\n");
 				if(inputf == true){//INPUT FLOAT
-					printf("\n\n%s", FUNC_INPUTF);
+					printf("\n%s", FUNC_INPUTF);
 				}
-				printf("\n\n\n");
 				if(inputs == true){//INPUT STRING
-					printf("\n\n%s", FUNC_INPUTS);
+					printf("\n%s", FUNC_INPUTS);
 				}
-				if(int2float == true){//INPUT STRING
-					printf("\n\n%s", FUNC_INT_TO_FLOAT);
+				if(int2float == true){//INT2FLOAT
+					printf("\n%s", FUNC_INT_TO_FLOAT);
 				}
-				if(float2int == true){//INPUT STRING
-					printf("\n\n%s", FUNC_FLOAT_TO_INT);
+				if(float2int == true){//FLOAT2INT
+					printf("\n%s", FUNC_FLOAT_TO_INT);
 				}
-				if(len == true){//INPUT STRING
-					printf("\n\n%s", FUNC_STRLEN);
+				if(len == true){//STRING LENGTH
+					printf("\n%s", FUNC_STRLEN);
 				}
-				if(substr == true){//INPUT STRING
-					printf("\n\n%s", FUNC_SUBSTRING);
+				if(substr == true){//SUBSTRING
+					printf("\n%s", FUNC_SUBSTRING);
 				}
-				if(ord == true){//INPUT STRING
-					printf("\n\n%s", FUNC_ORD);
+				if(ord == true){//???
+					printf("\n%s", FUNC_ORD);
 				}
-				if(chr == true){//INPUT STRING
-					printf("\n\n%s", FUNC_CHR);
+				if(chr == true){//???
+					printf("\n%s", FUNC_CHR);
 				}
 			}
 			break;
@@ -665,8 +629,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				inArguments = false;
 				inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
-				argCount = 0;
-				printf("\nCALL %s\n", inFunctionCallName);
+				argCount = 0;////////////////////////////////////////////////////
+				
+				printf("CALL %s\n", inFunctionCallName);
 				printPops(&variableStack, variableCount);
 			}
 			if(inPrint == true){
@@ -688,7 +653,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					scannerTokenListMoveNext(tokenList, errorHandle);
 					shiftCounter++;
 				}
-
+				
+				printf("\n");
 				//navrat
 				for(int i = 0; i < shiftCounter; i++){
 					scannerTokenListMovePrev(tokenList, errorHandle);
