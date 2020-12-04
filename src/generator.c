@@ -299,8 +299,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				 //jestli se nejedna o prirazeni vice hodnot do vice promennych, carka => vice promennych
 				if(currentToken.type == TOKEN_COMMA){
 					isMultiVariable = true;
-					scannerTokenListMoveNext(tokenList, errorHandle); //Navrat zpatky
 				}
+				scannerTokenListMoveNext(tokenList, errorHandle); //Navrat zpatky
 			}
 			if(!isMultiVariable){
 				scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
@@ -358,8 +358,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				isMultiExpression = false;
 				//////////// Osetreni Vyrazu s jednou hodnotou ////////////
 
-
-				scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
+				//má to tady být???
+				//scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
 			}
 			else{isMultiVariable = false;}
 			break;
