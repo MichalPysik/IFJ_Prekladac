@@ -97,7 +97,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
-	printf("TOKEN: %s", tokenTypes[currentToken.type]);
+	///////////////////////////////////////////printf("TOKEN: %s", tokenTypes[currentToken.type]);
 	if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
 	printf("\n");
 
@@ -281,69 +281,87 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	// GENEROVANÍ PODLE TOKENŮ
 	switch (currentToken.type)
 	{
+		
 		case TOKEN_ASSIGN:
-			leftSide = false;
+			//leftSide = false;
 
-			break;
-		case TOKEN_INIT:
-			scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
-			printf("DEFVAR LF@%s\n", currentToken.attribute.string);
-			currentVariableID = currentToken.attribute.string;
+			//break;
+		case TOKEN_INIT: ;//semicolon, protože compiler nadává
+			bool isMultiVariable = false;
 
-			//---------------------------Osetreni Vyrazu s jednou hodnotou-------------------------------------------------//
-			//!!!!!!!!!!!!!!!!!!!!jeste nefunguje pro proměnné + není odzkoušeno přiřazení a := -1
-			int shiftCount = 0;
-			Token singleExpressionToken;
-
-			scannerTokenListMoveNext(tokenList, errorHandle); //presunuti na prvni hodnotu za :=
-			shiftCount++;
-			scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
-
-			while(1){//dokud nedojdeme na nejakou hodnotu)
-				if(currentToken.type != TOKEN_LROUNDBRACKET){
-					singleExpressionToken = currentToken;
-					break;
-				}
-				
-				scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
-				shiftCount++;
-				scannerTokenListGetActive(tokenList, &currentToken, errorHandle); //peeknuti za ni, abychom vedeli jestli to je jen jedna hodnota
-
+			if(currentToken.type == TOKEN_INIT){
+				printf("DEFVAR LF@%s\n", currentToken.attribute.string);
 			}
-			bool isMultiExpression = false;
-			while(currentToken.type != TOKEN_EOL){ //cekujeme jestli je po hodnote znamenko operatoru, je => je to multiExpression
-				if(currentToken.type == TOKEN_ADD ||
-				   currentToken.type == TOKEN_SUB ||
-				   currentToken.type == TOKEN_MUL ||
-				   currentToken.type == TOKEN_DIV ){
-					isMultiExpression = true;
-					break;
+			else{//currentToken.type == TOKEN_ASSIGN
+				leftSide = false;
+				scannerTokenListMovePrev(tokenList, errorHandle);
+				scannerTokenListGetPrev(tokenList, &currentToken, errorHandle);
+				 //jestli se nejedna o prirazeni vice hodnot do vice promennych, carka => vice promennych
+				if(currentToken.type == TOKEN_COMMA){
+					isMultiVariable = true;
+					scannerTokenListMoveNext(tokenList, errorHandle); //Navrat zpatky
 				}
-				scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
+			}
+			if(!isMultiVariable){
+				scannerTokenListGetPrev(tokenList, &currentToken, errorHandle); // BERU TOKEN VLEVO od := 
+				currentVariableID = currentToken.attribute.string;
+
+				//---------------------------Osetreni Vyrazu s jednou hodnotou-------------------------------------------------//
+				int shiftCount = 0;
+				Token singleExpressionToken;
+
+				scannerTokenListMoveNext(tokenList, errorHandle); //presunuti na prvni hodnotu za :=
 				shiftCount++;
 				scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
-			}
 
+				while(1){//dokud nedojdeme na nejakou hodnotu)
+					if(currentToken.type != TOKEN_LROUNDBRACKET){
+						singleExpressionToken = currentToken;
+						break;
+					}
+					
+					scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
+					shiftCount++;
+					scannerTokenListGetActive(tokenList, &currentToken, errorHandle); //peeknuti za ni, abychom vedeli jestli to je jen jedna hodnota
 
-			//navrat na puvodni token
-			for (int i = 0; i < shiftCount; i++){scannerTokenListMovePrev(tokenList, errorHandle);}
-			scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
-
-			
-			if(isMultiExpression == false/*singleValueExpression == true*/){
-				//printf("DEFVAR LF@%s\n", currentVariableID);
-				if(singleExpressionToken.type == TOKEN_INTVALUE) printf("MOVE LF@%s int@%ld\n", currentVariableID, singleExpressionToken.attribute.integer);
-				else if(singleExpressionToken.type == TOKEN_FLOATVALUE) printf("MOVE LF@%s float@%a\n", currentVariableID, singleExpressionToken.attribute.real);
-				else if(singleExpressionToken.type == TOKEN_STRINGVALUE) {
-					printf("MOVE LF@%s string@", currentVariableID);
-					printString(singleExpressionToken.attribute.string);
 				}
+				bool isMultiExpression = false;
+				while(currentToken.type != TOKEN_EOL){ //cekujeme jestli je po hodnote znamenko operatoru, je => je to multiExpression
+					if(currentToken.type == TOKEN_ADD ||
+					currentToken.type == TOKEN_SUB ||
+					currentToken.type == TOKEN_MUL ||
+					currentToken.type == TOKEN_DIV ){
+						isMultiExpression = true;
+						break;
+					}
+					scannerTokenListMoveNext(tokenList, errorHandle); //posunuti dal
+					shiftCount++;
+					scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+				}
+
+
+				//navrat na puvodni token
+				for (int i = 0; i < shiftCount; i++){scannerTokenListMovePrev(tokenList, errorHandle);}
+				scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
+
+				
+				if(isMultiExpression == false/*singleValueExpression == true*/){
+					//printf("DEFVAR LF@%s\n", currentVariableID);
+					if(singleExpressionToken.type == TOKEN_INTVALUE) printf("MOVE LF@%s int@%ld\n", currentVariableID, singleExpressionToken.attribute.integer);
+					else if(singleExpressionToken.type == TOKEN_FLOATVALUE) printf("MOVE LF@%s float@%a\n", currentVariableID, singleExpressionToken.attribute.real);
+					else if(singleExpressionToken.type == TOKEN_STRINGVALUE) {
+						printf("MOVE LF@%s string@", currentVariableID);
+						printString(singleExpressionToken.attribute.string);
+					}
+					else if(singleExpressionToken.type == TOKEN_ID) printf("MOVE LF@%s LF@%s\n",currentVariableID, singleExpressionToken.attribute.string);
+				}
+				isMultiExpression = false;
+				//////////// Osetreni Vyrazu s jednou hodnotou ////////////
+
+
+				scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
 			}
-			isMultiExpression = false;
-			//////////// Osetreni Vyrazu s jednou hodnotou ////////////
-
-
-			scannerTokenListGetNext(tokenList, &currentToken, errorHandle); // BERU TOKEN VPRAVO od :=
+			else{isMultiVariable = false;}
 			break;
 
 		
