@@ -110,7 +110,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool inExpression = false;
 	static bool inPrint = false;
 	static bool inMain = false;
-	static bool singleExpression = false;
+	static bool multiExpression = false;
 	static bool leftSide = false;
 	static bool inArguments = false;
 	static bool inFunctionCall = false;
@@ -139,13 +139,13 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	errorHandleInit(errorHandle);
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
-	/*
-	printf("\n\nVolam generatorGenerateCode:\n\n");
+	
+	//printf("\n\nVolam generatorGenerateCode:\n\n");
 
-	printf("TOKEN: %s ", tokenTypes[currentToken.type]);
-	if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
-	printf("\n");
-	*/
+	//printf("TOKEN: %s ", tokenTypes[currentToken.type]);
+	//if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
+	//printf("\n");
+	
 	static int grammarRule = 0;
 
 	// GENEROVÁNÍ PODLE PRAVIDEL
@@ -195,6 +195,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		// VÝRAZY
 		// VÍCE OPERANDŮ
 		if(52 <= grammarRule && grammarRule <= 61){
+			multiExpression = true;
 			if(inExpression == false){
 				expressionType = TOKEN_EMPTY;
 				printf("\nCREATEFRAME\n");
@@ -215,7 +216,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				
 				ParserStackPtr top = (*semanticRuleStack);
 				while(top != NULL && tokenCount < 3){ // načte max první tři terminály
-					//printf("\n\n    EXPRESSION: %s", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					printf("\n\n    EXPRESSION: %s", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
 					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_LROUNDBRACKET && STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_RROUNDBRACKET){
 						if(tokenCount == 0){
 							operator = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
@@ -313,26 +314,27 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				ParserStackPtr top = (*semanticRuleStack);
 				if(top != NULL && top->next == NULL && inExpression == false){
 					//printf("\n\nSINGLE EXPRESSION: %s", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
-					printf("MOVE LF@%s ", currentVariableID);
-	
-					Token expressionValue;
-					expressionValue.type = TOKEN_EMPTY;
-					expressionValue = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
-					
-					if(expressionValue.type == TOKEN_INTVALUE){
-						printf(" int@%ld\n", expressionValue.attribute.integer);
-					} 
-					else if(expressionValue.type == TOKEN_FLOATVALUE){
-						printf(" float@%a\n", expressionValue.attribute.real);
+					if(inReturn == false){
+						printf("MOVE LF@%s ", currentVariableID);
+		
+						Token expressionValue;
+						expressionValue.type = TOKEN_EMPTY;
+						expressionValue = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
+						
+						if(expressionValue.type == TOKEN_INTVALUE){
+							printf("int@%ld\n", expressionValue.attribute.integer);
+						} 
+						else if(expressionValue.type == TOKEN_FLOATVALUE){
+							printf("float@%a\n", expressionValue.attribute.real);
+						}
+						else if(expressionValue.type == TOKEN_STRINGVALUE) {
+							printf("string@\n");
+							printString(expressionValue.attribute.string, false);
+						}
+						else if(expressionValue.type == TOKEN_ID){
+							printf("LF@%s\n", expressionValue.attribute.string);
+						}
 					}
-					else if(expressionValue.type == TOKEN_STRINGVALUE) {
-						printf(" string@\n");
-						//printString(expressionValue.attribute.string);
-					}
-					else if(expressionValue.type == TOKEN_ID){
-						printf(" LF@%s\n", expressionValue.attribute.string);
-					}
-
 					top = top->next;
 					parserStackPop(semanticRuleStack);
 				}
@@ -341,23 +343,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	}
 	
 	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 51){
-		inExpression = false;
-		//printf("MOVE LF@%s TF@$result\n", currentVariableID);
-		//if(inInitOrAssign){
-		if(inReturn){
-			inReturn = false;
-			//push na stack navratovych hodnot;
-			//posunuti na dalsi navratovou hodnotu
-			//jakmile EOL, tak PUSHnout vsechny hodnoty
-
-		}
-		else if(inMultiAssign == false){
+		
+		if(inMultiAssign == false && inReturn == false){
 			printf("POPS LF@%s\n\n", currentVariableID);
 		}
-		//}
-		
-		//singleExpression = false;
-		//currentVariableID = NULL;
+		if(inReturn){
+			//pushArguments(&variableStack,2);
+
+			inReturn = false;
+		}
+		inExpression = false;
 	}
 	
 	
@@ -373,7 +368,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			inMultiAssign = true;
 
 			break;
-		case TOKEN_INIT: ;//semicolon, protože compiler nadává
+		case TOKEN_INIT:
 			leftSide = false;
 			scannerTokenListGetPrev(tokenList, &previousToken, errorHandle);
 			printf("DEFVAR LF@%s\n", previousToken.attribute.string);
@@ -396,6 +391,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				//printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&argumentStack, data);
 			}
+			if(inReturn == true && multiExpression == false){
+				printf("\nPUSHS string@");
+				printString(currentToken.attribute.string, true);
+			}
 			break;
 
 		case TOKEN_INTVALUE:
@@ -408,6 +407,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				argCount++;
 				//printf("\nPUSHING: %ld\n", currentToken.attribute.integer);
 				parserStackPush(&argumentStack, data);
+			}
+			if(inReturn == true && multiExpression == false){
+				printf("\nPUSHS int@%ld\n", currentToken.attribute.integer);
 			}
 			break;
 
@@ -422,8 +424,14 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				//printf("\nPUSHING: %f\n", data.token.attribute.real);
 				parserStackPush(&argumentStack, data);
 			}
+			if(inReturn == true && multiExpression == false){
+				printf("\nPUSHS float@%a\n", currentToken.attribute.real);
+			}
 			
 			break;
+		case TOKEN_COMMA:
+			multiExpression = false;
+		break;
 
 		case TOKEN_ID:
 			//printf("Token: %s,  Name: %s\n", tokenTypes[currentToken.type], currentToken.attribute.string);
@@ -475,6 +483,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				variableCount++;
 				//printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&variableStack, data);
+			}
+
+			if(inReturn == true && multiExpression == false){
+				printf("PUSHS LF@%s\n", currentToken.attribute.string);
 			}
 
 			//BUILT IN FUNKCE
@@ -587,6 +599,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_EOL:
 			leftSide = false;
+			multiExpression = false;
+			//inReturn = false;
+			//inExpression = false;
 			/*
 			if(inReturn){	
 				inReturn = false;
