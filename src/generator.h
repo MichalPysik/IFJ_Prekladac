@@ -26,7 +26,7 @@ void printPushs(ParserStackPtr *varStack, int argCount);
 void printPops(ParserStackPtr *varStack, int varCount);
 
 //Tiskne řetězcovou hodnotu podle zadání
-void printString(char* string);
+void printString(char* string, bool printNewLine);
 
 //Generování kódu
 int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle);

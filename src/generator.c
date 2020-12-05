@@ -49,7 +49,7 @@ void printPops(ParserStackPtr *varStack, int varCount){
 	}
 }
 
-void printString(char* string){
+void printString(char* string, bool printNewLine){
 	for (int i = 0; string[i] != '\0'; i++){
 		if(string[i] <= 32)
 		{
@@ -66,7 +66,9 @@ void printString(char* string){
 			printf("%c", string[i]);
 		}
 	}
-	printf("\n");
+	if(printNewLine == true){
+		printf("\n");
+	}
 }
 
 
@@ -92,6 +94,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static int variableCount = 0; 
 	static int argCount = 0;
 
+	//pomocné proměnné na uchovávání kontextu aktuální pozices
 	static bool inFunction = false;
 	static char *inFunctionName = NULL;
 	static char *inFunctionCallName = NULL;
@@ -102,6 +105,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool leftSide = false;
 	static bool inArguments = false;
 	static bool inFunctionCall = false;
+	static bool isStringExpression = false;
+	static bool inInitOrAssign = false;
+	static bool inReturn = false;
 
 	//Vestavěné funkce
 	static bool inputi = false;
@@ -199,11 +205,17 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							expressionType = operand1.type;
 						}
 					}
-					
+
+					if(operand1.type == TOKEN_STRINGVALUE || operand2.type == TOKEN_STRINGVALUE){
+						isStringExpression = true;
+					}
+
 					top = top->next;
 					parserStackPop(semanticRuleStack);
 					tokenCount++;
 				}
+					//printf("OPERAND 2 TOKEN: %s\n", tokenTypes[operand2.type]);
+					//printf("OPERAND 1 TOKEN: %s\n", tokenTypes[operand1.type]);
 				if(operand2.type == TOKEN_EMPTY){
 					printf("POPS TF@$operand2\n");
 				}
@@ -223,7 +235,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf("IDIV TF@$result");
 				}
 				else if(operator.type == TOKEN_ADD){
-					printf("ADD TF@$result");
+					if(isStringExpression){
+						printf("CONCAT TF@$result");
+					}
+					else{
+						printf("ADD TF@$result");
+					}
 				}
 				else if(operator.type == TOKEN_SUB){
 					printf("SUB TF@$result");
@@ -238,7 +255,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 				else if(operand1.type == TOKEN_STRINGVALUE) {
 					printf(" string@");
-					printString(operand1.attribute.string);
+					printString(operand1.attribute.string, false);
 				}
 				else if(operand1.type == TOKEN_ID){
 					printf(" LF@%s", operand1.attribute.string);
@@ -255,8 +272,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf(" float@%a\n", operand2.attribute.real);
 				}
 				else if(operand2.type == TOKEN_STRINGVALUE) {
-					printf(" string@\n");
-					printString(operand2.attribute.string);
+					printf(" string@");
+					printString(operand2.attribute.string, true);
 				}
 				else if(operand2.type == TOKEN_ID){
 					printf(" LF@%s\n", operand2.attribute.string);
@@ -265,9 +282,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					printf(" TF@$operand2\n");
 				}
 				
-				if(operand1.type != TOKEN_EMPTY && operand2.type != TOKEN_EMPTY){
-					printf("PUSHS TF@$result\n\n");
-				}
+				printf("PUSHS TF@$result\n\n");
 			}
 		// POUZE 1 OPERAND
 		} else if(grammarRule > 61 && currentToken.type == TOKEN_EOL){
@@ -305,7 +320,18 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	
 	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 51){
 		inExpression = false;
-		printf("MOVE LF@%s TF@$result\n", currentVariableID);
+		//printf("MOVE LF@%s TF@$result\n", currentVariableID);
+		//if(inInitOrAssign){
+		if(inReturn){
+			//push na stack navratovych hodnot;
+			//posunuti na dalsi navratovou hodnotu
+			//jakmile EOL, tak PUSHnout vsechny hodnoty
+
+		}
+		else{
+			printf("POPS LF@%s\n", currentVariableID);
+		}
+		//}
 		
 		//singleExpression = false;
 		//currentVariableID = NULL;
@@ -324,6 +350,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			//break;
 		case TOKEN_INIT: ;//semicolon, protože compiler nadává
 			bool isMultiVariable = false;
+			inInitOrAssign = true;
 
 			if(currentToken.type == TOKEN_INIT){
 				printf("\nDEFVAR LF@%s\n", currentToken.attribute.string);
@@ -387,14 +414,19 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					else if(singleExpressionToken.type == TOKEN_FLOATVALUE) printf("MOVE LF@%s float@%a\n", currentVariableID, singleExpressionToken.attribute.real);
 					else if(singleExpressionToken.type == TOKEN_STRINGVALUE) {
 						printf("MOVE LF@%s string@", currentVariableID);
-						printString(singleExpressionToken.attribute.string);
+						printString(singleExpressionToken.attribute.string, true);
 					}
-					else if(singleExpressionToken.type == TOKEN_ID) printf("MOVE LF@%s LF@%s\n",currentVariableID, singleExpressionToken.attribute.string);
+					else if(singleExpressionToken.type == TOKEN_ID &&
+							symTableSearch(*globalSymTable, currentToken.attribute.string, NULL, errorHandle) == 1){
+						printf("MOVE LF@%s LF@%s\n",currentVariableID, singleExpressionToken.attribute.string);
+					}
 				}
 				isMultiExpression = false;
 				//////////// Osetreni Vyrazu s jednou hodnotou ////////////
 			}
-			else{isMultiVariable = false;}
+			else{//isMultiVariable == true; //TODO!!!
+				isMultiVariable = false;
+			}
 			break;
 
 		
@@ -403,7 +435,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			if(inPrint == true){
 				printf("\nWRITE string@");
-				printString(currentToken.attribute.string);
+				printString(currentToken.attribute.string, true);
 			}
 			if(inArguments == true){
 				ParserStackData data;
@@ -603,6 +635,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_EOL:
 			leftSide = false;
+			if(inReturn){	
+				inReturn = false;
+				//PUSHnout vsechny hodnoty ze stacku navratovych hodnot
+			}
 			variableCount = 0;
 			//POPování zbytku proměnných, nemělo by se nikdy stát
 			/*
@@ -629,7 +665,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				inArguments = false;
 				inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
-				argCount = 0;////////////////////////////////////////////////////
+				argCount = 0;
 				
 				printf("CALL %s\n", inFunctionCallName);
 				printPops(&variableStack, variableCount);
@@ -640,6 +676,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_KEYWORD_RETURN:
+			inReturn = true;
 			if(inFunction == true && inFunctionName != "main"){
 				Token tempToken;
 				tempToken.type = TOKEN_EMPTY;
@@ -655,7 +692,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 				
 				printf("\n");
-				//navrat
+				
 				for(int i = 0; i < shiftCounter; i++){
 					scannerTokenListMovePrev(tokenList, errorHandle);
 					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
