@@ -4,14 +4,12 @@ package main
 func add(a int, b int) (int, int) {
     c := a + b
     err := 0
-    return c, err
+    return a, b
 }
 
 func main() {
-    a := 10
-    b := 10
-    vysl := 0
-    err := 0
-    vysl, err = add(a, b)
-    print(vysl)
-}
+    a := 0
+    b := 0
+    a, b = 7+5 * 10, 4+18
+    print(a)
+}   
