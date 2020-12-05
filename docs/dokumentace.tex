@@ -1,0 +1,112 @@
+
+\documentclass[a4paper, 11pt]{article}
+
+
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[left=2cm, text={17cm, 24cm}, top=3cm]{geometry}
+\usepackage{times}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage[unicode]{hyperref}
+\usepackage{pdfpages}
+\usepackage{lipsum}
+
+
+\begin{document}
+
+
+% Titulní stránka %
+
+	\begin{titlepage}
+		\begin{center}
+			\includegraphics[width=0.77\linewidth]{FIT_logo.pdf} \\
+
+			\vspace{\stretch{0.382}}
+
+			\Huge{Projektová dokumentace} \\
+			\LARGE{\textbf{Implementace překladače imperativního jazyka IFJ20}} \\
+			\Large{Tým 75, varianta 1}
+			
+		\end{center}
+        \begin{center}
+	            \Large{Implementovaná rozšíření: \textbf{BASE}}
+	            \vspace{\stretch{0.618}}
+		\end{center}
+		\begin{minipage}{0.4 \textwidth}
+			{\Large \today}
+		\end{minipage}
+		\hfill
+		\begin{minipage}[r]{0.6 \textwidth}
+			\Large
+			\begin{tabular}{l l l}
+				\textbf{Michal Pyšík} & (xpysik00) & \quad 25\,\% \\
+				Karel Jirgl & (xjirgll00) & \quad 25\,\% \\
+				Václav Klem & (xklem00) & \quad 25\,\% \\
+				Thanh Quang Tran & (xtrant02) & \quad 25\,\% \\
+			\end{tabular}
+		\end{minipage}
+	    
+	\end{titlepage}
+
+\tableofcontents
+
+\newpage
+
+
+\section{Spolupráce v týmu}
+\subsection{Rozdělení práce v týmu}
+Rozdělení práce probíhalo v době plánování. Nakonec jsme si všichni v různých částech implementace pomáhali, aby nebyl problém spojit všechny části předkladače v jeden funkční celek. Shodli jsme se na rovnoměrném rozdělení bodů, jelikož všichni členové týmu spolu aktivně komunikovali, pomáhali si a nebyly žádné významné neshody. 
+
+\subsubsection*{Michal Pyšík (xpysik00)}
+Implementace lexikálního analyzátoru a ustanovení typů tokenů
+
+\subsubsection*{Karel Jirgl (xjirgl00)}
+Gramatika, Syntaktická a sémantická analýza, implementace tabulky symbolů, LL tabulky, precedenční~syntaktické analýzy
+
+\subsubsection*{Václav Klem (xklemv00) }
+Generátor cílového kódu
+
+\subsubsection*{Thanh Quang Tran (xtrant02)}
+Gramatika, LL tabulka, tabulka precedenční syntaktické analýzy 
+
+\subsubsection*{Společná práce}
+Dokumentace, obecná struktura cílového programu
+
+\subsection{Způsob práce v týmu}
+Komunikace probíhala především prostřednictvím Discord serveru vytvořeného přímo pro tento projekt. Konaly se pravidelné porady a všichni členové týmu byli většinou k dispozici, pokud se vyskytl nějaký problém nebo bylo potřeba se dohodnout na konkrétních detailech implementace. Díky úspěšné komunikaci a vzájemnému porozumnění kódu mezi kolegy nebyl problém spojit jednotlivé části tak, aby spolu byly vzájemně kompatibilní. 
+
+\newpage
+\section{Lexikální analýza}
+První fází překladače je lexikální analyzátor (scanner). Nejdůležitější funkcí je zde \verb|scannerGetToken|, což je vlastně implementace deterministického konečného automatu, který čte jednotlivé znaky ze standartního vstupu, dokud nedojde do koncového stavu (návratová hodnota 0), nebo nenarazí na lexikální chybu (návratová hodnota 1). To je zajištěné pomocí \verb|switche| umístěného v nekonečném \verb|while| cyklu, kde každý \verb|case| reprezentuje právě jeden stav automatu, a při každém opakování cyklu je čten právě jeden znak ze vstupu.
+\newline
+\newline
+Funkce má jediný parametr, a to ukazatel na předem alokovaný prvek typu \verb|Token|, jehož typ (a případně atribut) se nastaví podle přečtených hodnot a dosaženého koncového stavu. Mezi typy tokenů bez atributů patří například relační operátory, aritmetické operátory, přiřazení, klíčová slova, odřádkování (EOL), konec souboru (EOF), závorky a další povolené znaky.
+\newline
+\newline
+Typy tokenů s atributy jsou pouze identifikátor, celé číslo, desetinné číslo a řetězec. Atribut tokenu je typu \verb|union|, v případě identifikátoru nebo řetězce se tedy využívá pouze atribut \verb|string|, u celého čísla \verb|integer| a u desetinného čísla \verb|real|. Když je zřejmé že načítáme nějaký z těchto 4 typů tak se přečtené znaky nejprve ukládají do bufferu (globální pole), a ve chvíli kdy je dosaženo koncového stavu, se do následující pozice v bufferu vloží nulový znak. Obsah bufferu až po tento znak je poté převeden na celé/desetinné číslo, nebo zkopírován do nově alokovaného stringu (jehož velikost pro alokaci je index pozice prvního nulového znaku v bufferu + 1). Tento postup je velice praktický, protože i když se obsah bufferu nemaže ale pouze přepisuje, cokoli za prvním nulovým znakem je ignorováno, například pozůstatky nějakého delšího dříve načteného řetězce.
+\newline
+\newline
+Všechny načtené tokeny se ukládají do obousměrného lineárního seznamu, který je předáván dalším částem překladače. Z pracujících se seznamem stojí za zmínku \verb|ScannerGetTokenList|, která plní seznam tokeny (voláním dříve popsané funkce), dokud nenarazí na token typu EOF, nebo volaná funkce nenahlásí lexikální chybu.
+
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{Scanner_FSM_Graph.pdf}
+
+\newpage
+
+\section{Syntaktická analýza}
+Prediktivní syntaktická analýza
+
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{LL_table.pdf}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{Precedence_table.pdf}
+
+\newpage
+
+\section{Semantická analýza}
+Běží zároveň se syntaktickou TODO
+
+\section{Generace mezikódu}
+děláme přímé generování TODO
+
+
+\end{document}
