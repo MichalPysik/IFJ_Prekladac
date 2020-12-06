@@ -107,3 +107,40 @@ len(s)−𝑖, jsou jako řetězec vráceny od 𝑖-tého znaku všechny zbývaj
 
 ---------------------------------------------------
 func ord(s string, i int) (int, int) // TODO
+
+
+---- greaterOrEqual ----
+LABEL $greaterOrEqual
+
+DEFVAR TF@$op1
+DEFVAR TF@$op2
+DEFVAR TF@$res
+DEFVAR TF@$res1
+DEFVAR TF@$res2
+
+POPS TF@$op2
+POPS TF@$op1
+
+GT TF@$res1 TF@$op1 TF@$op2
+EQ TF@$res2 TF@$op1 TF@$op2
+OR TF@$res TF@$res1 TF@$res2
+PUSHS TF@$res
+RETURN
+
+---- lesserOrEqual ----
+LABEL $lesserOrEqual
+
+DEFVAR TF@$op1
+DEFVAR TF@$op2
+DEFVAR TF@$res
+DEFVAR TF@$res1
+DEFVAR TF@$res2
+
+POPS TF@$op2
+POPS TF@$op1
+
+LT TF@$res1 TF@$op1 TF@$op2
+EQ TF@$res2 TF@$op1 TF@$op2
+OR TF@$res TF@$res1 TF@$res2
+PUSHS TF@$res
+RETURN
