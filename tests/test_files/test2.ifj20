@@ -1,19 +1,20 @@
 // Program 4: Scitani jako funkce
 package main
 
-func add(a int, b int) (int, int, int, int) {
+func add(a int, b int) (int){
     c := a + b
-    err := 5+1
-    return c, 5+3*7, 9+8, c
+    return 0
+}
 
-
+func add2(a int, b int){
+    c := a + b
+    print(c)
 }
 
 func main() {
     a := 3
     b := 6
-    c := 0
-    d := 0
-    a, b, c, d = add(a, b)
-    print(a," ", " ",b," ", c)
+    c := 10
+    c = add(a, b)
+    add2(a, b)
 } 
