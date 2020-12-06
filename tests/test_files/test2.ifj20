@@ -1,20 +1,7 @@
 
 package main
 
-func add(a int, b int) (int){
-    c := a + b
-    return 0
-}
-
-func add2(a int, b int){
-    c := a + b
-    print(c)
-}
 
 func main() {
-    a := 3
-    b := 6
-    c := 10
-    c = add(a, b)
-    add2(a, b)
+    _ := 6
 } 

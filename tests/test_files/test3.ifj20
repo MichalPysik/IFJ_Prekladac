@@ -7,9 +7,14 @@ func main() {
     a, err = inputi()
     print(a, "\n") 
     if(a >= 5){
-        print("Cislo je vetsi nez 5")
+        if(2 > 1){
+            print("IF1")
+        } else {
+            print("ELSE1")
+        }
+        print("IF0")
     } else {
-        print("Cislo je mensei nez 5")
+        print("ELSE0")
     }
-    
+
 } 

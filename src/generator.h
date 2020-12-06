@@ -33,4 +33,10 @@ void printString(char* string, bool printNewLine);
 int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle);
 
 
+typedef struct integerStack {
+	int ifID;
+	struct integerStack *next;
+} *integerStack;
+
+
 #endif //defined _GENERATOR_H
