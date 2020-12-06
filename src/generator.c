@@ -120,6 +120,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool isStringExpression = false;
 	static bool inMultiAssign = false;
 	static bool inReturn = false;
+	static bool inIfExpression = false;
 
 	//Vestavěné funkce
 	static bool inputi = false;
@@ -242,7 +243,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				
 				ParserStackPtr top = (*semanticRuleStack);
 				while(top != NULL && tokenCount < 3){ // načte max první tři terminály
-					//printf("\n\n    EXPRESSION: %s", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
+					printf("\n\n    EXPRESSION: %s", tokenTypes[STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type]);
 					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_LROUNDBRACKET && STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_RROUNDBRACKET){
 						if(tokenCount == 0){
 							operator = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
@@ -265,73 +266,96 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 					//printf("OPERAND 2 TOKEN: %s\n", tokenTypes[operand2.type]);
 					//printf("OPERAND 1 TOKEN: %s\n", tokenTypes[operand1.type]);
-				if(operand2.type == TOKEN_EMPTY){
-					printf("POPS TF@$operand2\n");
-				}
-				if(operand1.type == TOKEN_EMPTY){
-					printf("POPS TF@$operand1\n");
-				}
-
-
-				// TISK INSTRUKCI VYRAZU
-				if(operator.type == TOKEN_MUL){
-					printf("MUL TF@$result");
-				}
-				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_FLOATVALUE){
-					printf("DIV TF@$result");
-				}
-				else if (operator.type == TOKEN_DIV && expressionType == TOKEN_INTVALUE){
-					printf("IDIV TF@$result");
-				}
-				else if(operator.type == TOKEN_ADD){
-					if(isStringExpression){
-						printf("CONCAT TF@$result");
-					}
-					else{
-						printf("ADD TF@$result");
-					}
-				}
-				else if(operator.type == TOKEN_SUB){
-					printf("SUB TF@$result");
-				}
-
-				// OPERAND 1
-				if(operand1.type == TOKEN_INTVALUE) {
-					printf(" int@%ld", operand1.attribute.integer);
-				}
-				else if(operand1.type == TOKEN_FLOATVALUE) {
-					printf(" float@%a", operand1.attribute.real);
-				}
-				else if(operand1.type == TOKEN_STRINGVALUE) {
-					printf(" string@");
-					printString(operand1.attribute.string, false);
-				}
-				else if(operand1.type == TOKEN_ID){
-					printf(" LF@%s", operand1.attribute.string);
-				}
-				else if(operand1.type == TOKEN_EMPTY){
-					printf(" TF@$operand1");
-				}
-
-				// OPERAND 2
-				if(operand2.type == TOKEN_INTVALUE){
-					printf(" int@%ld\n", operand2.attribute.integer);
-				} 
-				else if(operand2.type == TOKEN_FLOATVALUE){
-					printf(" float@%a\n", operand2.attribute.real);
-				}
-				else if(operand2.type == TOKEN_STRINGVALUE) {
-					printf(" string@");
-					printString(operand2.attribute.string, true);
-				}
-				else if(operand2.type == TOKEN_ID){
-					printf(" LF@%s\n", operand2.attribute.string);
-				}
-				else if(operand2.type == TOKEN_EMPTY){
-					printf(" TF@$operand2\n");
-				}
+				if(operator.type != TOKEN_GTE && operator.type != TOKEN_LTE){
 				
-				printf("PUSHS TF@$result\n\n");
+					if(operand2.type == TOKEN_EMPTY){
+						printf("POPS TF@$operand2\n");
+					}
+					if(operand1.type == TOKEN_EMPTY){
+						printf("POPS TF@$operand1\n");
+					}
+
+
+					// TISK INSTRUKCI VYRAZU
+					if(operator.type == TOKEN_MUL){
+						printf("MUL TF@$result");
+					}
+					else if (operator.type == TOKEN_DIV && expressionType == TOKEN_FLOATVALUE){
+						printf("DIV TF@$result");
+					}
+					else if (operator.type == TOKEN_DIV && expressionType == TOKEN_INTVALUE){
+						printf("IDIV TF@$result");
+					}
+					else if(operator.type == TOKEN_ADD){
+						if(isStringExpression){
+							printf("CONCAT TF@$result");
+						}
+						else{
+							printf("ADD TF@$result");
+						}
+					}
+					else if(operator.type == TOKEN_SUB){
+						printf("SUB TF@$result");
+					}
+					else if(operator.type == TOKEN_LT){
+						printf("LT TF@$result");
+					}
+					else if(operator.type == TOKEN_GT){
+						printf("GT TF@$result");
+					}
+					else if(operator.type == TOKEN_EQ){
+						printf("EQ TF@$result");
+					}
+					else if(operator.type == TOKEN_NEQ){
+						printf("EQ TF@$result");
+					}
+
+					// OPERAND 1
+					if(operand1.type == TOKEN_INTVALUE) {
+						printf(" int@%ld", operand1.attribute.integer);
+					}
+					else if(operand1.type == TOKEN_FLOATVALUE) {
+						printf(" float@%a", operand1.attribute.real);
+					}
+					else if(operand1.type == TOKEN_STRINGVALUE) {
+						printf(" string@");
+						printString(operand1.attribute.string, false);
+					}
+					else if(operand1.type == TOKEN_ID){
+						printf(" LF@%s", operand1.attribute.string);
+					}
+					else if(operand1.type == TOKEN_EMPTY){
+						printf(" TF@$operand1");
+					}
+
+					// OPERAND 2
+					if(operand2.type == TOKEN_INTVALUE){
+						printf(" int@%ld\n", operand2.attribute.integer);
+					} 
+					else if(operand2.type == TOKEN_FLOATVALUE){
+						printf(" float@%a\n", operand2.attribute.real);
+					}
+					else if(operand2.type == TOKEN_STRINGVALUE) {
+						printf(" string@");
+						printString(operand2.attribute.string, true);
+					}
+					else if(operand2.type == TOKEN_ID){
+						printf(" LF@%s\n", operand2.attribute.string);
+					}
+					else if(operand2.type == TOKEN_EMPTY){
+						printf(" TF@$operand2\n");
+					}
+
+					
+					printf("PUSHS TF@$result\n\n");
+				}
+				else if(operator.type == TOKEN_GTE){
+					printf("GT $result %s \nEQ result2 a 5OR \nresult result1 result2");
+						// OPERAND 1
+				}
+				else if(operator.type == TOKEN_LTE){
+					printf("LT $result %s \nEQ result2 a 5OR \nresult result1 result2");
+				}
 			}
 		// POUZE 1 OPERAND
 		} else if(grammarRule > 61 && currentToken.type == TOKEN_EOL){
@@ -422,7 +446,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			//pushArguments(&variableStack,2);
 			inReturn = false;
 		}*/
-		
+		if(inIfExpression == true){
+			inIfExpression = false;
+			printf("\nPOPS TF@result\n\nJUMPIFNEQ $%s_if_else TF@result int@0\n", inFunctionName);
+		}
 		inExpression = false;
 	}
 	
@@ -743,12 +770,11 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_RROUNDBRACKET:
-			if(inArguments == true) {
+			if(inArguments == true && inPrint == false) {
 				inArguments = false;
 				//inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
 				argCount = 0;
-				
 				printf("CALL %s\n", inFunctionCallName);
 				if(variableCount != 0){
 				printPops(&variableStack, variableCount);
@@ -802,9 +828,14 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_KEYWORD_IF:
-			
-
+			printf("\n\n-------- if  -----------\n\n");
+			inIfExpression = true;
 			break; 
+
+		case TOKEN_KEYWORD_ELSE:
+			printf("\n\n-------- else -----------\n\n");
+			printf("\nLABEL $%s_if_else\n", inFunctionName);
+			break;
 
 		case TOKEN_KEYWORD_FOR:
 

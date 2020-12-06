@@ -1,0 +1,14 @@
+// Program 4: if
+package main
+
+func main() {
+    a := 0
+    err := 0
+    a, err = inputi()
+    if(a > 5){
+        print("Cislo je vetsi nez 5")
+    } else {
+        print("Cislo je mensei nez 5")
+    }
+    
+} 
