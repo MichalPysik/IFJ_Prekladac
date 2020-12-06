@@ -148,6 +148,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	//printf("TOKEN: %s \n", tokenTypes[currentToken.type]);
 	//if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
 	//printf("\n");
+	//printf("Variable ID: %s\n", currentVariableID);
+
 	
 	static int grammarRule = 0;
 
@@ -429,7 +431,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		case TOKEN_ASSIGN:
 			leftSide = false;
 			variableStack = reverseStack(&variableStack, variableCount);
-			inMultiAssign = true;
+			if(variableCount > 1){
+				inMultiAssign = true;
+			}
+			else{
+				currentVariableID = previousToken.attribute.string;
+			}
 
 			break;
 		case TOKEN_INIT:
@@ -690,14 +697,14 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}*/
 			variableCount = 0;
 			//POPování zbytku proměnných, nemělo by se nikdy stát
-			/*
+			
 			ParserStackPtr top = variableStack;
 			while(top != NULL){
 				//printf("POPPING %s", STACK_DATA_TO_TOKEN(parserStackPeek(&top)).attribute.string);
 				top = top->next;
 				parserStackPop(&variableStack);
 			}
-			*/
+			
 			break;
 		
 		case TOKEN_LROUNDBRACKET:
