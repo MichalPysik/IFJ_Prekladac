@@ -3,5 +3,8 @@ package main
 
 
 func main() {
-    _ := 6
+    a := 0
+    err := 0
+    a, err = inputi()
+    print(a)
 } 
