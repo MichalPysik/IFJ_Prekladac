@@ -12,7 +12,7 @@ typedef enum
 {
 	TOKEN_EMPTY, //prazdny defaultni typ
 
-	TOKEN_KEYWORD_ELSE,
+	TOKEN_KEYWORD_ELSE, //Klicova slova
 	TOKEN_KEYWORD_FLOAT64,
 	TOKEN_KEYWORD_FOR,
 	TOKEN_KEYWORD_FUNC,
@@ -51,7 +51,7 @@ typedef enum
 
 } Token_type;
 
-
+// Ulozena jmena typu tokenu primarne pro debugovaci ucely
 static char tokenTypes[][STATIC_STRING_LENGHT] = {"TOKEN_EMPTY", "TOKEN_KEYWORD_ELSE", "TOKEN_KEYWORD_FLOAT64", "TOKEN_KEYWORD_FOR", "TOKEN_KEYWORD_FUNC",
 	"TOKEN_KEYWORD_IF", "TOKEN_KEYWORD_INT", "TOKEN_KEYWORD_RETURN", "TOKEN_KEYWORD_STRING", "TOKEN_KEYWORD_PACKAGE", "TOKEN_ID",
 	"TOKEN_ASSIGN", "TOKEN_INIT", "TOKEN_COMMA", "TOKEN_SEMICOLON", "TOKEN_LROUNDBRACKET", "TOKEN_RROUNDBRACKET", "TOKEN_LCURLYBRACKET",
@@ -86,6 +86,7 @@ int scannerGetToken (Token *currentToken);
 
 /****************************************************** SCANNER TOKEN LIST ******************************************************************************/
 
+// Struktura prvku v obousmerne vazanem linearnim seznamu pro tokeny
 typedef struct TokenListElement {
 	Token token;
 	struct TokenListElement *leftPtr;
@@ -93,7 +94,7 @@ typedef struct TokenListElement {
 } *TokenListElementPtr;
 
 
-
+// Struktura obousmerne vazaneho linearniho seznamu na tokeny
 typedef struct {
 	TokenListElementPtr active;
 	TokenListElementPtr first;
@@ -101,32 +102,43 @@ typedef struct {
 } TokenList;
 
 
-
+// Inicializace dvousmerne vazaneho linearniho seznamu tokenu
 int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Pridani noveho prvku (tokenu) do seznamu
 int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHandle);
 
+// Smazani aktivniho prvku (tokenu) ze seznamu
 int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Posunuti aktivity seznamu na predchozi prvek
 int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Posunuti aktivity seznamu na nasledujici prvek
 int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Nacteni predchoziho prvku do adresy tokenu
 int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
+// Nacteni aktivniho prvku do adresy tokenu
 int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
+// Nacteni nasledujiciho prvku do adresy tokenu
 int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *errorHandle);
 
+// Nastavi prvni prvek seznamu jako aktivni prvek
 int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Nastavi posledni prvek seznamu jako aktivni prvek
 int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle);
 
+// Uvolni cely seznam i vsechny obsazene tokeny z pameti
 int scannerTokenListFree(TokenList *tokenList);
 
 
 /****************************************************** SCANNER GET TOKEN LIST ******************************************************************************/
 
+// Naplni seznam tokeny pomoci opakovaneho volani funkce scannerGetToken
 int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle);
 
 

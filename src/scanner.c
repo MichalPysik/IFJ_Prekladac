@@ -9,45 +9,45 @@ char strBuffer[2048];
 // Stavy konecneho automatu scanneru
 typedef enum
 {
-	SSTATE_START,
-	SSTATE_ID,
-	SSTATE_NUM,
-	SSTATE_NUM_UNDERSCORE,
-	SSTATE_NUM_REAL,
-	SSTATE_NUM_REAL_UNDERSCORE,
-	SSTATE_NUM_DOT,
-	SSTATE_NUM_EXPONENT,
-	SSTATE_NUM_EXPONENT_SIGN,
-	SSTATE_NUM_EXPONENT_AFTER,
-	SSTATE_NUM_EXPONENT_UNDERSCORE,
-	SSTATE_NUM_ZERO,
-	SSTATE_NUM_BIN_PREFIX,
-	SSTATE_NUM_OCT_PREFIX,
-	SSTATE_NUM_HEX_PREFIX,
-	SSTATE_NUM_BIN,
-	SSTATE_NUM_OCT,
-	SSTATE_NUM_HEX,
-	SSTATE_NUM_BIN_UNDERSCORE,
-	SSTATE_NUM_OCT_UNDERSCORE,
-	SSTATE_NUM_HEX_UNDERSCORE,
-	SSTATE_STRING,
-	SSTATE_STRING_BACKSLASH,
-	SSTATE_STRING_HEX1,
-	SSTATE_STRING_HEX2,
-	SSTATE_LESS,
-	SSTATE_MORE,
-	SSTATE_EQUAL,
-	SSTATE_EXMARK,
-	SSTATE_INITVAR,
-	SSTATE_SLASH,
-	SSTATE_COMMENT,
-	SSTATE_BLOCK_COMMENT,
-	SSTATE_BLOCK_COMMENT_END,
+	SSTATE_START,	//Pocatecni stav
+	SSTATE_ID,	//cte ID (zacina pismenem nebo _)
+	SSTATE_NUM,	//cte cele cislo
+	SSTATE_NUM_UNDERSCORE,	//cte cele cislo a narazil na jedno podtrzitko (BASE extension)
+	SSTATE_NUM_REAL,	//cte realne cislo, neboli float
+	SSTATE_NUM_REAL_UNDERSCORE,	//cte realne cislo a narazil na podtrzitko (BASE extension)
+	SSTATE_NUM_DOT,	//cte cele cislo, narazil na tecku a nejspise bude cist realne cislo
+	SSTATE_NUM_EXPONENT,	//cte cislo a narazil na exponent (znak e nebo E)
+	SSTATE_NUM_EXPONENT_SIGN,	//po znaku e/E narazil na znamenko + nebo -
+	SSTATE_NUM_EXPONENT_AFTER,	//cte exponent, ocekava pouze cisla
+	SSTATE_NUM_EXPONENT_UNDERSCORE,	//narazil na jedno podtrzitko u psani exponentu
+	SSTATE_NUM_ZERO, //precetl nulu
+	SSTATE_NUM_BIN_PREFIX,	//po nule nasledoval binarni prefix b/B
+	SSTATE_NUM_OCT_PREFIX,	//to stejne s oktalnim prefixem o/O
+	SSTATE_NUM_HEX_PREFIX,	//to stejne s hexadecimalnim prefixem x/X
+	SSTATE_NUM_BIN,	//cte binarni cislo
+	SSTATE_NUM_OCT, //cte oktalni cislo
+	SSTATE_NUM_HEX, //cte hexadecimalni cislo
+	SSTATE_NUM_BIN_UNDERSCORE,	//narazil na podtrzitko pri cteni binarniho cisla
+	SSTATE_NUM_OCT_UNDERSCORE,	//to stejne s oktalnim
+	SSTATE_NUM_HEX_UNDERSCORE,	//to stejne s hexadecimalnim
+	SSTATE_STRING,	//cte string
+	SSTATE_STRING_BACKSLASH,	//cte nejakou escape sekvenci uvnitr stringu
+	SSTATE_STRING_HEX1,	//cte prvni znak hexadecimalniho ascii kodu ve stringu
+	SSTATE_STRING_HEX2,	//stejne tak druhy znak
+	SSTATE_LESS,	//precetl znak <
+	SSTATE_MORE,	//precetl znak >
+	SSTATE_EQUAL,	//precetl znak =
+	SSTATE_EXMARK,	//precetl znak !
+	SSTATE_INITVAR,	//precetl znak :
+	SSTATE_SLASH,	//precetl lomitko /
+	SSTATE_COMMENT,	//cte jednoradkovy komentar
+	SSTATE_BLOCK_COMMENT,	//cte blokovy komentar
+	SSTATE_BLOCK_COMMENT_END,	//cte blokovy komentar a narazil na znak *
 
 } SFSM_STATE; //Vsechny stavy scanner FSM
 
 
-// test zda je token keyword, kdyz ano zmeni jeho typ na konkretni keyword
+// test zda je token keyword, kdyz ano zmeni jeho typ na konkretni keyword a uvolni alokovanou string value
 bool keywordCheck (Token *currentToken)
 {
 	if (currentToken->type != TOKEN_ID) return false;
@@ -91,12 +91,12 @@ bool keywordCheck (Token *currentToken)
 	else return false;
 
 	free(currentToken->attribute.string); //pokud to byl keyword tak uvolni pamet
-	return true; // vypada to neintuitivne ale true se vrati kdyz je to keyword
+	return true; // true se vrati kdyz je to keyword
 } // konec funkce keyword check
 
 
 // funkce co nacte novy Token do adresy currentToken
-// vraci 0 pri kdyz nacte platny token, 1 kdyz narazi na syntaktickou chybu
+// vraci 0 pri kdyz nacte platny token, 1 kdyz narazi na lexikalni chybu
 int scannerGetToken (Token *currentToken)
 {
 	currentToken->type = TOKEN_EMPTY;
@@ -920,6 +920,7 @@ int scannerGetToken (Token *currentToken)
 
 /****************************************************** SCANNER TOKEN LIST ******************************************************************************/
 
+// Inicializace dvousmerne vazaneho linearniho seznamu tokenu
 int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -935,6 +936,7 @@ int scannerTokenListInit(TokenList *tokenList, ErrorHandle *errorHandle)
 	return errorHandle->errorID;
 }
 
+// Pridani noveho prvku (tokenu) do seznamu
 int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -963,6 +965,7 @@ int scannerTokenListAdd(TokenList *tokenList, Token token, ErrorHandle *errorHan
 	return errorHandle->errorID;
 }
 
+// Smazani aktivniho prvku (tokenu) ze seznamu
 int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -996,6 +999,7 @@ int scannerTokenListDeleteActive(TokenList *tokenList, ErrorHandle *errorHandle)
 	return errorHandle->errorID;
 }
 
+// Posunuti aktivity seznamu na predchozi prvek
 int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1017,6 +1021,7 @@ int scannerTokenListMovePrev(TokenList *tokenList, ErrorHandle *errorHandle)
 	return errorHandle->errorID;
 }
 
+// Posunuti aktivity seznamu na nasledujici prvek
 int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1038,6 +1043,7 @@ int scannerTokenListMoveNext(TokenList *tokenList, ErrorHandle *errorHandle)
 	return errorHandle->errorID;
 }
 
+// Nacteni predchoziho prvku do adresy tokenu
 int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1059,6 +1065,7 @@ int scannerTokenListGetPrev(TokenList *tokenList, Token *token, ErrorHandle *err
 	return errorHandle->errorID;
 }
 
+// Nacteni aktivniho prvku do adresy tokenu
 int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1076,6 +1083,7 @@ int scannerTokenListGetActive(TokenList *tokenList, Token *token, ErrorHandle *e
 	return errorHandle->errorID;
 }
 
+// Nacteni nasledujiciho prvku do adresy tokenu
 int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1097,6 +1105,7 @@ int scannerTokenListGetNext(TokenList *tokenList, Token *token, ErrorHandle *err
 	return errorHandle->errorID;
 }
 
+// Nastavi prvni prvek seznamu jako aktivni prvek
 int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1114,6 +1123,7 @@ int scannerTokenListSetActiveFirst(TokenList *tokenList, ErrorHandle *errorHandl
 	return errorHandle->errorID;
 }
 
+// Nastavi posledni prvek seznamu jako aktivni prvek
 int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
@@ -1131,6 +1141,7 @@ int scannerTokenListSetActiveLast(TokenList *tokenList, ErrorHandle *errorHandle
 	return errorHandle->errorID;
 }
 
+// Uvolni cely seznam i vsechny obsazene tokeny z pameti
 int scannerTokenListFree(TokenList *tokenList)
 {
 	if(tokenList != NULL){
@@ -1156,6 +1167,7 @@ int scannerTokenListFree(TokenList *tokenList)
 
 /****************************************************** SCANNER GET TOKEN LIST ******************************************************************************/
 
+// Naplni seznam tokeny pomoci opakovaneho volani funkce scannerGetToken
 int scannerGetTokenList(TokenList *tokenList, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
