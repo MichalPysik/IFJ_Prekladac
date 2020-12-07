@@ -231,7 +231,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	//if(currentToken.type == TOKEN_ID) {printf(", NAME: %s", currentToken.attribute.string);}
 	//printf("\n");
 	//printf("Variable ID: %s\n", currentVariableID);
-
 	
 	static int grammarRule = 0;
 
@@ -497,22 +496,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							printf("LF@%s\n", expressionValue.attribute.string);
 						}
 					}
-					/*else{
-						if(expressionValue.type == TOKEN_INTVALUE){
-							printf("PUSH int@%ld\n", expressionValue.attribute.integer);
-						} 
-						else if(expressionValue.type == TOKEN_FLOATVALUE){
-							printf("PUSH int@%a\n", expressionValue.attribute.real);
-						}
-						else if(expressionValue.type == TOKEN_STRINGVALUE) {
-							printf("PUSH string@");
-							printString(expressionValue.attribute.string, true);
-						}
-						else if(expressionValue.type == TOKEN_ID){
-							printf("PUSH LF@%s\n", expressionValue.attribute.string);
-						}
-					}*/
-
 					top = top->next;
 					parserStackPop(semanticRuleStack);
 				}
@@ -542,8 +525,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		} 
 	}
 	
-	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 51){
-		
+	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 49){
 		if(inMultiAssign == false && inReturn == false && currentVariableID != NULL){
 			if(!strcmp(currentVariableID,"_")){
 				printf("POPS GF@_\n\n");
@@ -555,7 +537,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 		/*
 		if(inReturn){
-			//pushArguments(&variableStack,2);
+			//pushArguments(&variableStack,0);
 			inReturn = false;
 		}*/
 		if(inIfExpression == true){
@@ -564,9 +546,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 		inExpression = false;
 	}
-	
-	
-	
 	
 	// GENEROVANÍ PODLE TOKENŮ
 	switch (currentToken.type)
@@ -611,12 +590,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS string@%s\n", currentToken.attribute.string);
-				}/*
-				else if(tmp.type == TOKEN_EOL){
-					printf("\nPUSHS string@%s\n", currentToken.attribute.string);
-					inReturn = false;
-					printf("\n\nPOPFRAME\nRETURN\n");
-				}*/
+				}
 			}
 			break;
 
@@ -637,12 +611,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS int@%ld\n", currentToken.attribute.integer);
 				}
-				/*
-				else if(tmp.type == TOKEN_EOL){
-					printf("\nPUSHS int@%ld\n", currentToken.attribute.integer);
-					inReturn = false;
-					printf("\n\nPOPFRAME\nRETURN\n");
-				}*/
 			}
 			break;
 
@@ -663,12 +631,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS float@%a\n", currentToken.attribute.real);
 				}
-				/*
-				else if(tmp.type == TOKEN_EOL){
-					printf("\nPUSHS float@%a\n", currentToken.attribute.real);
-					inReturn = false;
-					printf("\n\nPOPFRAME\nRETURN\n");
-				}*/
 			}
 			
 			break;
@@ -749,15 +711,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(inReturn == true && multiExpression == false && (grammarRule < 51 )/* && grammarRule != 38*/){
 				Token tmp;
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
+				printf("Pred Push\n");
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS LF@%s\n", currentToken.attribute.string);
 				}
-				/*
-				else if(tmp.type == TOKEN_EOL){
-					printf("\nPUSHS LF@%s\n", currentToken.attribute.string);
-					inReturn = false;
-					printf("\n\nPOPFRAME\nRETURN\n");
-				}*/
 			}
 
 			//BUILT IN FUNKCE
@@ -922,10 +879,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_RROUNDBRACKET:
 			
-			if(inArguments == true && inPrint == false && strcmp(inFunctionCallName, "print")) {
+			if(inArguments == true && inPrint == false && strcmp(inFunctionCallName, "print") && inFunctionCall == true) {
 				inArguments = false;
-				//inFunctionCall = false;
-				//inFunctionCall = false;
+				inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
 				argCount = 0;
 				printf("CALL %s\n", inFunctionCallName);
@@ -999,7 +955,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_KEYWORD_FOR:
-
 			break;
 		
 		default:

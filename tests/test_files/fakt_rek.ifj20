@@ -7,9 +7,9 @@ func factorial(n int) (int) {
 	if n < 2 {
 		return 1
 	} else {
-		tmp := (1 + 2) * 0
+		tmp := 0
 		tmp = factorial(dec_n)
-		return n * tmp
+		return n
 	}
 }
 
