@@ -1048,7 +1048,10 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 						SymTableData data;
 						if(symTableSearch(currentLocalSymtable, currentToken.attribute.string, &data, errorHandle) == 1){
 							
-							symTableInsert(&currentLocalSymtable, currentToken.attribute.string, symTableInitDataInLine(VAR, false, parserSemanticTokenTypeToVarType(STACK_DATA_TO_TOKEN(parserStackPeek(&rightSideStack)).type), 0, NULL, 0, NULL, NULL, errorHandle), errorHandle);
+							if(data.idDataType != parserSemanticTokenTypeToVarType(STACK_DATA_TO_TOKEN(parserStackPeek(&rightSideStack)).type)){
+								// SEMANTIC ERROR - VALUE WRONG TYPE
+								errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - ASSIGNMENT - VALUE WRONG TYPE", __FILE__, __LINE__, errorHandle);
+							}
 							
 							break;
 						}

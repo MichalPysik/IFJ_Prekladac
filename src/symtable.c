@@ -68,15 +68,9 @@ int symTableInsert(SymTableBinTreePtr *RootPtr, char *key, SymTableData data, Er
 	
 	SymTableBinTreePtr *ROOT = RootPtr;
 	while((*ROOT) != NULL){
-		if(strcmp((*ROOT)->key, key) == 0){
-			char *newKey = (char*)realloc((*ROOT)->key,(sizeof(char)*strlen(key))+1);
-			if(newKey != NULL){
-				strcpy(newKey, key);
-				(*ROOT)->key = newKey;
-			} else {
-				errorSet(INTERNAL_ERROR, "symTableInsert: realloc NULL", __FILE__, __LINE__, errorHandle);
-			}
-			return errorHandle->errorID; // existující klíč - přepsat nebo chyba?
+		if(strcmp((*ROOT)->key, key) == 0){ // existující klíč - přepsat data (nebo chyba?)
+			(*ROOT)->data = data;
+			return errorHandle->errorID;
 		} else if(strcmp(key, (*ROOT)->key) < 0){
 			ROOT = &((*ROOT)->leftPtr);
 		} else {
