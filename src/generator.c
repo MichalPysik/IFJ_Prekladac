@@ -126,7 +126,7 @@ void printPops(ParserStackPtr *varStack, int varCount){
 	for(int i = 0; i < varCount; i++)	{
 		data = parserStackPop(varStack);
 		if(!strcmp(data.token.attribute.string,"_")){
-			printf("POPS GF@%_\n");
+			printf("POPS GF@_\n");
 		}
 		else{
 			printf("POPS LF@%s\n", data.token.attribute.string);
@@ -279,7 +279,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				data = parserStackPop(&variableStack);
 				variableToken = data.token;
 				if(!strcmp(variableToken.attribute.string,"_")){
-					printf("POPS GF@%_\n");
+					printf("POPS GF@_\n");
 				}
 				else{
 					printf("POPS LF@%s\n", variableToken.attribute.string);
@@ -474,7 +474,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 					if(inReturn == false){
 						if(!strcmp(currentVariableID,"_")){
-							printf("MOVE GF@%_ ");
+							printf("MOVE GF@_ ");
 						}
 						else{
 							printf("MOVE LF@%s ", currentVariableID);
@@ -546,7 +546,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		
 		if(inMultiAssign == false && inReturn == false && currentVariableID != NULL){
 			if(!strcmp(currentVariableID,"_")){
-				printf("POPS GF@%_\n\n");
+				printf("POPS GF@_\n\n");
 			}
 			else{
 				printf("POPS LF@%s\n\n", currentVariableID);
@@ -832,14 +832,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					
 			// UKONČENÍ DEFINICE FUNKCE
 			bracketCnt--;
-			int elseBrackets = IntegerStackPeekBrackets(&ifStack);
 			if(inElse == true){
-				int tmp = IntegerStackPeekID(&ifStack);
 				IntegerStackIncreaseBrackets(&ifStack);
-			}
-			if(inElse == true && elseBrackets == 2){
-				inElse = false;
-				printf("\n\nLABEL $if_end%d", currentElse);
+				int elseBrackets = IntegerStackPeekBrackets(&ifStack);
+				int tmp = IntegerStackPeekID(&ifStack);
+				
+				if(elseBrackets == 2){
+					inElse = false;
+					printf("\n\nLABEL $if_end%d", tmp);
+					integerStackPop(&ifStack);
+				}
 			}
 
 			if(inFunction == true && bracketCnt == 0){
@@ -922,7 +924,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			if(inArguments == true && inPrint == false && strcmp(inFunctionCallName, "print")) {
 				inArguments = false;
-				inFunctionCall = false;
+				//inFunctionCall = false;
 				//inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
 				argCount = 0;
@@ -979,6 +981,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_KEYWORD_IF:
+			inElse = false;
 			printf("\n\n#-------- if%d  -----------\n\n", ifCount);
 			integerStackPush(&ifStack, ifCount);
 			ifCount++;
@@ -988,9 +991,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		case TOKEN_KEYWORD_ELSE:;
 
 			inElse = true;
-			int tmp = integerStackPop(&ifStack);
-			IntegerStackIncreaseBrackets(&ifStack);
-			currentElse = tmp;
+			int tmp = IntegerStackPeekID(&ifStack);
+
 			printf("\nJUMP $if_end%d", tmp);
 			printf("\n\n#-------- else%d -----------\n\n", tmp);
 			printf("\nLABEL $%s_if_else%d\n", inFunctionName, tmp);
