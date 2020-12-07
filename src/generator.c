@@ -8,23 +8,40 @@ void integerStackInit(integerStack *stack)
 	(*stack) = NULL;
 }
 
-void integerStackPush(integerStack *stack, int ifID)
+void integerStackPush(integerStack *stack, int ID)
 {
     integerStack item = malloc(sizeof(struct integerStack));
 	if(item != NULL){
-		item->ifID = ifID;
+		item->ID = ID;
+		item->bracketCount = 0;
 		item->next = (*stack);
 		(*stack) = item;
 		//printf("PUSHING: %d\n", item->ifID);
 	}
 }
 
-int integerStackPeek(integerStack *stack)
+int IntegerStackPeekID(integerStack *stack)
 {
 	if((*stack) != NULL){
-		return (*stack)->ifID;
+		return (*stack)->ID;
 	}
 	return -1;
+}
+int IntegerStackPeekBrackets(integerStack *stack)
+{
+	if((*stack) != NULL){
+		return (*stack)->bracketCount;
+	}
+	return -1;
+}
+
+void IntegerStackIncreaseBrackets(integerStack *stack)
+{
+	if((*stack) != NULL){
+		(*stack)->bracketCount++;
+		return;
+	}
+	return;
 }
 
 int integerStackPop(integerStack *stack)
@@ -32,7 +49,7 @@ int integerStackPop(integerStack *stack)
 	integerStack top = (*stack);
 	if(top != NULL){
 		(*stack) = top->next;
-		int returned = top->ifID;
+		int returned = top->ID;
 		free(top);
 		//printf("POPPING: %d", returned);
 		return returned;
@@ -108,7 +125,12 @@ void printPops(ParserStackPtr *varStack, int varCount){
 	*varStack = reverseStack(varStack, varCount);
 	for(int i = 0; i < varCount; i++)	{
 		data = parserStackPop(varStack);
-		printf("POPS LF@%s\n", data.token.attribute.string);
+		if(!strcmp(data.token.attribute.string,"_")){
+			printf("POPS GF@%_\n");
+		}
+		else{
+			printf("POPS LF@%s\n", data.token.attribute.string);
+		}
 	}
 }
 
@@ -153,12 +175,13 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static ParserStackPtr variableStack = NULL;
 	static ParserStackPtr argumentStack = NULL;
 	static integerStack ifStack = NULL;
+	static integerStack forStack = NULL;
 	
 	static int bracketCnt = 0;
-	static int elseBracketCnt = 0;
 	static int variableCount = 0; 
 	static int argCount = 0;
 	static int ifCount = 0;
+	static int forCount = 0;
 
 	//pomocné proměnné na uchovávání kontextu aktuální pozices
 	static bool inFunction = false;
@@ -255,7 +278,13 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				Token variableToken;
 				data = parserStackPop(&variableStack);
 				variableToken = data.token;
-				printf("POPS LF@%s\n", variableToken.attribute.string);
+				if(!strcmp(variableToken.attribute.string,"_")){
+					printf("POPS GF@%_\n");
+				}
+				else{
+					printf("POPS LF@%s\n", variableToken.attribute.string);
+				}
+				
 			}
 			/*if(inReturn){
 				ParserStackData data;
@@ -444,7 +473,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					
 
 					if(inReturn == false){
-						printf("MOVE LF@%s ", currentVariableID);
+						if(!strcmp(currentVariableID,"_")){
+							printf("MOVE GF@%_ ");
+						}
+						else{
+							printf("MOVE LF@%s ", currentVariableID);
+						}
 						
 						currentVariableID = NULL; //////////////////////////////////toto jsem přidal + podmínku currentVariableID != NULL
 
@@ -511,7 +545,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 51){
 		
 		if(inMultiAssign == false && inReturn == false && currentVariableID != NULL){
-			printf("POPS LF@%s\n\n", currentVariableID);
+			if(!strcmp(currentVariableID,"_")){
+				printf("POPS GF@%_\n\n");
+			}
+			else{
+				printf("POPS LF@%s\n\n", currentVariableID);
+			}
 			currentVariableID = NULL;
 		}
 		/*
@@ -521,7 +560,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}*/
 		if(inIfExpression == true){
 			inIfExpression = false;
-			printf("\nPOPS TF@$result\n\nJUMPIFEQ $%s_if_else%d TF@$result bool@false\n", inFunctionName, integerStackPeek(&ifStack));
+			printf("\nPOPS TF@$result\n\nJUMPIFEQ $%s_if_else%d TF@$result bool@false\n", inFunctionName, IntegerStackPeekID(&ifStack));
 		}
 		inExpression = false;
 	}
@@ -771,7 +810,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			bracketCnt++;
 			if(inElse == true){
-				elseBracketCnt++;
+				IntegerStackIncreaseBrackets(&ifStack);
 			}
 
 			break;
@@ -780,10 +819,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					
 			// UKONČENÍ DEFINICE FUNKCE
 			bracketCnt--;
+			int elseBrackets = IntegerStackPeekBrackets(&ifStack);
 			if(inElse == true){
-				elseBracketCnt--;
+				int tmp = IntegerStackPeekID(&ifStack);
+				IntegerStackIncreaseBrackets(&ifStack);
 			}
-			if(inElse == true && elseBracketCnt == 0){
+			if(inElse == true && elseBrackets == 2){
 				inElse = false;
 				printf("\n\nLABEL $if_end%d", currentElse);
 			}
@@ -934,6 +975,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			inElse = true;
 			int tmp = integerStackPop(&ifStack);
+			IntegerStackIncreaseBrackets(&ifStack);
 			currentElse = tmp;
 			printf("\nJUMP $if_end%d", tmp);
 			printf("\n\n#-------- else%d -----------\n\n", tmp);

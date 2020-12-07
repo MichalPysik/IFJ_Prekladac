@@ -34,7 +34,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 
 typedef struct integerStack {
-	int ifID;
+	int ID;
+	int bracketCount;
 	struct integerStack *next;
 } *integerStack;
 
