@@ -677,7 +677,20 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		break;
 
 		case TOKEN_ID:
-			//printf("Token: %s,  Name: %s\n", tokenTypes[currentToken.type], currentToken.attribute.string);
+			/*
+			printf("Token: %s,  Name: %s\n", tokenTypes[currentToken.type], currentToken.attribute.string);
+			SymTableData tokenIdName;
+			symTableSearch(*globalSymTable, currentToken.attribute.string, &tokenIdName, errorHandle);
+			if(tokenIdName.idType == VAR){\
+				if(tokenIdName.idDataType == FLOAT) printf("\nNALEZEN FLOAT VAR: %s\n", currentToken.attribute.string);
+				else if(tokenIdName.idDataType == INT) printf("\nNALEZEN INT VAR: %s\n", currentToken.attribute.string);
+				else if(tokenIdName.idDataType == STRING) printf("\nNALEZEN STRING VAR: %s\n", currentToken.attribute.string);
+				
+			}else if(tokenIdName.idType == FUNC){
+				printf("\nNALEZEN FUNC: %s\n", currentToken.attribute.string);
+			}*/
+	
+
 			// TOKEN SE JMÉNEM FUNKCE
 			if(inFunction == true && inFunctionName == NULL){
 				inFunctionName = currentToken.attribute.string;
@@ -707,7 +720,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					data.functionParamDataTypes.active = data.functionParamDataTypes.active->rightPtr;
 					i++;
 				}*/
-				
+					
 				
 			}
 			
@@ -721,7 +734,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 
 			// PUSHujeme do variableStacku proměnné na levé straně
-			if(leftSide == true){
+			if(leftSide == true && previousToken.type != TOKEN_KEYWORD_FUNC){
 				SymTableData data;
 				symTableSearch(*globalSymTable, currentToken.attribute.string, &data, errorHandle);
 				if(data.idType == VAR){
@@ -909,6 +922,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			if(inArguments == true && inPrint == false && strcmp(inFunctionCallName, "print")) {
 				inArguments = false;
+				inFunctionCall = false;
 				//inFunctionCall = false;
 				pushArguments(&argumentStack, argCount);
 				argCount = 0;
