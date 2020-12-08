@@ -93,13 +93,48 @@ CREATEFRAME\n\
 DEFVAR TF@$s\n\
 DEFVAR TF@$i\n\
 DEFVAR TF@$n\n\n\
+DEFVAR TF@$strlen\n\
 DEFVAR TF@$substring\n\
+DEFVAR TF@$char\n\
 MOVE TF@$substring string@\n\
 POPS TF@$s\n\
 POPS TF@$i\n\
 POPS TF@$n\n\
-CONCAT TF@$substring string@loool\n\
-WRITE TF@$substring\n\
+DEFVAR TF@$count\n\
+DEFVAR TF@$result\n\
+DEFVAR TF@$lenght\n\
+STRLEN TF@$strlen TF@$s\n\
+LT TF@$result TF@$i int@0\n\
+JUMPIFEQ substr_err TF@$result bool@true\n\
+GT TF@$result TF@$i TF@$strlen\n\
+JUMPIFEQ substr_err TF@$result bool@true\n\
+LT TF@$result TF@$n int@0\n\
+JUMPIFEQ substr_err TF@$result bool@true\n\
+SUB TF@$strlen TF@$strlen TF@$i\n\
+GT TF@$result TF@$n TF@$strlen\n\
+JUMPIFEQ n_less_strlen TF@$result bool@false\n\
+MOVE TF@$n TF@$strlen\n\
+LABEL n_less_strlen\n\
+MOVE TF@$count TF@$i\n\
+SUB TF@$count TF@$count int@1\n\
+LABEL $concat_start\n\
+ADD TF@$lenght TF@$i TF@$n\n\
+SUB TF@$lenght TF@$lenght int@1\n\
+LT TF@$result TF@$count TF@$lenght\n\
+JUMPIFEQ $concat_end TF@$result bool@false\n\
+ADD TF@$count TF@$count int@1\n\
+GETCHAR TF@$char TF@$s TF@$count\n\
+SUB TF@$count TF@$count int@1\n\
+CONCAT TF@$substring TF@$substring TF@$char\n\
+ADD TF@$count TF@$count int@1\n\
+JUMP $concat_start\n\
+LABEL $concat_end\n\n\
+PUSHS TF@$substring\n\
+PUSHS int@0\n\
+RETURN\n\n\
+LABEL substr_err\n\n\
+PUSHS string@/000\n\
+PUSHS int@1\n\
 RETURN\n"
 
 #define FUNC_ORD "# --- func ord ------------------------------\n\
