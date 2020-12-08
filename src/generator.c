@@ -8,12 +8,12 @@ void integerStackInit(integerStack *stack)
 	(*stack) = NULL;
 }
 
-void integerStackPush(integerStack *stack, int ID, bool isFor)
+void integerStackPush(integerStack *stack, int ID, int keywordType)
 {
     integerStack item = malloc(sizeof(struct integerStack));
 	if(item != NULL){
 		item->ID = ID;
-		item->isFor = isFor;
+		item->keywordType = keywordType;
 		item->bracketCount = 0;
 		item->next = (*stack);
 		(*stack) = item;
@@ -29,12 +29,17 @@ int IntegerStackPeekID(integerStack *stack)
 	return -1;
 }
 
-bool IntegerStackPeekIsFor(integerStack *stack)
+int IntegerStackPeekKeywordType(integerStack *stack)
 {
 	if((*stack) != NULL){
-		return (*stack)->isFor;
+		return (*stack)->keywordType;
 	}
-	return false;
+	return -1;
+}
+
+int IntegerStackSetKeywordType(integerStack *stack, int keywordType)
+{
+	(*stack)->keywordType = keywordType;
 }
 
 int IntegerStackPeekBrackets(integerStack *stack)
@@ -272,7 +277,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 
 		if(grammarRule == 28 || grammarRule == 29){
-			inForDefinition = true;
+			IntegerStackSetKeywordType(&ifForStack, FOR_INIT);
 		}
 
 		if(grammarRule == 34 || grammarRule == 36){
@@ -306,7 +311,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		// VÍCE OPERANDŮ
 		if(52 <= grammarRule && grammarRule <= 61){
 			multiExpression = true;
-			if(inExpression == false || inForAssignment == true){
+			int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
+			if(inExpression == false || currentKeyword == FOR_ASSIGNMENT){
 				expressionType = TOKEN_EMPTY;
 				printf("\nCREATEFRAME\n");
 				printf("DEFVAR TF@$operand1\n");
@@ -364,7 +370,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 				//printf("OPERAND 2 TOKEN: %s\n", tokenTypes[operand2.type]);
 				//printf("OPERAND 1 TOKEN: %s\n", tokenTypes[operand1.type]);
-					//NORMAL EXPRESSIONS
+					int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
 					if(operand2.type == TOKEN_EMPTY){
 						printf("POPS TF@$operand2\n");
 					}
@@ -464,7 +470,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					else if(operator.type == TOKEN_LTE){
 						printf("\nCALL $lessOrEqual");
 					}
-					else if(inForExpression == true){
+					else if(currentKeyword == FOR_EXPRESSION){
 						printf("\n");
 					}
 					else{
@@ -531,16 +537,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			//pushArguments(&variableStack,0);
 			inReturn = false;
 		}*/
-		if(inIfExpression == true){
-			inIfExpression = false;
+		int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
+		if(currentKeyword == IF_EXPRESSION){
+			IntegerStackSetKeywordType(&ifForStack, IF);
 			printf("\nPOPS TF@$result\n\nJUMPIFEQ $%s_if_else%d TF@$result bool@false\n", inFunctionName, IntegerStackPeekID(&ifForStack));
 		}
-		if(inForAssignment == false){
+		if(currentKeyword != FOR_ASSIGNMENT){
 			inExpression = false;
 		}
-
-		if(inForAssignment == true){
-			inForAssignment = false;
+		else if(currentKeyword == FOR_ASSIGNMENT){
+			IntegerStackSetKeywordType(&ifForStack, FOR);
 			printf("JUMP $for_%d_start\n\nLABEL for_%d_assignment_end\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
 		}
 	}
@@ -765,42 +771,41 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			break;
 		
-		case TOKEN_LCURLYBRACKET:///////////////////////////////////////////////////////////////////////////
+		case TOKEN_LCURLYBRACKET:
 			
 			bracketCnt++;
-			bool isFor2 = IntegerStackPeekIsFor(&ifForStack);
-			if((inElse == true || inForBody == true)){ 
-				//printf("\n%d BRACETS BEFORE: %d\n",isFor2 ,IntegerStackPeekBrackets(&ifForStack));
+			int currentID = IntegerStackPeekID(&ifForStack);
+			if(currentID != -1){	
 				IntegerStackIncreaseBrackets(&ifForStack);
-				//printf("\n%d BRACKETS AFTER: %d\n",isFor2 ,IntegerStackPeekBrackets(&ifForStack));
 			}
+
 			break;
 
 		case TOKEN_RCURLYBRACKET:;
 			// UKONČENÍ DEFINICE FUNKCE
-			bool isFor = IntegerStackPeekIsFor(&ifForStack);
+			int currentKeywordType = IntegerStackPeekKeywordType(&ifForStack);
 			
+
 			bracketCnt--;
-			if(inElse == true && isFor == false){
+			if(currentKeywordType == ELSE){
 				//printf("\n%d BRACETS BEFORE: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				IntegerStackIncreaseBrackets(&ifForStack);
 				//printf("\n%d BRACKETS AFTER: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				int elseBrackets = IntegerStackPeekBrackets(&ifForStack);
 				int tmp = IntegerStackPeekID(&ifForStack);
-				if(elseBrackets == 2){
-					inElse = false;
+				//printf("\n%d\n",elseBrackets);
+				if(elseBrackets == 4){
 					printf("\n\nLABEL $if_end%d", tmp);
 					integerStackPop(&ifForStack);
 				}
 			}
-			if(inForBody == true && isFor == true){
+			if(currentKeywordType == FOR){
 				//printf("\n%d BRACETS BEFORE: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				IntegerStackIncreaseBrackets(&ifForStack);
 				//printf("\n%d BRACKETS AFTER: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				int forBrackets = IntegerStackPeekBrackets(&ifForStack);
 				int tmp = IntegerStackPeekID(&ifForStack);
 				if(forBrackets == 2){
-					inForBody = false;
 					printf("\n\nJUMP for_%d_assignment_start\n\nLABEL for_%d_end\n\n", tmp, tmp);
 					integerStackPop(&ifForStack);
 				}
@@ -932,19 +937,15 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_KEYWORD_IF:
-			inIf = true;
-			inElse = false;
 			printf("\n\n#-------- if%d  -----------\n\n", ifCount);
-			integerStackPush(&ifForStack, ifCount, false);
+			integerStackPush(&ifForStack, ifCount, IF);
 			ifCount++;
-			inIfExpression = true;
+			IntegerStackSetKeywordType(&ifForStack, IF_EXPRESSION);
 			break; 
 
 		case TOKEN_KEYWORD_ELSE:;
-			inIf == false;
-			inElse = true;
 			int tmp = IntegerStackPeekID(&ifForStack);
-
+			IntegerStackSetKeywordType(&ifForStack, ELSE);
 			printf("\nJUMP $if_end%d", tmp);
 			printf("\n\n#-------- else%d -----------\n\n", tmp);
 			printf("\nLABEL $%s_if_else%d\n", inFunctionName, tmp);
@@ -952,24 +953,20 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_KEYWORD_FOR:;
 
-			inForBody = true;
-			int temp = IntegerStackPeekID(&ifForStack);
-
 			printf("\n\n#-------- FOR%d  -----------\n\n", forCount);
-			integerStackPush(&ifForStack, forCount, true);
+			integerStackPush(&ifForStack, forCount, FOR);
 			forCount++;
 			break;
 
-		case TOKEN_SEMICOLON:
-			if(inForExpression == true && inForAssignment == false){
-				inForExpression = false;
-				inForAssignment = true;
+		case TOKEN_SEMICOLON:;
+			int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
+			if(currentKeyword == FOR_EXPRESSION){
+				IntegerStackSetKeywordType(&ifForStack, FOR_ASSIGNMENT);
 				printf("JUMPIFEQ $for_%d_end TF@$result bool@false\n\n", IntegerStackPeekID(&ifForStack));
 				printf("\n\nJUMP for_%d_assignment_end\n\nLABEL for_%d_assignment_start\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
 			}
-			if(inForDefinition == true){
-				inForDefinition = false;
-				inForExpression = true;
+			if(currentKeyword == FOR_INIT){
+				IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);
 				printf("\nLABEL $for_%d_start\n", IntegerStackPeekID(&ifForStack));
 			}
 			

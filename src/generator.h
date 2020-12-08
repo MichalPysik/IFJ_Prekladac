@@ -191,9 +191,16 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 typedef struct integerStack {
 	int ID;
 	int bracketCount;
-	bool isFor;
+	int keywordType;
 	struct integerStack *next;
 } *integerStack;
 
+#define IF 0
+#define IF_EXPRESSION 1
+#define ELSE 2
+#define FOR 3
+#define FOR_INIT 4
+#define FOR_EXPRESSION 5
+#define FOR_ASSIGNMENT 6
 
 #endif //defined _GENERATOR_H
