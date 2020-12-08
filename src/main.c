@@ -1,4 +1,11 @@
-// main
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: main.c
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
 
 #include "common.h"
 #include "scanner.h"

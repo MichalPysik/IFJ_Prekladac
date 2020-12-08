@@ -1,4 +1,12 @@
-// common.h
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: common.h
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
+
 
 #ifndef _COMMON_H
 #define _COMMON_H

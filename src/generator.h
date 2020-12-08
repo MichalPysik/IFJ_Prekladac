@@ -1,4 +1,12 @@
-// hlavickovy soubor generatoru
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: generator.h
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
+
 
 #ifndef _GENERATOR_H
 #define _GENERATOR_H

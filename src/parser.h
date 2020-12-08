@@ -1,4 +1,12 @@
-// hlavickovy soubor parseru
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: parser.h
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
+
 
 #ifndef _PARSER_H
 #define _PARSER_H

@@ -1,4 +1,11 @@
-// generator.c
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: generator.c
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
 
 #include "generator.h"
 
@@ -276,8 +283,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(!strcmp(currentToken.attribute.string,"print")) inPrint = true;		
 		}
 
-		if(grammarRule == 28 || grammarRule == 29){
+		if(grammarRule == 28){
 			IntegerStackSetKeywordType(&ifForStack, FOR_INIT);
+		}
+
+		if(grammarRule == 29){
+			//IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);
 		}
 
 		if(grammarRule == 34 || grammarRule == 36){
@@ -547,7 +558,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 		else if(currentKeyword == FOR_ASSIGNMENT){
 			IntegerStackSetKeywordType(&ifForStack, FOR);
-			printf("JUMP $for_%d_start\n\nLABEL for_%d_assignment_end\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
+			printf("JUMP $for_%d_start\n\nLABEL $for_%d_assignment_end\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
 		}
 	}
 	
@@ -806,7 +817,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				int forBrackets = IntegerStackPeekBrackets(&ifForStack);
 				int tmp = IntegerStackPeekID(&ifForStack);
 				if(forBrackets == 2){
-					printf("\n\nJUMP for_%d_assignment_start\n\nLABEL for_%d_end\n\n", tmp, tmp);
+					printf("\n\nJUMP $for_%d_assignment_start\n\nLABEL $for_%d_end\n\n", tmp, tmp);
 					integerStackPop(&ifForStack);
 				}
 			}
@@ -963,7 +974,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(currentKeyword == FOR_EXPRESSION){
 				IntegerStackSetKeywordType(&ifForStack, FOR_ASSIGNMENT);
 				printf("JUMPIFEQ $for_%d_end TF@$result bool@false\n\n", IntegerStackPeekID(&ifForStack));
-				printf("\n\nJUMP for_%d_assignment_end\n\nLABEL for_%d_assignment_start\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
+				printf("\n\nJUMP $for_%d_assignment_end\n\nLABEL $for_%d_assignment_start\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
 			}
 			if(currentKeyword == FOR_INIT){
 				IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);

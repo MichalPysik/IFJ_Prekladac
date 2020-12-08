@@ -1,4 +1,11 @@
-// tabulka symbolu implementovana pomoci stromu
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: symtable.c
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
 
 #include "symtable.h"
 

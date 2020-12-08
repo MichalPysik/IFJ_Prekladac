@@ -1,4 +1,12 @@
-// hlavickovy soubor tabulky symbolu
+/**
+ * Název projektu: Implementace překladače imperativního jazyka IFJ20
+ * soubor: symtable.h
+ * autoři: 	Karel Jirgl (xjirgl01)
+ * 			Michal Pyšík (xpysik00)
+ * 			Václav Klem (xklemv00)
+ * 			Thanh Quang Tran (xtrant02)
+ */
+
 
 #ifndef _SYMTABLE_H
 #define _SYMTABLE_H
@@ -7,7 +15,7 @@
 
 
 
-// Typ identifikátoru
+
 typedef enum {
 	VAR,	// proměnná
 	FUNC	// funkce
