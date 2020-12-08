@@ -7,17 +7,172 @@
 #include "scanner.h"
 #include "parser.h"
 
-#define FUNC_INPUTI "# --- func inputi ------------------------------\nLABEL inputi\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 int\n\nJUMPIFEQ $inputi_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputi_err\nPUSHS int@0\nPUSHS int@1\nRETURN\n"
-#define FUNC_INPUTF "# --- func inputf ------------------------------\nLABEL inputf\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 float\n\nJUMPIFEQ $inputf_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputf_err\nPUSHS int@0\nPUSHS int@1\nRETURN\n"
-#define FUNC_INPUTS "# --- func inputs ------------------------------\nLABEL inputs\nCREATEFRAME\nDEFVAR TF@$1\nREAD TF@$1 string\n\nJUMPIFEQ $inputs_err TF@$1 nil@nil\nPUSHS TF@$1\nPUSHS int@0\nRETURN\nLABEL $inputs_err\nPUSHS int@0\nPUSHS int@1\nRETURN\n"
-#define FUNC_INT_TO_FLOAT "# --- func int2float ------------------------------\nLABEL int2float\n\nCREATEFRAME\nDEFVAR TF@$1\nDEFVAR TF@$2\nPOPS TF@$1\n\nINT2FLOAT TF@$2 TF@$1\n\nPUSHS TF@$2\nRETURN\n"
-#define FUNC_FLOAT_TO_INT "# --- func float2int ------------------------------\nLABEL float2int\n\nCREATEFRAME\nDEFVAR TF@$1\nDEFVAR TF@$2\nPOPS TF@$1\n\nFLOAT2INT TF@$2 TF@$1\n\nPUSHS TF@$2\nRETURN\n"
-#define FUNC_STRLEN "# --- func strlen ------------------------------\nLABEL len\nCREATEFRAME\n\nDEFVAR TF@s\nPOPS TF@s\n\nDEFVAR TF@$1\n\nSTRLEN TF@$1 TF@s\n\nPUSHS TF@$1\n\nRETURN\n"
-#define FUNC_SUBSTRING "# --- func substr ------------------------------\n"
-#define FUNC_ORD "# --- func ord ------------------------------\n"
-#define FUNC_CHR "# --- func chr ------------------------------\nLABEL chr\nCREATEFRAME\n\nDEFVAR TF@$0\nDEFVAR TF@$1\nDEFVAR TF@$2\n\nPOPS TF@$1\nLT TF@$compareResult TF@$1 int$0\nJUMPIFEQ $chr_error TF@$compareResult bool@true\nGT TF@$compareResult TF@$1 int$255\nJUMPIFEQ $chr_error TF@$compareResult bool@true\n\nINT2CHAR TF@$2\nPUSHS int@0\nPUSHS string@$2\nRETURN\n\nLABEL $chr_error\nPUSHS int@1\nPUSHS string@/000\nRETURN\n"
-#define FUNC_GTE "# --- func GTE ------------------------------\nLABEL $greaterOrEqual\n\nDEFVAR TF@$op1\nDEFVAR TF@$op2\nDEFVAR TF@$res\nDEFVAR TF@$res1\nDEFVAR TF@$res2\n\nPOPS TF@$op2\nPOPS TF@$op1\n\n\nGT TF@$res1 TF@$op1 TF@$op2\nEQ TF@$res2 TF@$op1 TF@$op2\nOR TF@$res TF@$res1 TF@$res2\nPUSHS TF@$res\nRETURN\n\n"
-#define FUNC_LTE "# --- func LTE ------------------------------\nLABEL $lessOrEqual \n\nDEFVAR TF@$op1\nDEFVAR TF@$op2\nDEFVAR TF@$res\nDEFVAR TF@$res1\nDEFVAR TF@$res2\n\nPOPS TF@$op2\nPOPS TF@$op1\n\n\nLT TF@$res1 TF@$op1 TF@$op2\nEQ TF@$res2 TF@$op1 TF@$op2\nOR TF@$res TF@$res1 TF@$res2\nPUSHS TF@$res\nRETURN\n\n"
+#define FUNC_INPUTI "# --- func inputi ------------------------------\n\
+LABEL inputi\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$1\n\
+READ TF@$1 int\n\n\
+JUMPIFEQ $inputi_err TF@$1 nil@nil\n\
+PUSHS TF@$1\n\
+PUSHS int@0\n\
+RETURN\n\
+LABEL $inputi_err\n\
+PUSHS int@0\n\
+PUSHS int@1\n\
+RETURN\n"
+
+#define FUNC_INPUTF "# --- func inputf ------------------------------\n\
+LABEL inputf\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$1\n\
+READ TF@$1 float\n\n\
+JUMPIFEQ $inputf_err TF@$1 nil@nil\n\
+PUSHS TF@$1\n\
+PUSHS int@0\n\
+RETURN\n\
+LABEL $inputf_err\n\
+PUSHS int@0\n\
+PUSHS int@1\n\
+RETURN\n"
+
+#define FUNC_INPUTS "# --- func inputs ------------------------------\n\
+LABEL inputs\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$1\n\
+READ TF@$1 string\n\n\
+JUMPIFEQ $inputs_err TF@$1 nil@nil\n\
+PUSHS TF@$1\n\
+PUSHS int@0\n\
+RETURN\n\
+LABEL $inputs_err\n\
+PUSHS int@0\n\
+PUSHS int@1\n\
+RETURN\n"
+
+#define FUNC_INT_TO_FLOAT "# --- func int2float ------------------------------\n\
+LABEL int2float\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$1\n\
+DEFVAR TF@$2\n\
+POPS TF@$1\n\n\
+INT2FLOAT TF@$2 TF@$1\n\n\
+PUSHS TF@$2\n\
+RETURN\n"
+
+#define FUNC_FLOAT_TO_INT "# --- func float2int ------------------------------\n\
+LABEL float2int\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$1\n\
+DEFVAR TF@$2\n\
+POPS TF@$1\n\n\
+FLOAT2INT TF@$2 TF@$1\n\n\
+PUSHS TF@$2\n\
+RETURN\n"
+
+#define FUNC_LEN "# --- func len ------------------------------\n\
+LABEL len\n\n\
+CREATEFRAME\n\n\
+DEFVAR TF@s\n\
+POPS TF@s\n\n\
+DEFVAR TF@$1\n\n\
+STRLEN TF@$1 TF@s\n\n\
+PUSHS TF@$1\n\n\
+RETURN\n"
+
+#define FUNC_SUBSTRING "# --- func substr ------------------------------\n\
+LABEL substr\n\n\
+CREATEFRAME\n\
+DEFVAR TF@$s\n\
+DEFVAR TF@$i\n\
+DEFVAR TF@$n\n\n\
+DEFVAR TF@$substring\n\
+MOVE TF@$substring string@\n\
+POPS TF@$s\n\
+POPS TF@$i\n\
+POPS TF@$n\n\
+RETURN\n"
+
+#define FUNC_ORD "# --- func ord ------------------------------\n\
+LABEL ord\n\n\
+CREATEFRAM\n\
+DEFVAR LF@$return\n\
+TYPE GF@$tmp LF@%%2\n\
+JUMPIFEQ ord$cont GF@$tmp string@int\n\
+EXIT int@4\n\
+LABEL ord$cont\n\
+DEFVAR LF@len\n\
+MOVE LF@$return nil@nil\n\
+CREATEFRAME\n\
+DEFVAR TF@%%1\n\
+MOVE TF@%%1 LF@%%1\n\
+CALL length\n\
+MOVE LF@len TF@$return\n\
+CLEARS\n\
+PUSHS LF@%%2\n\
+PUSHS int@0\n\
+LTS\n\
+PUSHS LF@%%2\n\
+PUSHS LF@len\n\
+LTS\n\
+NOTS\n\
+ORS\n\
+POPS TF@$return\n\
+JUMPIFEQ ord$nil TF@$return bool@true\n\
+STRI2INT LF@$return LF@%%1 LF@%%2\n\
+LABEL ord$nil\n\
+POPFRAME\n\
+RETURN\n"
+
+#define FUNC_CHR "# --- func chr ------------------------------\n\
+LABEL chr\n\n\
+CREATEFRAME\n\n\
+DEFVAR TF@$0\n\
+DEFVAR TF@$1\n\
+DEFVAR TF@$2\n\
+DEFVAR TF@$compareResult\n\n\
+POPS TF@$1\n\
+LT TF@$compareResult TF@$1 int@0\n\
+JUMPIFEQ $chr_error TF@$compareResult bool@true\n\
+GT TF@$compareResult TF@$1 int@255\n\
+JUMPIFEQ $chr_error TF@$compareResult bool@true\n\n\
+INT2CHAR TF@$2 TF@$1\n\
+PUSHS TF@$2\n\
+PUSHS int@0\n\
+RETURN\n\n\
+LABEL $chr_error\n\
+PUSHS string@/000\n\
+PUSHS int@1\n\
+RETURN\n"
+
+#define FUNC_GTE "# --- func GTE ------------------------------\n\
+LABEL $greaterOrEqual\n\n\
+DEFVAR TF@$op1\n\
+DEFVAR TF@$op2\n\
+DEFVAR TF@$res\n\
+DEFVAR TF@$res1\n\
+DEFVAR TF@$res2\n\n\
+POPS TF@$op2\n\
+POPS TF@$op1\n\n\n\
+GT TF@$res1 TF@$op1 TF@$op2\n\
+EQ TF@$res2 TF@$op1 TF@$op2\n\
+OR TF@$res TF@$res1 TF@$res2\n\
+PUSHS TF@$res\n\
+RETURN\n"
+
+#define FUNC_LTE "# --- func LTE ------------------------------\n\
+LABEL $lessOrEqual\n\n\
+DEFVAR TF@$op1\n\
+DEFVAR TF@$op2\n\
+DEFVAR TF@$res\n\
+DEFVAR TF@$res1\n\
+DEFVAR TF@$res2\n\n\
+POPS TF@$op2\n\
+POPS TF@$op1\n\n\n\
+LT TF@$res1 TF@$op1 TF@$op2\n\
+EQ TF@$res2 TF@$op1 TF@$op2\n\
+OR TF@$res TF@$res1 TF@$res2\n\
+PUSHS TF@$res\n\
+RETURN\n"
 
 void pushArguments(ParserStackPtr *argStack, int argCount);
 
@@ -36,6 +191,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 typedef struct integerStack {
 	int ID;
 	int bracketCount;
+	bool isFor;
 	struct integerStack *next;
 } *integerStack;
 

@@ -159,6 +159,14 @@ MOVE LF@a int@5
 
 LABEL $for0
 
+#--- a > 0, skoc na konec for pokud neplati podminka ----
+
+GT TF@$result LF@a int@0
+
+JUMPIFEQ $for_end0 TF@$result bool@false
+
+#--- BODY ----
+
 CREATEFRAME
 DEFVAR TF@$operand1
 DEFVAR TF@$operand2
@@ -168,7 +176,7 @@ MUL TF@$result LF@vysl LF@a
 PUSHS TF@$result
 POPS LF@vysl
 
-#----KONEC 
+#--- a = a - 1 ----
 CREATEFRAME
 DEFVAR TF@$operand1
 DEFVAR TF@$operand2
@@ -180,9 +188,11 @@ PUSHS TF@$result
 
 POPS LF@a
 
-GT TF@$result LF@a int@0
+JUMP $for0
+#----KONEC 
 
-JUMPIFEQ $for0 TF@$result bool@true
+
+LABEL $for_end0
 
 POPFRAME
 EXIT int@0
