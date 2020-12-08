@@ -410,6 +410,24 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							printf("IDIV TF@$result");
 						}
 						else if(operator.type == TOKEN_ADD){
+							/*
+							if(operand1.type == TOKEN_ID){
+								SymTableData varType;
+								symTableSearch(*globalSymTable, operand1.attribute.string, &varType, errorHandle);
+								if(varType.idDataType == STRING){
+									printf("STRINGCONCAT TF@$result");
+								}else if(varType.idDataType == INT){
+									printf("INTCONCAT TF@$result");
+								}else if(varType.idDataType == FLOAT){
+									printf("FLOATCONCAT TF@$result");
+								}
+							}else if(operand2.type == TOKEN_ID){
+								SymTableData varType;
+								symTableSearch(*globalSymTable, operand2.attribute.string, &varType, errorHandle);
+								if(varType.idDataType == STRING){
+									printf("CONCAT TF@$result");
+								}
+							}*/
 							if(isStringExpression){
 								printf("CONCAT TF@$result");
 							}

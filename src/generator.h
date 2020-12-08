@@ -98,38 +98,35 @@ MOVE TF@$substring string@\n\
 POPS TF@$s\n\
 POPS TF@$i\n\
 POPS TF@$n\n\
+CONCAT TF@$substring string@loool\n\
+WRITE TF@$substring\n\
 RETURN\n"
 
 #define FUNC_ORD "# --- func ord ------------------------------\n\
-LABEL ord\n\n\
-CREATEFRAM\n\
-DEFVAR LF@$return\n\
-TYPE GF@$tmp LF@%%2\n\
-JUMPIFEQ ord$cont GF@$tmp string@int\n\
-EXIT int@4\n\
-LABEL ord$cont\n\
-DEFVAR LF@len\n\
-MOVE LF@$return nil@nil\n\
+LABEL ord\n\
 CREATEFRAME\n\
-DEFVAR TF@%%1\n\
-MOVE TF@%%1 LF@%%1\n\
-CALL length\n\
-MOVE LF@len TF@$return\n\
-CLEARS\n\
-PUSHS LF@%%2\n\
-PUSHS int@0\n\
-LTS\n\
-PUSHS LF@%%2\n\
-PUSHS LF@len\n\
-LTS\n\
-NOTS\n\
-ORS\n\
-POPS TF@$return\n\
-JUMPIFEQ ord$nil TF@$return bool@true\n\
-STRI2INT LF@$return LF@%%1 LF@%%2\n\
-LABEL ord$nil\n\
-POPFRAME\n\
-RETURN\n"
+DEFVAR TF@$s\n\
+DEFVAR TF@$i\n\
+DEFVAR TF@$strlen\n\
+DEFVAR TF@$result\n\
+DEFVAR TF@$intResult\n\
+POPS TF@$s\n\
+POPS TF@$i\n\n\
+STRLEN TF@$strlen TF@$s\n\
+GT TF@$result TF@$i TF@$strlen \n\
+JUMPIFEQ $ord_err TF@$result bool@true\n\
+EQ TF@$result TF@$i TF@$strlen \n\
+JUMPIFEQ $ord_err TF@$result bool@true\n\
+LT TF@$result TF@$i int@0 \n\
+JUMPIFEQ $ord_err TF@$result bool@true\n\
+STRI2INT TF@$intResult TF@$s TF@$i\n\n\
+PUSHS TF@$intResult\n\
+PUSHS int@0\n\n\
+RETURN\n\n\
+LABEL $ord_err\n\n\
+PUSHS string@/000\n\
+PUSHS int@1\n\n\
+RETURN"
 
 #define FUNC_CHR "# --- func chr ------------------------------\n\
 LABEL chr\n\n\
