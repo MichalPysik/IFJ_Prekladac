@@ -1,4 +1,3 @@
-
 \documentclass[a4paper, 12pt]{article}
 
 
@@ -12,6 +11,28 @@
 \usepackage{amsthm, amsmath, amssymb}
 \usepackage[unicode]{hyperref}
 \usepackage{pdfpages}
+\usepackage{pdflscape}
+\usepackage{everypage}
+
+\def\fillandplacepagenumber{%
+ \par\pagestyle{empty}%
+ \vbox to 0pt{\vss}\vfill
+ \vbox to 0pt{\baselineskip0pt
+   \hbox to\linewidth{\hss}%
+   \baselineskip\footskip
+   \hbox to\linewidth{%
+     \hfil\thepage\hfil}\vss}}
+
+\newcommand{\Lpagenumber}{\ifdim\textwidth=\linewidth\else\bgroup
+  \dimendef\margin=0 %use \margin instead of \dimen0
+  \ifodd\value{page}\margin=\oddsidemargin
+  \else\margin=\evensidemargin
+  \fi
+  \raisebox{\dimexpr -\topmargin-\headheight-\headsep-0.5\linewidth}[0pt][0pt]{%
+    \rlap{\hspace{\dimexpr \margin+\textheight+\footskip}%
+    \llap{\rotatebox{90}{\thepage}}}}%
+\egroup\fi}
+\AddEverypageHook{\Lpagenumber}%
 
 
 \begin{document}
@@ -42,8 +63,8 @@
 			\Large
 			\begin{tabular}{l l l}
 				\textbf{Michal Pyšík} & (xpysik00) & \quad 25\,\% \\
-				Karel Jirgl & (xjirgll00) & \quad 25\,\% \\
-				Václav Klem & (xklem00) & \quad 25\,\% \\
+				Karel Jirgl & (xjirgl00) & \quad 25\,\% \\
+				Václav Klem & (xklemv00) & \quad 25\,\% \\
 				Thanh Quang Tran & (xtrant02) & \quad 25\,\% \\
 			\end{tabular}
 		\end{minipage}
@@ -98,11 +119,24 @@ Všechny načtené tokeny se ukládají do obousměrně vázaného lineárního 
 
 \section{Syntaktická analýza}
 Prediktivní syntaktická analýza
-    
-\includegraphics[width=\textwidth,keepaspectratio]{LL_table.pdf}
 
-\includegraphics[width=\textwidth,keepaspectratio]{Precedence_table.pdf}
+\begin{landscape}
+\pagestyle{empty}
+\begin{figure}[h]
+\subsection{LL tabulka}
+\hspace*{-3.6cm}\vspace*{+1cm}\includegraphics[width=1.85\textwidth,keepaspectratio]{LL_table.pdf}
+%\fillandplacepagenumber
+\end{figure}
+\end{landscape}
 
+\begin{landscape}
+\pagestyle{empty}
+\begin{figure}[h]
+\subsection{Precedenční tabulka}
+\hspace*{-3.6cm}\vspace*{+1cm}\includegraphics[width=1.85\textwidth,keepaspectratio]{Precedence_table.pdf}
+%\fillandplacepagenumber
+\end{figure}
+\end{landscape}
 
 \newpage
 
@@ -189,15 +223,17 @@ Běží zároveň se syntaktickou TODO
 
 \newpage
 
-\section{Generace mezikódu}
-Generování cílového kódu IFJcode20 probíhá paralelně se syntaktickou a sémantickou analýzou. Parser generátoru předává sekvenci pravidel LL tabulky pravého a levého rozboru, list tokenů z lexikálního analyzátoru , sémantický stack, který obsahuje tokeny na generování výrazu. Hlavní funkcí je \verb|generatorGenerateCode|, která tiskne instrukce prostřednictvím přepínače \verb|switch| a instrukce aritmetických a logických operací prostřednictvím podmíněného cyklu \verb|while| za pomocí sémantického zásobníku předávaného parserem.\\
+\section{Generace mezikódu IFJcode20}
+Generování cílového kódu IFJcode20 probíhá vždy po každém dokončení jedné iterace syntaktické a sémantické analýzy. Parser generátoru sekvenčně předává pravidla LL tabulky pravého a levého rozboru a sémantický stack, který obsahuje tokeny pro generování aritmetických a logických výrazů. Scanner poskytuje double-linked list tokenů z lexikálního analyzátoru.
 \newline
-Ke generování podmíněných příkazů \verb|if| je použit zásobník na ukládání celočíselných hodnot, které reprezentují jednotlivé ID daných podmíněných příkazů, kvůli správnému výpisu návěští \verb|LABEL| pro \verb|if| a \verb|else|. \\
 \newline
-Tisk instrukcí probíhá paralelně s parserem na standardní výstup.
+Hlavní funkcí je \verb|generatorGenerateCode|, která tiskne instrukce prostřednictvím přepínače \verb|switch| a instrukce aritmetických a logických operací prostřednictvím podmíněného cyklu \verb|while| za pomocí sémantického zásobníku předávaného parserem.\\
+\newline
+Ke generování podmíněného příkazu \verb|if| / \verb|else| a cyklů \verb|for| je kvůli správnému výpisu návěští \verb|LABEL| použit zásobník na ukládání celočíselných hodnot, které reprezentují jednotlivé ID daných klíčových slov. K uchování informací o momentálním kontextu v kódu IFJ20 slouží \verb|static| proměnné.\\
+\newline
 
 \newpage
 
 \section{Hlavní funkce main}
-Funkce main inicializuje 
+Funkce main inicializuje
 \end{document}
