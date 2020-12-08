@@ -601,9 +601,26 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 			if(inReturn == true && multiExpression == false  && (grammarRule < 51 ) /*&& grammarRule != 38*/){
 				Token tmp;
+				int shiftCount = 0;
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS string@%s\n", currentToken.attribute.string);
+				}
+				//ošetření, když je jediný token v závorkách
+				else if(tmp.type == TOKEN_RROUNDBRACKET){//TOTO JSEM PŘIDAL
+					while(tmp.type == TOKEN_RROUNDBRACKET){
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						shiftCount++;
+						scannerTokenListGetActive(tokenList, &tmp, errorHandle);
+					}
+					if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
+						printf("\nPUSHS string@%s\n", currentToken.attribute.string);
+					}
+					for (int i = 0; i < shiftCount; i++)
+					{
+						scannerTokenListMovePrev(tokenList, errorHandle);
+					}
+					scannerTokenListGetActive(tokenList, &tmp, errorHandle);
 				}
 			}
 			break;
@@ -621,16 +638,33 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 			if(inReturn == true && multiExpression == false  && (grammarRule < 51 )/* && grammarRule != 38*/){
 				Token tmp;
+				int shiftCount = 0;
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS int@%ld\n", currentToken.attribute.integer);
+				}
+				//ošetření, když je jediný token v závorkách
+				else if(tmp.type == TOKEN_RROUNDBRACKET){//TOTO JSEM PŘIDAL
+					while(tmp.type == TOKEN_RROUNDBRACKET){
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						shiftCount++;
+						scannerTokenListGetActive(tokenList, &tmp, errorHandle);
+					}
+					if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
+						printf("\nPUSHS int@%ld\n", currentToken.attribute.integer);
+					}
+					for (int i = 0; i < shiftCount; i++)
+					{
+						scannerTokenListMovePrev(tokenList, errorHandle);
+					}
+					scannerTokenListGetActive(tokenList, &tmp, errorHandle);
 				}
 			}
 			break;
 
 		case TOKEN_FLOATVALUE:
 			if(inPrint == true){
-				printf("\nWRITE int@%a\n", currentToken.attribute.real);
+				printf("\nWRITE float@%a\n", currentToken.attribute.real);
 			}
 			if(inArguments == true){
 				ParserStackData data;
@@ -641,9 +675,26 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 			if(inReturn == true && multiExpression == false && (grammarRule < 51 )/* && grammarRule != 38*/){
 				Token tmp;
+				int shiftCount = 0;
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
-				if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
+				if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL/*|| tmp.type == TOKEN_RROUNDBRACKET*/){
 					printf("\nPUSHS float@%a\n", currentToken.attribute.real);
+				}
+				//ošetření, když je jediný token v závorkách
+				else if(tmp.type == TOKEN_RROUNDBRACKET){//TOTO JSEM PŘIDAL
+					while(tmp.type == TOKEN_RROUNDBRACKET){
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						shiftCount++;
+						scannerTokenListGetActive(tokenList, &tmp, errorHandle);
+					}
+					if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
+						printf("\nPUSHS float@%a\n", currentToken.attribute.real);
+					}
+					for (int i = 0; i < shiftCount; i++)
+					{
+						scannerTokenListMovePrev(tokenList, errorHandle);
+					}
+					scannerTokenListGetActive(tokenList, &tmp, errorHandle);
 				}
 			}
 			
@@ -724,10 +775,26 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			if(inReturn == true && multiExpression == false && (grammarRule < 51 )/* && grammarRule != 38*/){
 				Token tmp;
+				int shiftCount = 0;
 				scannerTokenListGetNext(tokenList, &tmp, errorHandle);
-				printf("Pred Push\n");
 				if(tmp.type == TOKEN_COMMA  || tmp.type == TOKEN_EOL){
 					printf("\nPUSHS LF@%s\n", currentToken.attribute.string);
+				}
+				//ošetření, když je jediný token v závorkách
+				else if(tmp.type == TOKEN_RROUNDBRACKET){//TOTO JSEM PŘIDAL
+					while(tmp.type == TOKEN_RROUNDBRACKET){
+						scannerTokenListMoveNext(tokenList, errorHandle);
+						shiftCount++;
+						scannerTokenListGetActive(tokenList, &tmp, errorHandle);
+					}
+					if(tmp.type == TOKEN_COMMA || tmp.type == TOKEN_EOL){
+						printf("\nPUSHS LF@%s\n", currentToken.attribute.string);
+					}
+					for (int i = 0; i < shiftCount; i++)
+					{
+						scannerTokenListMovePrev(tokenList, errorHandle);
+					}
+					scannerTokenListGetActive(tokenList, &tmp, errorHandle);
 				}
 			}
 
