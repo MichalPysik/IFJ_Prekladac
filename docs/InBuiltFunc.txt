@@ -144,3 +144,55 @@ EQ TF@$res2 TF@$op1 TF@$op2
 OR TF@$res TF@$res1 TF@$res2
 PUSHS TF@$res
 RETURN
+
+--- FOR ----
+vysl := 1
+a := 4
+for ; a > 0; a = a - 1 {
+    vysl = vysl * a
+}
+
+DEFVAR LF@vysl
+MOVE LF@vysl int@1
+DEFVAR LF@a
+MOVE LF@a int@5
+
+LABEL $for0
+
+CREATEFRAME
+DEFVAR TF@$operand1
+DEFVAR TF@$operand2
+DEFVAR TF@$result
+
+MUL TF@$result LF@vysl LF@a
+PUSHS TF@$result
+POPS LF@vysl
+
+#----KONEC 
+CREATEFRAME
+DEFVAR TF@$operand1
+DEFVAR TF@$operand2
+DEFVAR TF@$result
+
+SUB TF@$result LF@a int@1
+
+PUSHS TF@$result
+
+POPS LF@a
+
+GT TF@$result LF@a int@0
+
+JUMPIFEQ $for0 TF@$result bool@true
+
+POPFRAME
+EXIT int@0
+
+
+
+
+
+
+
+
+
+
