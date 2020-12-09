@@ -2,16 +2,11 @@
 package main
 
 func main() {
-    n := 0
-    err := 0
-    print("zadej pocet iteraci: \n")
-    n, err = inputi()
-
-    a := 2
-    i := 0
-    
-    for ; i < n; i = i + 1 {
-        a = a * a
-        print(a, "\n")        
+    a := 1
+    b := 2
+    if a != b {
+        print("a se nerovna b")
+    } else {
+        print("a se rovna b")
     }
 }

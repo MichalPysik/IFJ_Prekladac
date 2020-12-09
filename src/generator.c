@@ -23,6 +23,21 @@ void generatorFree()
 	integerStackFree(&ifForStack);
 }
 
+IDdataType getIDdatatype(ParserStackPtr *symtableStack, char *variable, ErrorHandle *errorHandle){
+		ParserStackPtr topSymtable = (*symtableStack);
+		while(topSymtable != NULL){
+			
+			SymTableBinTreePtr currentLocalSymtable = STACK_DATA_TO_SYMTABLE(parserStackPeek(&topSymtable));
+			
+			SymTableData data;
+			if(symTableSearch(currentLocalSymtable, variable, &data, errorHandle) == 1){
+				return data.idDataType;
+			}
+			topSymtable = topSymtable->next;
+		}
+		return NIL;
+}
+
 void integerStackInit(integerStack *stack)
 {
 	(*stack) = NULL;
@@ -419,12 +434,23 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							printf("IDIV TF@$result");
 						}
 						else if(operator.type == TOKEN_ADD){
-							if(isStringExpression){
+							if(operand1.type == TOKEN_ID){
+								if(getIDdatatype(symtableStack, operand1.attribute.string, errorHandle) == STRING){
+									printf("CONCAT TF@$result");
+								}else{
+								printf("ADD TF@$result");
+								}
+							}else if(operand2.type == TOKEN_ID){
+								if(getIDdatatype(symtableStack, operand2.attribute.string, errorHandle) == STRING){
+									printf("CONCAT TF@$result");
+								}else{
+								printf("ADD TF@$result");
+								}
+							}
+							else if(isStringExpression){
 								printf("CONCAT TF@$result");
 							}
-							else{
-								printf("ADD TF@$result");
-							}
+							
 						}
 						else if(operator.type == TOKEN_SUB){
 							printf("SUB TF@$result");
@@ -482,6 +508,10 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					}
 					else if(operand2.type == TOKEN_EMPTY){
 						printf(" TF@$operand2\n");
+					}
+
+					if(operator.type == TOKEN_NEQ){
+						printf("\nNOT TF@$result TF@$result\n");
 					}
 
 					if(operator.type == TOKEN_GTE){
