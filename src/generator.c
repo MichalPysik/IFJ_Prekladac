@@ -729,15 +729,11 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			// PUSHujeme do variableStacku proměnné na levé straně
 			if(leftSide == true && previousToken.type != TOKEN_KEYWORD_FUNC){
-				SymTableData data;
-				symTableSearch(*globalSymTable, currentToken.attribute.string, &data, errorHandle);
-				if(data.idType == VAR){
 				ParserStackData tokenData;
 				tokenData.token = currentToken;
 				variableCount++;
 				//printf("\nPUSHING: %s\n", data.token.attribute.string);
 				parserStackPush(&variableStack, tokenData);
-				}
 			}
 
 			if(inReturn == true && multiExpression == false && (grammarRule < 51 )/* && grammarRule != 38*/){

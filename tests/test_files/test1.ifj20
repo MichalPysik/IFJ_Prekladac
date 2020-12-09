@@ -8,7 +8,7 @@ func add(a int, b int) (int, int) {
 }
 
 func main() {
-    a := 0
+    a, b:= 0
     b := 0
     a, b = 7+5 * 10, 4+18
     print(a)
