@@ -11,6 +11,10 @@
 #include "parser.h"
 
 
+ParserStackPtr semanticStack = NULL;
+
+ParserStackPtr returnIfStack = NULL;
+
 
 int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle)
 {
@@ -41,6 +45,12 @@ int parserAnalyze(TokenList *tokenList, ErrorHandle *errorHandle)
 	
 	
 	handleFreeError(symTableDispose(&globalSymTable), __LINE__, __FILE__);
+	
+	
+	parserStackFree(&semanticStack);
+	
+	parserStackFree(&returnIfStack);
+	
 	
 	return errorHandle->errorID;
 }
@@ -283,11 +293,6 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	
 	
 	
-	// leftAndRightAnalysis stack
-	ParserStackPtr leftAndRightAnalysisStack;
-	parserStackInit(&leftAndRightAnalysisStack);
-	
-	
 	// symtable stack
 	ParserStackPtr symtableStack;
 	parserStackInit(&symtableStack);
@@ -297,14 +302,13 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	ParserStackPtr syntaxStack;
 	parserStackInit(&syntaxStack);	
 	
-	
 	//parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(TERM_EOF)); // $ -> ukončovací symbol -> už je součástí neterminálu <program>
 	parserStackPush(&syntaxStack, STACK_TERM_TO_DATA(NONTERM_program)); // S -> počáteční symbol
 	
 	
-	// semantic stack
-	ParserStackPtr semanticStack;
-	parserStackInit(&semanticStack);
+	// leftAndRightAnalysis stack (stack of rule numbers)
+	ParserStackPtr leftAndRightAnalysisRuleStack;
+	parserStackInit(&leftAndRightAnalysisRuleStack);
 	
 	
 	// expression token list
@@ -333,7 +337,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 				parserStackPop(&syntaxStack);
 			
 			// jsme v EXPRESSION
-			}else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_EXPRESSION){
+			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == TERM_EXPRESSION){
 				
 				// EXPRESSION - START
 				parserStackPop(&syntaxStack); // pop EXPRESSION neterminal
@@ -349,19 +353,19 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 					scannerTokenListMoveNext(tokenList, errorHandle);
 				}
 				
-				parserRunPrecedentSyntaxAnalysis(&expressionList, &semanticStack, &symtableStack, globalSymTable, &leftAndRightAnalysisStack, errorHandle);
+				parserRunPrecedentSyntaxAnalysis(&expressionList, &symtableStack, globalSymTable, &leftAndRightAnalysisRuleStack, errorHandle);
 				
 				// EXPRESSION - END
 				
 			// porovnání zásobníku - na vrcholu zásobníku je stejný terminál jako aktuální token
 			} else if(STACK_DATA_TO_TERM(parserStackPeek(&syntaxStack)) == MAP_TOKEN_TO_TERM[currentToken.type]){
-				parserSemanticAnalysis(tokenList, &semanticStack, &symtableStack, globalSymTable, &leftAndRightAnalysisStack, NULL, errorHandle);
+				parserSemanticAnalysis(tokenList, &symtableStack, globalSymTable, &leftAndRightAnalysisRuleStack, NULL, errorHandle);
 				
 				parserStackPop(&syntaxStack);
 				scannerTokenListMoveNext(tokenList, errorHandle);
 				
 			// jinak chyba
-			} else  {
+			} else {
 				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - NOT SAME TERM", __FILE__, __LINE__, errorHandle);
 			}
 		
@@ -383,7 +387,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 			if(LLtableResult != 0){
 				
 				// levý rozbor
-				parserLeftAnalysis(LLtableResult, &leftAndRightAnalysisStack);
+				parserLeftAnalysis(LLtableResult, &leftAndRightAnalysisRuleStack);
 				
 				LLtableResult--; // indexování v poli
 				
@@ -406,8 +410,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	}
 	
 	handleFreeError(parserTokenListFree(&expressionList), __LINE__, __FILE__);
-
-	parserStackFree(&semanticStack);
+	
 	
 	parserStackFree(&syntaxStack);
 	
@@ -419,7 +422,7 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 	}
 	parserStackFree(&symtableStack);
 	
-	parserStackFree(&leftAndRightAnalysisStack);
+	parserStackFree(&leftAndRightAnalysisRuleStack);
 	
 	
 	if(result != ALL_OK && !errorExists(*errorHandle)) {
@@ -430,24 +433,24 @@ int parserRunPredictiveSyntaxAnalysis(TokenList *tokenList, SymTableBinTreePtr *
 }
 
 
-int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ErrorHandle *errorHandle)
+int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisRuleStack, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 
 
-	ParserStackPtr semanticRuleStack;
-	parserStackInit(&semanticRuleStack);
+	ParserStackPtr expressionRuleStack;
+	parserStackInit(&expressionRuleStack);
 	
 	
 	ParserStackPtr semanticPrecedentStack;
 	parserStackInit(&semanticPrecedentStack);
 	
 	
-	ParserStackPtr statementStack;
-	parserStackInit(&statementStack);
+	ParserStackPtr precedentStack;
+	parserStackInit(&precedentStack);
 	
-	parserStackPush(&statementStack, STACK_TERM_TO_DATA(TERM_PSEUDO_DOLLAR)); // koncový symbol a počáteční symbol
-
+	parserStackPush(&precedentStack, STACK_TERM_TO_DATA(TERM_PSEUDO_DOLLAR)); // koncový symbol a počáteční symbol precedenčního zásobníku
+	
 	
 	Token currentToken;
 	currentToken.type = TOKEN_EMPTY;
@@ -455,44 +458,44 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	currentToken.pos_number = 0;
 	
 	currentToken.type = TOKEN_EOL;
-	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token)
+	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token) seznamu tokenů
 	currentToken.type = TOKEN_EOF;
-	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token)
+	scannerTokenListAdd(expressionList, currentToken, errorHandle); // koncový symbol (token) seznamu tokenů
 	
 	scannerTokenListSetActiveFirst(expressionList, errorHandle);
 
 	while(scannerTokenListGetActive(expressionList, &currentToken, errorHandle) == ALL_OK){
 		
-		Term_type stackTopTerm = STACK_DATA_TO_TERM(parserStackPrecedentTop(&statementStack));
+		Term_type stackTopTerm = STACK_DATA_TO_TERM(parserStackPrecedentTop(&precedentStack));
 		Term_type tokenTerm = MAP_TOKEN_TO_PREC_TERM[currentToken.type];
 		char operation = PrecedenceTable[TERM_TO_PREC_TABLE(stackTopTerm)][TERM_TO_PREC_TABLE(tokenTerm)];
 		
 		if(stackTopTerm == TERM_PSEUDO_DOLLAR && tokenTerm == TERM_PSEUDO_DOLLAR){
-			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
+			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisRuleStack, &expressionRuleStack, errorHandle);
 			break;
 		} else if(operation == '='){
-			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
+			parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisRuleStack, &expressionRuleStack, errorHandle);
 			
 			parserStackPush(&semanticPrecedentStack, STACK_TOKEN_TO_DATA(currentToken));
-			parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+			parserStackPush(&precedentStack, STACK_TERM_TO_DATA(tokenTerm));
 			
 			scannerTokenListMoveNext(expressionList, errorHandle);
 		} else if(operation == '<'){
-			parserSemanticAnalysis(expressionList, semanticStack, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
+			parserSemanticAnalysis(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisRuleStack, &expressionRuleStack, errorHandle);
 			
-			parserStackPrecedentTopAddHandle(&statementStack);
+			parserStackPrecedentTopAddHandle(&precedentStack);
 			
 			parserStackPush(&semanticPrecedentStack, STACK_TOKEN_TO_DATA(currentToken));
-			parserStackPush(&statementStack, STACK_TERM_TO_DATA(tokenTerm));
+			parserStackPush(&precedentStack, STACK_TERM_TO_DATA(tokenTerm));
 			
 			scannerTokenListMoveNext(expressionList, errorHandle);
 		} else if(operation == '>'){
-			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisStack, &semanticRuleStack, errorHandle);
+			generatorGenerateCode(expressionList, symtableStack, globalSymTable, leftAndRightAnalysisRuleStack, &expressionRuleStack, errorHandle);
 			
-			int rightAnalysis = parserStackPrecedentTopPopAndPushRule(&statementStack, &semanticPrecedentStack, &semanticRuleStack);
+			int rightAnalysis = parserStackPrecedentTopPopAndPushRule(&precedentStack, &semanticPrecedentStack, &expressionRuleStack);
 			if(rightAnalysis > 0){
 				// pravý rozbor
-				parserRightAnalysis(rightAnalysis, leftAndRightAnalysisStack);
+				parserRightAnalysis(rightAnalysis, leftAndRightAnalysisRuleStack);
 			} else {
 				errorSet(SYNTAX_ERROR, "PARSER_ANALYZE: SYNTAX_ERROR - PRECEDENT TABLE -> NO RULE", __FILE__, __LINE__, errorHandle);
 			}
@@ -504,17 +507,17 @@ int parserRunPrecedentSyntaxAnalysis(TokenList *expressionList, ParserStackPtr *
 	handleFreeError(parserTokenListFree(expressionList), __LINE__, __FILE__);
 	scannerTokenListInit(expressionList, errorHandle);
 	
-	parserStackFree(&statementStack);
+	parserStackFree(&precedentStack);
 	
 	parserStackFree(&semanticPrecedentStack);
 	
-	parserStackFree(&semanticRuleStack);
+	parserStackFree(&expressionRuleStack);
 
 	return errorHandle->errorID;
 }
 
 
-int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisStack, ParserStackPtr *semanticRuleStack, ErrorHandle *errorHandle)
+int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *symtableStack, SymTableBinTreePtr *globalSymTable, ParserStackPtr *leftAndRightAnalysisRuleStack, ParserStackPtr *expressionRuleStack, ErrorHandle *errorHandle)
 {
 	if(errorExists(*errorHandle)){return ERROR_ALREADY_EXISTS;}
 	
@@ -523,6 +526,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	static int CodeBlockNumber = 1;
 	static int returnExists = 0;
 	static int inFor = 0;
+	static int functionShouldEnd = 0;
 	
 	static int inReturn = 0;
 	static int inDefinition = 0;
@@ -650,12 +654,33 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 	
 	
 	
-	
-	
 	// RETURN NENALEZEN
 	// při levé složené závorce '{' nastavíme returnExists na 0
 	if(currentToken.type == TOKEN_LCURLYBRACKET){
+		// KONTROLA RETURN V OBOU ČÁSTECH IF
+		if(prevToken.type == TOKEN_KEYWORD_ELSE && returnExists == 0){
+			parserStackPush(&returnIfStack, STACK_INT_TO_DATA(CodeBlockNumber));
+		}
 		returnExists = 0;
+	}
+	
+	// KONTROLA RETURN V OBOU ČÁSTECH IF
+	if(prevToken.type == TOKEN_RCURLYBRACKET && currentToken.type != TOKEN_KEYWORD_ELSE){
+		if((CodeBlockNumber+1) == STACK_DATA_TO_INT(parserStackPeek(&returnIfStack))){
+			parserStackPop(&returnIfStack);
+			returnExists = 0;
+		}
+	}
+	
+	// KONTROLA RETURN JAKO POSLEDNÍ PŘÍKAZ V ROZSAHU PLATNOSTI (možná by stačilo jen varování)
+	if(currentToken.type == TOKEN_EOL && CodeBlockNumber >= 2 && inReturn == 1){
+		functionShouldEnd = 1;
+	}
+	if(functionShouldEnd == 1 && currentToken.type != TOKEN_EOL){
+		functionShouldEnd = 0;
+		if(currentToken.type != TOKEN_RCURLYBRACKET){
+			errorSet(SEM_OTHER_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - KEYWORD RETURN TOO EARLY!", __FILE__, __LINE__, errorHandle);
+		}
 	}
 	
 	
@@ -678,7 +703,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		inFunctionCall = 1;
 		
 		// push semantic stack
-		parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
+		parserStackPush(&semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 	}
 	
 	
@@ -712,7 +737,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		if(currentToken.type == TOKEN_ID){
 			
 			// push semantic stack
-			parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
+			parserStackPush(&semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 		}
 		
 	// PRAVÁ ČÁST PŘÍKAZU
@@ -723,7 +748,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		|| currentToken.type == TOKEN_EQ || currentToken.type == TOKEN_NEQ || currentToken.type == TOKEN_GT || currentToken.type == TOKEN_LT || currentToken.type == TOKEN_GTE || currentToken.type == TOKEN_LTE){
 		
 		// push semantic stack
-		parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(currentToken));
+		parserStackPush(&semanticStack, STACK_TOKEN_TO_DATA(currentToken));
 	}
 	
 	
@@ -738,9 +763,9 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		if(inExpression == 1 && !errorExists(*errorHandle)){
 			//printf("EXPRESSION\n");
 			
-			parserSemanticChangeIDsToTypes(semanticStack, symtableStack, errorHandle);
+			parserSemanticChangeIDsToTypes(&semanticStack, symtableStack, errorHandle);
 			
-			Token_type expressionType = parserSemanticExpressionCheckOperatorsAndOperands(semanticStack, errorHandle);
+			Token_type expressionType = parserSemanticExpressionCheckOperatorsAndOperands(&semanticStack, errorHandle);
 			if(!(TOKEN_EQ <= expressionType && expressionType <= TOKEN_LTE)){
 				// nikdy nenastane -> máme jako syntaktickou chybu
 				errorSet(SEM_TYPE_COMPATIBILITY_ERROR, "PARSER_ANALYZE: SEMANTIC_ERROR - WRONG TYPE IN IF or FOR expression", __FILE__, __LINE__, errorHandle);
@@ -763,11 +788,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			ParserStackPtr expressionStack;
 			parserStackInit(&expressionStack);
 			
-			ParserStackPtr top = (*semanticStack);
-			ParserStackPtr topStart = (*semanticStack);
+			ParserStackPtr top = (semanticStack);
+			ParserStackPtr topStart = (semanticStack);
 			while(top != NULL){
 				
-				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_KEYWORD_RETURN && topStart != (*semanticStack))){
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_KEYWORD_RETURN && topStart != (semanticStack))){
 					parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
 					
 					Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
@@ -777,7 +802,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 					parserStackFree(&expressionStack);
 					functionParamNumber++;
 				} else {
-					parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+					parserStackPush(&expressionStack, parserStackPeek(&semanticStack));
 				}
 				
 				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_KEYWORD_RETURN){
@@ -786,14 +811,14 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				
 				top = top->next;
 				
-				parserStackPop(semanticStack);
+				parserStackPop(&semanticStack);
 			}
 			
 			parserStackFree(&expressionStack);
 			
 			// expressions to value types - end
 			
-			parserStackPop(semanticStack); // pop TOKEN_KEYWORD_RETURN
+			parserStackPop(&semanticStack); // pop TOKEN_KEYWORD_RETURN
 			
 			
 			
@@ -851,11 +876,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			ParserStackPtr expressionStack;
 			parserStackInit(&expressionStack);
 			
-			ParserStackPtr top = (*semanticStack);
-			ParserStackPtr topStart = (*semanticStack);
+			ParserStackPtr top = (semanticStack);
+			ParserStackPtr topStart = (semanticStack);
 			while(top != NULL){
 				
-				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_LROUNDBRACKET && topStart != (*semanticStack))){
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_LROUNDBRACKET && topStart != (semanticStack))){
 					parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
 					
 					Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
@@ -865,7 +890,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 					parserStackFree(&expressionStack);
 					functionParamNumber++;
 				} else {
-					parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+					parserStackPush(&expressionStack, parserStackPeek(&semanticStack));
 				}
 				
 				if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_LROUNDBRACKET){
@@ -874,23 +899,23 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				
 				top = top->next;
 				
-				parserStackPop(semanticStack);
+				parserStackPop(&semanticStack);
 			}
 			
 			parserStackFree(&expressionStack);
 			
 			// expressions to value types - end
 			
-			parserStackPop(semanticStack); // pop TOKEN_LROUNDBRACKET
+			parserStackPop(&semanticStack); // pop TOKEN_LROUNDBRACKET
 			
 			
 			
-			if(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
+			if(STACK_DATA_TO_INT(parserStackPeek(&semanticStack)) != -1){
 				
-				Token functionIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)); // pop function id token
+				Token functionIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(&semanticStack)); // pop function id token
 				if(functionIdToken.type == TOKEN_ID){
 					
-					parserStackPop(semanticStack); // pop function name Token
+					parserStackPop(&semanticStack); // pop function name Token
 					
 					SymTableData data;
 					if(symTableSearch(*globalSymTable, functionIdToken.attribute.string, &data, errorHandle) == 1){
@@ -932,7 +957,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 								IDdataType paramDataType;
 								while(symTableParamListGetActive(&data.functionReturnDataTypes, &paramDataType, errorHandle) == ALL_OK){
 									
-									parserStackPush(semanticStack, STACK_TOKEN_TO_DATA(parserSemanticVarTypeToToken(paramDataType)));
+									parserStackPush(&semanticStack, STACK_TOKEN_TO_DATA(parserSemanticVarTypeToToken(paramDataType)));
 									
 									symTableParamListMoveNext(&data.functionReturnDataTypes, errorHandle);
 								}
@@ -976,11 +1001,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				ParserStackPtr expressionStack;
 				parserStackInit(&expressionStack);
 				
-				ParserStackPtr top = (*semanticStack);
-				ParserStackPtr topStart = (*semanticStack);
+				ParserStackPtr top = (semanticStack);
+				ParserStackPtr topStart = (semanticStack);
 				while(top != NULL){
 					
-					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_ASSIGN && topStart != (*semanticStack))){
+					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_COMMA || (STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_ASSIGN && topStart != (semanticStack))){
 						parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
 						
 						Token_type functionParamTokenType = parserSemanticExpressionCheckOperatorsAndOperands(&expressionStack, errorHandle);
@@ -994,7 +1019,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 						
 						parserStackFree(&expressionStack);
 					} else if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_LROUNDBRACKET){// TOKEN_LROUNDBRACKET just pop
-						parserStackPush(&expressionStack, parserStackPeek(semanticStack));
+						parserStackPush(&expressionStack, parserStackPeek(&semanticStack));
 					}
 					
 					if(STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type == TOKEN_ASSIGN){
@@ -1003,7 +1028,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 					
 					top = top->next;
 					
-					parserStackPop(semanticStack);
+					parserStackPop(&semanticStack);
 				}
 				
 				parserStackFree(&expressionStack);
@@ -1013,7 +1038,7 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 				parserSemanticChangeIDsToTypes(&paramStack, symtableStack, errorHandle);
 
 				while(STACK_DATA_TO_INT(parserStackPeek(&paramStack)) != -1){
-					parserStackPush(semanticStack, parserStackPop(&paramStack));
+					parserStackPush(&semanticStack, parserStackPop(&paramStack));
 				}
 				
 				parserStackFree(&paramStack);
@@ -1031,14 +1056,14 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			
 			// split left and right side of cmd
 			int assignTokenLoaded = 0;
-			while(STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
-				if(STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)).type == TOKEN_ASSIGN){
-					parserStackPop(semanticStack);
+			while(STACK_DATA_TO_INT(parserStackPeek(&semanticStack)) != -1){
+				if(STACK_DATA_TO_TOKEN(parserStackPeek(&semanticStack)).type == TOKEN_ASSIGN){
+					parserStackPop(&semanticStack);
 					assignTokenLoaded = 1;
 				} else if(assignTokenLoaded == 0){
-					parserStackPush(&rightSideStack, parserStackPop(semanticStack));
+					parserStackPush(&rightSideStack, parserStackPop(&semanticStack));
 				} else if(assignTokenLoaded == 1){
-					parserStackPush(&leftSideStack, parserStackPop(semanticStack));
+					parserStackPush(&leftSideStack, parserStackPop(&semanticStack));
 				}
 			}
 			
@@ -1100,11 +1125,11 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 			ParserStackPtr expressionStack;
 			parserStackInit(&expressionStack);	
 			
-			ParserStackPtr top = (*semanticStack);
+			ParserStackPtr top = (semanticStack);
 			while(top != NULL && STACK_DATA_TO_TOKEN(parserStackPeek(&top)).type != TOKEN_INIT){
 				top = top->next;
 				
-				parserStackPush(&expressionStack, parserStackPop(semanticStack));
+				parserStackPush(&expressionStack, parserStackPop(&semanticStack));
 			}
 			
 			parserSemanticChangeIDsToTypes(&expressionStack, symtableStack, errorHandle);
@@ -1117,14 +1142,14 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 
 			// expression to value type - end
 
-			parserStackPop(semanticStack); // pop TOKEN_INIT
+			parserStackPop(&semanticStack); // pop TOKEN_INIT
 			
 			
 			
 			if(newVarTokenType != TOKEN_EMPTY){
 			
-				if(STACK_DATA_TO_INT(parserStackPeek(symtableStack)) != -1 && STACK_DATA_TO_INT(parserStackPeek(semanticStack)) != -1){
-					Token newVarIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(semanticStack)); // pop var id token
+				if(STACK_DATA_TO_INT(parserStackPeek(symtableStack)) != -1 && STACK_DATA_TO_INT(parserStackPeek(&semanticStack)) != -1){
+					Token newVarIdToken = STACK_DATA_TO_TOKEN(parserStackPeek(&semanticStack)); // pop var id token
 					if(newVarIdToken.type == TOKEN_ID){
 						
 						// pop currentLocalSymtable
@@ -1160,13 +1185,13 @@ int parserSemanticAnalysis(TokenList *tokenList, ParserStackPtr *semanticStack, 
 		}
 		
 		// clear semantic stack
-		parserStackFree(semanticStack);
+		parserStackFree(&semanticStack);
 	}
 	
 	
 	
 	// call generator and generate code from token and rules
-	generatorGenerateCode(tokenList, symtableStack, globalSymTable, leftAndRightAnalysisStack, semanticRuleStack, errorHandle);
+	generatorGenerateCode(tokenList, symtableStack, globalSymTable, leftAndRightAnalysisRuleStack, expressionRuleStack, errorHandle);
 	
 	
 	return errorHandle->errorID;
@@ -1214,15 +1239,15 @@ int parserSemanticChangeIDsToTypes(ParserStackPtr *expressionStack, ParserStackP
 }
 
 
-Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *semanticStack, ErrorHandle *errorHandle)
+Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *expressionStack, ErrorHandle *errorHandle)
 {
-	ParserStackPtr top = (*semanticStack);
+	ParserStackPtr top = (*expressionStack);
 	if(top->next != NULL){
 		
 		// COMPARE
 		if(TOKEN_EQ <= top->next->data.token.type && top->next->data.token.type <= TOKEN_LTE){
 			
-			top = (*semanticStack);
+			top = (*expressionStack);
 			Token_type expressionTokenType = top->data.token.type;
 			while(top != NULL){
 				
@@ -1235,7 +1260,7 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 				top = top->next;
 			}
 			
-			top = (*semanticStack);
+			top = (*expressionStack);
 			return top->next->data.token.type;
 			
 		// ACTION
@@ -1246,7 +1271,7 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 			// MATH INT
 			if(top->data.token.type == TOKEN_INTVALUE){
 				
-				top = (*semanticStack);
+				top = (*expressionStack);
 				Token_type expressionTokenType = top->data.token.type;
 				while(top != NULL){
 					
@@ -1267,7 +1292,7 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 			// MATH FLOAT
 			} else if(top->data.token.type == TOKEN_FLOATVALUE){
 				
-				top = (*semanticStack);
+				top = (*expressionStack);
 				Token_type expressionTokenType = top->data.token.type;
 				while(top != NULL){
 					
@@ -1288,7 +1313,7 @@ Token_type parserSemanticExpressionCheckOperatorsAndOperands(ParserStackPtr *sem
 			// STRING
 			} else if(top->data.token.type == TOKEN_STRINGVALUE){
 				
-				top = (*semanticStack);
+				top = (*expressionStack);
 				Token_type expressionTokenType = top->data.token.type;
 				while(top != NULL){
 					
@@ -1369,23 +1394,23 @@ int parserTokenListFree(TokenList *tokenList)
 }
 
 
-int parserLeftAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisStack)
+int parserLeftAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisRuleStack)
 {
 	// Levý rozbor (číslováno od 1)
 	//printf("Lr: %d\n", ruleNumber);
 	
-	parserStackPush(leftAndRightAnalysisStack, STACK_INT_TO_DATA(ruleNumber));
+	parserStackPush(leftAndRightAnalysisRuleStack, STACK_INT_TO_DATA(ruleNumber));
 	
 	return 0;
 }
 
 
-int parserRightAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisStack)
+int parserRightAnalysis(int ruleNumber, ParserStackPtr *leftAndRightAnalysisRuleStack)
 {
 	// Pravý rozbor (číslováno od 1)
 	//printf("Rr: %d\n", ruleNumber);
 	
-	parserStackPush(leftAndRightAnalysisStack, STACK_INT_TO_DATA(ruleNumber));
+	parserStackPush(leftAndRightAnalysisRuleStack, STACK_INT_TO_DATA(ruleNumber));
 	
 	return 0;
 }
@@ -1432,7 +1457,7 @@ int parserStackPrecedentTopHasHandle(ParserStackPtr *stack)
 	return (STACK_DATA_TO_INT(parserStackPrecedentTop(stack)) != -1);
 }
 
-int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr *semanticPrecedentStack, ParserStackPtr *semanticRuleStack)
+int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr *semanticPrecedentStack, ParserStackPtr *expressionRuleStack)
 {
 	ParserStackPtr ruleStack;
 	parserStackInit(&ruleStack);
@@ -1443,7 +1468,7 @@ int parserStackPrecedentTopPopAndPushRule(ParserStackPtr *stack, ParserStackPtr 
 		parserStackPush(&ruleStack, top->data);
 		
 		if(STACK_DATA_TO_TOKEN(parserStackPeek(semanticPrecedentStack)).type != TOKEN_EMPTY){
-			parserStackPush(semanticRuleStack, parserStackPeek(semanticPrecedentStack));
+			parserStackPush(expressionRuleStack, parserStackPeek(semanticPrecedentStack));
 		}
 		parserStackPop(semanticPrecedentStack);
 		

@@ -9,17 +9,6 @@
 
 #include "symtable.h"
 
-/*
-**	symTableInit ...... inicializace vyhledávacího stromu
-**	symTableInsert .... vkládání nové hodnoty
-**	symTableSearch .... vyhledávání hodnoty uzlu zadaného klíčem
-**	symTableDispose ... zrušení celého stromu
-*
-**	BTPreorder ...... nerekurzivní průchod typu pre-order
-**	BTInorder ....... nerekurzivní průchod typu in-order
-**	BTPostorder ..... nerekurzivní průchod typu post-order
-*/
-
 
 
 /****************************************************** SYMTABLE TREE ******************************************************************************/
@@ -284,8 +273,8 @@ int symTableParamListFree(SymTableParamList *paramList)
 
 /* Name: Print_tree
 *  Source: Algoritmy (IAL) - FIT (Fakulta Informacnich Technologii) - file: c401-test.c
-*  Date: 2005-10-01
-*  Authors: Martin Tucek, (Roman Lukas - 2006), (Karel Masarik - 2013)
+*  Date: 2020-11-10
+*  Authors: Martin Tucek - 2005-10-01; (Roman Lukas - 2006), (Karel Masarik - 2013)
 *  Edited: true
 */
 void Print_tree2(SymTableBinTreePtr TempTree, char* sufix, char fromdir, char* space_size)
