@@ -56,11 +56,8 @@
 	            \Large{Implementovaná rozšíření: \textbf{BASE}}
 	            \vspace{\stretch{0.618}}
 		\end{center}
-		\begin{minipage}{0.4 \textwidth}
-			{\Large \today}
-		\end{minipage}
 		\hfill
-		\begin{minipage}[r]{0.6 \textwidth}
+		\begin{minipage}[r]{0.8 \textwidth}
 			\Large
 			\begin{tabular}{l l l}
 				\textbf{Michal Pyšík} & (xpysik00) & \quad 25\,\% \\
@@ -113,35 +110,48 @@ Typy tokenů s atributy jsou pouze identifikátor, celé číslo, desetinné č�
 \newline
 Všechny načtené tokeny se ukládají do obousměrně vázaného lineárního seznamu \verb|tokenList|, který je předáván dalším částem překladače. Z pracujících se seznamem stojí za zmínku\linebreak \verb|ScannerGetTokenList|, která plní seznam tokeny (voláním dříve popsané funkce), dokud nenarazí na token typu \verb|EOF|, nebo volaná funkce nenahlásí lexikální chybu. 
 
+\newgeometry{left=17mm, top=10mm, bottom=2cm} 
 \subsection{Graf konečného stavového automatu lexikálního analýzátoru}
-\includegraphics[height=24cm,keepaspectratio]{Scanner_FSM_Graph.pdf}
+\includegraphics[height=25cm,keepaspectratio]{Scanner_FSM_Graph.pdf}
+\restoregeometry
 
 \section{Syntaktická a sémantická analýza (parser)}
 Celá syntaktická a sémantická analýza se odehrává v souboru parser.c a konkrétně se spouští funkcí parserAnalyze.
-
+\newline
+\newline
 V našem projektu je funkce parserAnalyze přímo volána z hlavní funkce main se vstupním parametrem tokenList, který obsahuje kompletní seznam tokenů načtený skenerem, který je implementován jako dynamický obousměrný lineární seznam. První akcí této funkce je vytvoření globální tabulky symbolů.
-
+\newline
+\newline
 Proces parseru se skládá ze dvou hlavních funkcí:
 
-parserPreRun – zde dojde k naplnění globální tabulky symbolů uživatelskými a vestavěnými funkcemi, vytvoření jejich lokálních tabulek symbolů a uložení důležitých informací o nich (počet vstupních a výstupních parametrů a datové typy parametrů).
+\begin{itemize}
 
-parserRunPredictiveSyntaxAnalysis – spuštění samotného procesu syntaktické a sémantické analýzy.
+    \item \verb|parserPreRun| –- zde dojde k naplnění globální tabulky symbolů uživatelskými a vestavěnými funkcemi, vytvoření jejich lokálních tabulek symbolů a uložení důležitých informací o nich (počet vstupních a výstupních parametrů a datové typy parametrů).
+    \item \verb|parserRunPredictiveSyntaxAnalysis| –- spuštění samotného procesu syntaktické a sémantické analýzy.
+    
+\end{itemize}
+
+
+
+
 
 \subsection{Implementace funkce \protect\Verb|parserPreRun|}
 Hned na začátku funkce dojde k naplnění globální tabulky symbolů vestavěnými funkcemi voláním funkce \verb|parserSymTableInitBuiltIn|.
+\newline
+\newline
+Dále se v cyklu prochází celý tokenList, kde se očekává token \verb|TOKEN_KEYWORD_FUNC| následovaný tokenem \verb|TOKEN_ID|, což značí začátek definice funkce. V globální tabulce symbolů se zkontroluje, že se nejedná o redefinici funkce a vloží se do ní záznam nové funkce, který bude obsahovat seznam typů vstupních parametrů a seznam typů výstupních parametrů funkce. Do záznamu se také přidá nová lokální tabulka symbolů, kam se přidají proměnné vstupních parametrů a proměnná blackhole~(\,~\verb|_|\,~).
+\newline
+\newline
+Nakonec se kontroluje výskyt prologu (token \verb|TOKEN_KEYWORD_PACKAGE|), výskyt hlavní funkce \verb|main|, a že funkce \verb|main| nemá žádné vstupní ani výstupní parametry.
 
-Dále se v cyklu prochází celý tokenList, kde se očekává token \verb|TOKEN_KEYWORD_FUNC| následovaný tokenem \verb|TOKEN_ID|, což značí začátek definice funkce. V globální tabulce symbolů se zkontroluje, že se nejedná o redefinici funkce a vloží se do ní záznam nové funkce, který bude obsahovat seznam typů vstupních parametrů a seznam typů výstupních parametrů funkce. Do záznamu se také přidá nová lokální tabulka symbolů, kam se přidají proměnné vstupních parametrů a proměnná blackhole (\verb|‚_‘|).
-
-Nakonec se kontroluje výskyt prologu (token \verb|TOKEN_KEYWORD_PACKAGE|), výskyt hlavní funkce main, a že funkce main nemá žádné vstupní ani výstupní parametry.
-
-\subsection{Proces analýzy - funkce \protect\Verb|parserRunPredictiveSyntaxAnalysis|}
-Na začátku funkce parserRunPredictiveSyntaxAnalysis dojde k nastavení ukazatele aktivního prvku tokenList na první prvek a spouští se analýza kódu.
+\subsection{Proces analýzy -- funkce \protect\Verb|parserRunPredictiveSyntaxAnalysis|}
+Na začátku funkce parserRunPredictiveSyntaxAnalysis dojde k nastavení ukazatele aktivního prvku \verb|tokenList| na první prvek a spouští se analýza kódu.
 
 \subsubsection{Syntaktická analýza celého kódu}
 Pro syntaktickou analýzu kódu je použita Prediktivní syntaktická analýza. Na syntaktický zásobník je na počátku vložen neterminální stav \verb|NONTERM_PROGRAM| a zároveň s \verb|tokenList| je zásobník procházen v cyklu se třemi podmínkami:
 
 \begin{enumerate}
-    \item Pokud je na zásobníku terminál \verb|TERM_EOF|, zkontroluje se i aktuální čtený token, zda je roven tokenu \verb|TOKEN_EOF|. V případě platnosti je analýza ukončena s pozitivním výsledkem – syntaxe i sémantika je správně. V případě, že na zásobníku je terminál \verb|TERM_EOF|, ale aktuální token není \verb|TOKEN_EOF|, je vrácena chyba špatného tokenu na vstupní pásce.
+    \item Pokud je na zásobníku terminál \verb|TERM_EOF|, zkontroluje se i aktuální čtený token, zda je roven tokenu \verb|TOKEN_EOF|. V případě platnosti je analýza ukončena s pozitivním výsledkem –- syntaxe i sémantika je správně. V případě, že na zásobníku je terminál \verb|TERM_EOF|, ale aktuální token není \verb|TOKEN_EOF|, je vrácena chyba špatného tokenu na vstupní pásce.
     \newpage
     \item Jestliže se na zásobníku nachází neterminál, nalezne se podle aktuálního tokenu na vstupu
     v LL-tabulce číslo pravidla pro jeho rozklad. Pokud nebylo pravidlo nalezeno, došlo k syntaktické chybě. Jinak se ze zásobníku odstraní daný neterminál a nahradí se pravou stranou pravidla ze seznamu pravidel podle LL-tabulky. LL-tabulka i seznam pravidel je uložen v souboru common.h. Číslo pravidla je uloženo do zásobník s posloupností čísel pravidel pravého a levého rozboru.
@@ -266,6 +276,9 @@ Sémantická analýza běží paralelně se syntaktickou analýzou a její funkc
 \newpage
 
 \section{Tabulka symbolů}
+Součástí překladače je tabulka symbolů. Do tabulky symbolů se ukládají informace o funkcích a proměnných, například jejich název, typ, návratové hodnoty a další. Je implementována jako binární vyhledávácí strom, kde každý uzel uchovává jméno funkce nebo proměnné. Pokud se jedná o funkci, tak se ukládá její počet a datový typ parametrů a návratových hodnot ukládané v obousměrně vázaném lineárním seznamu. \\
+\newline
+Binární vyhledávací strom \verb|globalSymtable| ukládá informace funkcí a každý uzel ukládá svůj vlastní lokální tabulku symbolů \verb|functionLocalSymTable|, která je taky implementována BVS a ukládá v nich proměnné a další informace obsažené v těle dané funkce. 
 
 \section{Generace mezikódu IFJcode20}
 Generování cílového kódu IFJcode20 probíhá vždy po každém dokončení jedné iterace syntaktické a sémantické analýzy. Parser generátoru sekvenčně předává pravidla LL tabulky pravého a levého rozboru a sémantický stack, který obsahuje tokeny pro generování aritmetických a logických výrazů. Scanner poskytuje double-linked list tokenů z lexikálního analyzátoru.
@@ -278,5 +291,8 @@ Generování podmíněných příkazů \verb|if| / \verb|else| a cyklů \verb|fo
 K uchování informací o momentálním kontextu v kódu IFJ20 slouží \verb|static| proměnné typu boolean, které jsou nastavovány pomocí již zmíněného přepínače \verb|switch| a podmíněných výrazů, které se rozhodují na základě současného gramatického pravidla. Na práci s proměnnými jsou implementovány 2 zásobníky, \verb|variableStack| pro práci s levou stranou přiřazovacího výrazu a \verb|argumentStack|, pro správné předávání argumentů při volání funkcí.
 
 \section{Hlavní funkce main}
-Funkce main předá errorHandle nastavený na stderr a rozjede překladač a vyplivne cílový kód. 
+Hlavní funkce překladače nejprve inicializuje \verb|ErrorHandle|, což je pomocná datová struktura, jejíž úkolem je zpracovávat chybová hlášení.
+Dále se zde inicializuje obousměrně vázaný lineární seznam a načtou se do něj všechny tokeny. Na závěr se volá funkce \verb|parserAnalyze|,
+která kromě syntaktické a sémantické kontroly volá také hlavní funkci generátoru mezikódu. Návratová hodnota celého programu se vyhodnotí
+voláním funkce \verb|getResult|, která zpracovává již zmíněný \verb|ErrorHandle|, který byl předáván všem klíčovým funkcím v rámce celého překladu. 
 \end{document}
