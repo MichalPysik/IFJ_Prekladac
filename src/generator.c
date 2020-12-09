@@ -250,7 +250,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	errorHandleInit(errorHandle);
 	scannerTokenListGetActive(tokenList, &currentToken, errorHandle);
 	
-	
 	//printf("\n\nVolam generatorGenerateCode:\n\n");
 
 	//printf("TOKEN: %s \n", tokenTypes[currentToken.type]);
@@ -410,24 +409,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							printf("IDIV TF@$result");
 						}
 						else if(operator.type == TOKEN_ADD){
-							/*
-							if(operand1.type == TOKEN_ID){
-								SymTableData varType;
-								symTableSearch(*globalSymTable, operand1.attribute.string, &varType, errorHandle);
-								if(varType.idDataType == STRING){
-									printf("STRINGCONCAT TF@$result");
-								}else if(varType.idDataType == INT){
-									printf("INTCONCAT TF@$result");
-								}else if(varType.idDataType == FLOAT){
-									printf("FLOATCONCAT TF@$result");
-								}
-							}else if(operand2.type == TOKEN_ID){
-								SymTableData varType;
-								symTableSearch(*globalSymTable, operand2.attribute.string, &varType, errorHandle);
-								if(varType.idDataType == STRING){
-									printf("CONCAT TF@$result");
-								}
-							}*/
 							if(isStringExpression){
 								printf("CONCAT TF@$result");
 							}
@@ -561,11 +542,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			}
 			currentVariableID = NULL;
 		}
-		/*
-		if(inReturn){
-			//pushArguments(&variableStack,0);
-			inReturn = false;
-		}*/
 		int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
 		if(currentKeyword == IF_EXPRESSION){
 			IntegerStackSetKeywordType(&ifForStack, IF);
@@ -817,9 +793,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 			bracketCnt--;
 			if(currentKeywordType == ELSE){
-				//printf("\n%d BRACETS BEFORE: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				IntegerStackIncreaseBrackets(&ifForStack);
-				//printf("\n%d BRACKETS AFTER: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				int elseBrackets = IntegerStackPeekBrackets(&ifForStack);
 				int tmp = IntegerStackPeekID(&ifForStack);
 				//printf("\n%d\n",elseBrackets);
@@ -829,9 +803,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				}
 			}
 			if(currentKeywordType == FOR){
-				//printf("\n%d BRACETS BEFORE: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				IntegerStackIncreaseBrackets(&ifForStack);
-				//printf("\n%d BRACKETS AFTER: %d\n",isFor ,IntegerStackPeekBrackets(&ifForStack));
 				int forBrackets = IntegerStackPeekBrackets(&ifForStack);
 				int tmp = IntegerStackPeekID(&ifForStack);
 				if(forBrackets == 2){
@@ -890,16 +862,12 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		case TOKEN_EOL:
 			leftSide = false;
 			multiExpression = false;
-			//inExpression = false;
 			variableCount = 0;
 			parserStackFree(&variableStack);
 			parserStackFree(&argumentStack);
 			break;
 		
 		case TOKEN_LROUNDBRACKET:
-			//printf("PREVIOUS: %s", tokenTypes[previousToken.type]);
-			//printf("inFunctionCall: %d", inFunctionCall);
-			//printf("\nJmeno funkce: %s \n", previousToken.attribute.string);
 			if(inFunctionCall == true && previousToken.type == TOKEN_ID){
 				inFunctionCallName = previousToken.attribute.string;
 				inArguments = true;
@@ -925,44 +893,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_KEYWORD_RETURN:
 			inReturn = true;
-			if(inFunction == true && inFunctionName != "main"){
-				/*
-				Token tempToken;
-				tempToken.type = TOKEN_EMPTY;
-				tempToken.pos_line = 0;
-				tempToken.pos_number = 0;
-				int shiftCounter = 0;
-
-				scannerTokenListGetNext(tokenList, &tempToken, errorHandle);
-				while(tempToken.type != TOKEN_EOL){
-					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
-					scannerTokenListMoveNext(tokenList, errorHandle);
-					shiftCounter++;
-				}
-				
-				printf("\n");
-				
-				for(int i = 0; i < shiftCounter; i++){
-					scannerTokenListMovePrev(tokenList, errorHandle);
-					scannerTokenListGetActive(tokenList, &tempToken, errorHandle);
-					if(tempToken.type == TOKEN_ID){
-						printf("PUSHS LF@%s\n", tempToken.attribute.string);
-					}
-					else if(tempToken.type == TOKEN_INTVALUE){
-						printf("PUSHS int@%ld\n", tempToken.attribute.integer);
-					}
-					else if(tempToken.type == TOKEN_FLOATVALUE)
-					{
-						printf("PUSHS float@%a\n", tempToken.attribute.real);
-					}
-					else if (tempToken.type == TOKEN_STRINGVALUE)
-					{
-						printf("PUSHS string@%s\n", tempToken.attribute.string);
-					}
-				}
-				*/
-
-			}
 			break;
 
 		case TOKEN_KEYWORD_IF:
@@ -1004,25 +934,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		default:
 			break;
 	}	
-	
-	
-	// GENEROVÁNÍ PODLE ULOŽENÝCH DAT
-	
-	// TODO
-	
-	// výpis tokenů/u
-	/*
-	if(currentToken.type == TOKEN_EOL){
-		printf("\n");
-	}
-	else if (currentToken.type == TOKEN_ID){
-		printf("%s ", currentToken.attribute.string);
-	}
-	else{
-		printf("%s ",tokenTypes[currentToken.type]);
-	}
-	*/
-	//Print_tree(globalSymTable);
 	
 	
 	return errorHandle->errorID;
