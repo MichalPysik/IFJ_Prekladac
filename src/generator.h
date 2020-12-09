@@ -214,6 +214,9 @@ OR TF@$res TF@$res1 TF@$res2\n\
 PUSHS TF@$res\n\
 RETURN\n"
 
+
+void generatorFree();
+
 void pushArguments(ParserStackPtr *argStack, int argCount);
 
 void printPushs(ParserStackPtr *varStack, int argCount);
@@ -234,6 +237,9 @@ typedef struct integerStack {
 	int keywordType;
 	struct integerStack *next;
 } *integerStack;
+
+void integerStackFree(integerStack *stack);
+
 
 #define IF 0
 #define IF_EXPRESSION 1

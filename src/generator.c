@@ -10,6 +10,19 @@
 #include "generator.h"
 
 
+
+static ParserStackPtr variableStack = NULL;
+static ParserStackPtr argumentStack = NULL;
+static integerStack ifForStack = NULL;
+
+
+void generatorFree()
+{
+	parserStackFree(&variableStack);
+	parserStackFree(&argumentStack);
+	integerStackFree(&ifForStack);
+}
+
 void integerStackInit(integerStack *stack)
 {
 	(*stack) = NULL;
@@ -57,7 +70,6 @@ int IntegerStackPeekBrackets(integerStack *stack)
 	return -1;
 }
 
-
 void IntegerStackIncreaseBrackets(integerStack *stack)
 {
 	if((*stack) != NULL){
@@ -80,7 +92,6 @@ int integerStackPop(integerStack *stack)
 	return -1;
 }
 
-//HELP KAREL
 void integerStackFree(integerStack *stack)
 {
 	int top;
@@ -90,8 +101,6 @@ void integerStackFree(integerStack *stack)
 	}
 	integerStackInit(stack);
 }
-
-
 
 ParserStackPtr reverseStack(ParserStackPtr *varStack, int varCount){
 	ParserStackPtr tempStack = NULL;
@@ -118,7 +127,6 @@ void preorderTreeParamsTraversal(SymTableBinTreePtr TempTree)
     preorderTreeParamsTraversal(TempTree->leftPtr);   
     preorderTreeParamsTraversal(TempTree->rightPtr); 
 }
-
 
 void pushArguments(ParserStackPtr *argStack, int argCount){
 	ParserStackData data;
@@ -195,9 +203,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	previousToken.pos_line = 0;
 	previousToken.pos_number = 0;
 	
-	static ParserStackPtr variableStack = NULL;
-	static ParserStackPtr argumentStack = NULL;
-	static integerStack ifForStack = NULL;
 	
 	static int bracketCnt = 0;
 	static int variableCount = 0; 

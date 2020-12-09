@@ -21,26 +21,27 @@ int main()
 	FILE_INPUT	= stdin;
 	FILE_OUTPUT	= stdout;
 	FILE_ERROR	= stderr;
-
+	
 	ErrorHandle errorHandle;
 	errorHandleInit(&errorHandle);
-
-
+	
+	
 	TokenList tokenList;
 	scannerTokenListInit(&tokenList, &errorHandle);
-
-
+	
+	
 	// získání seznamu s tokeny
 	scannerGetTokenList(&tokenList, &errorHandle);
-
-
+	
+	
 	// Syntaktická analýza + Sémantická analýza
 	parserAnalyze(&tokenList, &errorHandle);
-
-
-	// generování výsledného kódu
-	// přímé volání z parseru
-
+	
+	
+	// generování výsledného kódu -> přímé volání z parseru
+	// uvolnění generátoru
+	generatorFree();
+	
 	
 	int result = getResult(errorHandle, &tokenList);
 	handleFreeError(scannerTokenListFree(&tokenList), __LINE__, __FILE__);
@@ -69,10 +70,3 @@ int getResult(ErrorHandle errorHandle, TokenList *tokenList)
 	
 	return handleError(errorHandle, tokenTypes[currentToken.type], currentToken.pos_line, currentToken.pos_number, tokenIdName);
 }
-
-
-
-// TODO SCANNER - vytvořit Seznam na tokeny nebo Zásobník na tokeny
-// TODO SYMTABLE - vytvořit pomocí binárního stromu tabulku symbolů
-// TODO PARSER - semantic pre run (+ vložení do tabulky symbolů i předdefinované funkce)
-// TODO GENERATOR - generování kódu z tokenů + zdrojové kódy předdefinovaných funkcí
