@@ -224,6 +224,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static int argCount = 0;
 	static int ifCount = 0;
 	static int forCount = 0;
+	static int semicolonCount = 0;
 
 	//pomocné proměnné na uchovávání kontextu aktuální pozices
 	static bool inFunction = false;
@@ -308,7 +309,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 		}
 
 		if(grammarRule == 29){
-			//IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);
+			semicolonCount++;
+			IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);
 		}
 
 		if(grammarRule == 34 || grammarRule == 36){
@@ -449,6 +451,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 							}
 							else if(isStringExpression){
 								printf("CONCAT TF@$result");
+							}else{
+							printf("ADD TF@$result");
 							}
 							
 						}
@@ -961,7 +965,8 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 
 		case TOKEN_SEMICOLON:;
 			int currentKeyword = IntegerStackPeekKeywordType(&ifForStack);
-			if(currentKeyword == FOR_EXPRESSION){
+			semicolonCount++;
+			if(currentKeyword == FOR_EXPRESSION && semicolonCount == 2){
 				IntegerStackSetKeywordType(&ifForStack, FOR_ASSIGNMENT);
 				printf("JUMPIFEQ $for_%d_end TF@$result bool@false\n\n", IntegerStackPeekID(&ifForStack));
 				printf("\n\nJUMP $for_%d_assignment_end\n\nLABEL $for_%d_assignment_start\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
@@ -969,6 +974,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			if(currentKeyword == FOR_INIT){
 				IntegerStackSetKeywordType(&ifForStack, FOR_EXPRESSION);
 				printf("\nLABEL $for_%d_start\n", IntegerStackPeekID(&ifForStack));
+				semicolonCount++;
 			}
 			
 			break;

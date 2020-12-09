@@ -2,11 +2,12 @@
 package main
 
 func main() {
-    a := 1
-    b := 2
-    if a != b {
-        print("a se nerovna b")
-    } else {
-        print("a se rovna b")
+    a := 2
+    n := 0
+    err := 0
+    n, err = inputi()
+
+    for i := 0; i < n; i = i + 1 {
+        a = a + a
     }
 }
