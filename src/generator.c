@@ -11,9 +11,9 @@
 
 
 
-static ParserStackPtr variableStack = NULL;
-static ParserStackPtr argumentStack = NULL;
-static integerStack ifForStack = NULL;
+ParserStackPtr variableStack = NULL;
+ParserStackPtr argumentStack = NULL;
+integerStack ifForStack = NULL;
 
 
 void generatorFree()
@@ -102,12 +102,12 @@ void integerStackFree(integerStack *stack)
 	integerStackInit(stack);
 }
 
-ParserStackPtr reverseStack(ParserStackPtr *varStack, int varCount){
+ParserStackPtr reverseStack(ParserStackPtr *varStack){
 	ParserStackPtr tempStack = NULL;
 	ParserStackData top;
 	if (varStack == NULL) return NULL;
 
-	for(int i = 0; i < varCount; i++){
+	while(STACK_DATA_TO_INT(parserStackPeek(varStack)) != -1){
 		top = parserStackPop(varStack);
 		parserStackPush(&tempStack, top);
 	}
@@ -153,8 +153,8 @@ void printPops(ParserStackPtr *varStack, int varCount){
 	Token variableToken[varCount];
 	//reverseStack(varStack, varCount);
 	
-	*varStack = reverseStack(varStack, varCount);
-	for(int i = 0; i < varCount; i++)	{
+	*varStack = reverseStack(varStack);
+	while(STACK_DATA_TO_INT(parserStackPeek(varStack)) != -1){
 		data = parserStackPop(varStack);
 		if(!strcmp(data.token.attribute.string,"_")){
 			printf("POPS GF@_\n");
@@ -231,6 +231,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 	static bool inForBody = false;
 	static bool inElse = false;
 	static bool inIf = false;
+	static bool singleExpression = false;
 
 	//Vestavěné funkce
 	static bool inputi = false;
@@ -307,21 +308,25 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			
 			//TISKNE POSLEDNI PRVEK
 		}
+
 		if(grammarRule == 38 || grammarRule == 39){
+			
 			if(inMultiAssign == true && variableCount != 1){
 				ParserStackData data;
 				Token variableToken;
 				data = parserStackPop(&variableStack);
 				variableToken = data.token;
-				if(!strcmp(variableToken.attribute.string,"_")){
-					printf("POPS GF@_\n");
+				if(variableToken.type == TOKEN_ID || variableToken.type == TOKEN_STRINGVALUE){
+					if(!strcmp(variableToken.attribute.string,"_")){
+						printf("POPS GF@_\n");
+					}
+					else{
+						printf("POPS LF@%s\n", variableToken.attribute.string);
+					}
 				}
-				else{
-					printf("POPS LF@%s\n", variableToken.attribute.string);
-				}
-				
 			}
 		}
+		
 		// VÝRAZY
 		// VÍCE OPERANDŮ
 		if(52 <= grammarRule && grammarRule <= 61){
@@ -505,8 +510,9 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					expressionValue = STACK_DATA_TO_TOKEN(parserStackPeek(&top));
 					
 
-					if(inReturn == false){
+					if(inReturn == false && currentVariableID != NULL){
 						if(!strcmp(currentVariableID,"_")){
+							
 							printf("MOVE GF@_ ");
 						}
 						else{
@@ -534,7 +540,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 					parserStackPop(semanticRuleStack);
 				}
 			}
-		} 
+		}
 	}
 	
 	if(previousToken.type == TOKEN_EOL && inExpression == true && grammarRule < 49){
@@ -560,14 +566,24 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			printf("JUMP $for_%d_start\n\nLABEL $for_%d_assignment_end\n\n", IntegerStackPeekID(&ifForStack), IntegerStackPeekID(&ifForStack));
 		}
 	}
-	
+
+	//
+	if(previousToken.type == TOKEN_EOL){
+		multiExpression = false;
+		inMultiAssign = false;
+		inReturn = false;
+		variableCount = 0;
+		parserStackFree(&variableStack);
+		parserStackFree(&argumentStack);
+	}	
+
 	// GENEROVANÍ PODLE TOKENŮ
 	switch (currentToken.type)
 	{
 		
 		case TOKEN_ASSIGN:
 			leftSide = false;
-			variableStack = reverseStack(&variableStack, variableCount);
+			variableStack = reverseStack(&variableStack);
 			if(variableCount > 1){
 				inMultiAssign = true;
 			}
@@ -732,7 +748,7 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 				ParserStackData tokenData;
 				tokenData.token = currentToken;
 				variableCount++;
-				//printf("\nPUSHING: %s\n", data.token.attribute.string);
+				//printf("\nPUSHING: %s\n, VariableCount: %d", tokenData.token.attribute.string, variableCount);
 				parserStackPush(&variableStack, tokenData);
 			}
 
@@ -861,11 +877,6 @@ int generatorGenerateCode(TokenList *tokenList, ParserStackPtr *symtableStack, S
 			break;
 
 		case TOKEN_EOL:
-			leftSide = false;
-			multiExpression = false;
-			variableCount = 0;
-			parserStackFree(&variableStack);
-			parserStackFree(&argumentStack);
 			break;
 		
 		case TOKEN_LROUNDBRACKET:

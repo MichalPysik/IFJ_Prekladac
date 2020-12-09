@@ -2,12 +2,16 @@
 package main
 
 func main() {
-    a := 0
-    for i := 0; i < 11; i = i + 1 {
-        if(i < 5){
-            print(i)
-        } else {
-            print("i je vetsi nez 5")
-        }
+    n := 0
+    err := 0
+    print("zadej pocet iteraci: \n")
+    n, err = inputi()
+
+    a := 2
+    i := 0
+    
+    for ; i < n; i = i + 1 {
+        a = a * a
+        print(a, "\n")        
     }
 }
